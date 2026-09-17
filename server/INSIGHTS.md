@@ -36,6 +36,8 @@ Testcontainers integration tests go green against a correctly-migrated database 
 own database is silently several migrations behind. After adding a migration, confirm the column
 actually landed rather than trusting a clean `pnpm db:migrate`.
 
+**Update 2026-09-17:** `seed.ts` now uses the same `pathToFileURL` guard. It showed up as a real failure: `./scripts/e2e.sh` ran `pnpm db:seed` against the isolated Postgres. That step printed only the pnpm banner, with no "✓ seeded", and exited 0. The API then answered every request with `No system user found — run \`pnpm db:seed\`.`, and all 7 e2e flows failed. The tell is a missing "✓ seeded" line. After the fix, 7/7 flows pass.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
