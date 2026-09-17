@@ -7,7 +7,7 @@ Cross-package findings belong in the root `INSIGHTS.md`.
 
 ### Assert that something *disappeared* with a named ARIA list, not a CSS count
 
-`specs/04-pr-findings.flow.json` · `client/.../FindingsPanel/FindingsPanel.tsx` · 2026-09-17
+`specs/04-pr-findings.flow.json:16` · `client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx:96` · 2026-09-17
 
 `wait --text` and `find` can only prove that something is **present**. A filter check ("after clicking CRITICAL, the WARNING card is gone") needs an absence or count assertion. The quick answer, `get count "[data-finding-id]"`, is a CSS selector, which this suite's locator rule forbids (README: `--url`, `--text`, `find role|text|label` only).
 

@@ -1,7 +1,7 @@
 # e2e (@devdigest/e2e)
 
 ## Before answering
-Search `e2e/INSIGHTS.md` first.
+Search `e2e/docs/`, `e2e/specs/README.md`, `e2e/INSIGHTS.md` first.
 
 ## Conventions (not obvious from code)
 - Deterministic locators only (`--url`, `--text`, `find role|text|label`) — never the AI `chat` command.
@@ -15,4 +15,5 @@ Search `e2e/INSIGHTS.md` first.
 
 ## Use when
 - Flow format, env knobs, coverage table → read `e2e/README.md`
+- Writing/debugging a flow, assertion patterns → read `e2e/docs/` · which journey each flow guarantees → read `e2e/specs/README.md`
 - Findings → read `e2e/INSIGHTS.md`

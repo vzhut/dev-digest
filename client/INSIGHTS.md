@@ -11,7 +11,7 @@ _No entries yet._
 
 ### Closing a popover on capture-phase `scroll` also kills scrolling inside it
 
-`src/components/findings-popover/FindingsPopover.tsx` · 2026-09-17
+`src/components/findings-popover/FindingsPopover.tsx:78` · 2026-09-17
 
 Symptom: in the PR list, the findings popover had a max height, and the scrollbar was visible but scrolling didn't work. A long file path also added a horizontal scrollbar.
 
@@ -34,7 +34,7 @@ _No entries yet._
 
 ### A click inside a portalled popover still fires the clickable row it came from
 
-`src/components/findings-popover/FindingsPopover.tsx` · 2026-09-17
+`src/components/findings-popover/FindingsPopover.tsx:138-146` · 2026-09-17
 
 The findings popover is rendered with `createPortal(…, document.body)` so the PR list table card (`overflow: hidden`) can't clip it. In the DOM it is no longer inside the PR row, but React bubbles *synthetic* events along the **React** tree, not the DOM tree. A click on a preview inside the popover therefore reaches the `onClick` of `PRRow`, which calls `router.push`, and the user gets navigated away.
 

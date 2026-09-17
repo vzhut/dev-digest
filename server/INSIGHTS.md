@@ -11,7 +11,7 @@ _No entries yet._
 
 ### `` `file://${process.argv[1]}` `` as a CLI entrypoint guard — silently never fires on a path with a space
 
-`server/src/db/migrate.ts:39` · `server/src/db/seed.ts:227` · 2026-09-16
+`server/src/db/migrate.ts:39` · `server/src/db/seed.ts:229` · 2026-09-16
 
 Both scripts gated their CLI entrypoint with `` if (import.meta.url === `file://${process.argv[1]}`) ``.
 `import.meta.url` percent-encodes a space as `%20`; `process.argv[1]` keeps the literal space. On a
@@ -42,7 +42,7 @@ actually landed rather than trusting a clean `pnpm db:migrate`.
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
 
-`server/src/vendor/shared/contracts/trace.ts` · `server/src/db/schema/runs.ts` · 2026-09-16
+`server/src/vendor/shared/contracts/trace.ts:69` · `server/src/db/schema/runs.ts:31` · 2026-09-16
 
 `RunStats` is not just a wire DTO — the whole `RunTrace` is stored as a single jsonb document in
 `run_traces.trace` and re-parsed through the same Zod schema when the trace drawer opens. Documents
@@ -60,7 +60,7 @@ which parses a trace with no `cost_usd` key and asserts it still succeeds.
 
 ### Failed `agent_runs` store tokens `0`, not `NULL` — aggregate over `status = 'done'` only
 
-`server/src/modules/reviews/run-executor.ts:303` · `server/src/modules/pulls/routes.ts:147-153` · 2026-09-17
+`server/src/modules/reviews/run-executor.ts:303` · `server/src/modules/pulls/routes.ts:142-158` · 2026-09-17
 
 On the failure/cancel path `completeAgentRun` writes `tokens_in = 0` and `tokens_out = 0` (only
 `cost_usd` is written as `NULL`). A zero there does not mean "used no tokens" — the run may have
@@ -84,6 +84,8 @@ _No entries yet._
 ## Session Notes
 
 ### 2026-09-16 — Run cost badge
+
+`server/src/db/migrations/0010_skinny_punisher.sql:1` · `server/src/modules/reviews/run-executor.ts:269` · 2026-09-16
 
 Restored `agent_runs.cost_usd` (migration `0010`) and stopped `run-executor.ts` discarding the
 `costUsd` every LLM adapter already computes; added the PR-list `SUM`, the `reviews`→`agent_runs`

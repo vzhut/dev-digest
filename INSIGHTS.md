@@ -40,7 +40,7 @@ _No entries yet._
 
 ### Why does a real review store `confidence: 0` on every finding?
 
-`GET /repos/bb2312bb-a43b-46ca-8865-a9ac9dd16e43/pulls` (PR #24) · 2026-09-17
+`server/src/vendor/shared/contracts/findings.ts:57` · `client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/constants.ts:4` · `GET /repos/bb2312bb-a43b-46ca-8865-a9ac9dd16e43/pulls` (PR #24) · 2026-09-17
 
 All six persisted findings of PR #24's latest review have `confidence: 0`, so the UI shows "0% conf" everywhere. With "Hide low confidence" on (threshold 0.65), every one of them would be hidden. The seeded findings (0.98 / 0.86) are fine, so the UI is not the cause.
 
