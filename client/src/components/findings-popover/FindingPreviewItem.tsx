@@ -7,7 +7,7 @@ import { fileLineLabel } from "./helpers";
 import { s } from "./styles";
 
 /** One finding in the popover — read-only text by design: no buttons, no links.
- *  Accept/Dismiss live only on the Review runs finding cards. */
+ *  Accept/Reject live only on the Review runs finding cards. */
 export function FindingPreviewItem({ finding: f }: { finding: FindingPreview }) {
   const meta = SEV[f.severity];
   const SevIcon = Icon[meta.icon];
