@@ -45,7 +45,7 @@ Consequences:
   hidden loses its pill.
 - Selecting a pill does **not** change the counts, so the other pills stay
   visible and clickable.
-- Dismissed and accepted findings are counted — they are still rendered (muted).
+- Rejected (`dismissed_at`) and accepted findings are counted — they are still rendered (muted).
 
 ### Filter
 
@@ -74,8 +74,6 @@ on it by role instead of CSS selectors.
 ## Out of scope
 
 - Multi-select filters, filter persistence in the URL.
-- Renaming the finding's **Dismiss** button (the acceptance wording calls it
-  "Reject"; the label stays "Dismiss").
 
 ## Tests
 
@@ -87,3 +85,14 @@ on it by role instead of CSS selectors.
   disappears.
 - e2e `04-pr-findings.flow.json` — seeded PR #482: pill visible → click → only
   that severity's card remains.
+
+## Delivery log
+
+| Phase | Record |
+|---|---|
+| Initiation | Mapped criteria 16–23 to the code. Pills and filter were missing. Accept/Reject (`FindingCard`) and findings in the Trace drawer (`FindingsSection`) already existed. `review.findings` are loaded with the page, so no server change was needed. Found a conflict: "Hide low confidence" vs "pill = cards shown". |
+| Planning | This spec. Decisions: count **after** the confidence toggle and before the severity filter, count rejected/accepted findings, single-select with auto-reset, and relabel Dismiss → **Reject** (the API keeps `dismiss`). |
+| Implementation | `severityCounts` (`src/lib/severity.ts`), `SeverityPills`, and the filter plus named ARIA list in `FindingsPanel`. The `FindingCard` border fix removed the React shorthand warning. Commit `a126c77`, with review follow-ups on branch `lesson-01`. |
+| Validation | Client 80 tests + typecheck. Code review ran on two axes: standards and spec. Fixed from it: e2e CSS selectors → role locators, the missing `SeverityPills.test.tsx`, a duplicated severity order, focus not reset after hide-low (the test was confirmed by mutation), and a redundant effect. Hermetic e2e passed 7/7, and flow `04` clicks the CRITICAL pill and checks `1 finding shown` / `2 findings shown`. Manual check on PR #482 and PR #24. |
+| Completion | Insights: `client/INSIGHTS.md` (`borderColor` shorthand) and `e2e/INSIGHTS.md` (asserting absence with a named list). Committed in logical slices on `lesson-01`. |
+

@@ -38,7 +38,7 @@ Additions (nullish, so older payloads still parse):
 
 - Counts are always derived on the client by grouping the array by `severity`;
   there is no separate counts field that could drift from the list.
-- Dismissed/accepted findings are included (matches the Review runs cards).
+- Rejected (`dismissed_at`) and accepted findings are included (matches the Review runs cards).
 - Order: CRITICAL → WARNING → SUGGESTION, then `file`, then `start_line`.
 - `summary` = `rationale` with markdown kept as-is, cut at 200 chars + `…`.
 
@@ -125,3 +125,14 @@ Clicking the trigger does not navigate; clicking elsewhere on the row still does
   findings in this run" (seeded review: 1 CRITICAL + 1 WARNING). Needs
   agent-browser `hover`; verify it exists. Timeline has no e2e: the seeded review
   has no `run_id`, so seeded data shows no run tiles.
+
+## Delivery log
+
+| Phase | Record |
+|---|---|
+| Initiation | The PR list and runs endpoints carried no finding data, the UI kit had no popover, and nothing used portals. Traps found up front: the list table card has `overflow: hidden` (the popover would be clipped), React bubbles clicks out of portals (they would navigate the row), and seeded reviews have no `run_id` (no Timeline e2e possible). |
+| Planning | This spec, first covering only the PR list, then extended to Timeline tiles after comparing with the mockups. Decisions: one `FindingPreview` contract, `null` vs `[]` semantics, latest review = same row as SCORE, batched queries, no migration. |
+| Implementation | 4a: contract (both copies), `_shared/finding-previews.ts`, `pulls/routes.ts`, `run.repo.ts`. 4b: `components/findings-popover`. 4c: FINDINGS column in `PRRow`. 4d: `RunHistory` tiles. A bug found in manual testing (a non-working inner scroll, a horizontal scrollbar, a broken title row) led to measure-then-place with no inner scroll. Commit `a126c77`. |
+| Validation | Server 140 tests (incl. integration: `null` / `[]` / latest-only / ordering / truncation / run previews). Client 80 tests (popover: open/close, no buttons, clicks don't reach the row, confirmed by mutation; placement cases). reviewer-core typecheck. Hermetic e2e 7/7, and flow `02` hovers PR #482 and reads `2 FINDINGS IN THIS RUN`. Manually checked on PR #24 (6–13 findings). Code review: no spec gaps; standards fixes applied. |
+| Completion | Insights: `client/INSIGHTS.md` (portal click bubbling, capture-phase scroll), root `INSIGHTS.md` (`confidence: 0` comes from the model). The `seed.ts` entrypoint fix that unblocked local e2e was committed separately (`a3bfb29`). |
+
