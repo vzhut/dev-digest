@@ -202,12 +202,89 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     expect(trace.config.model).toBe('gpt-4.1');
     expect(trace.stats.grounding).toBe('1/2 passed');
     expect(trace.log.length).toBeGreaterThan(0);
+    // Cost reaches the trace stats (the drawer's COST tile reads this).
+    expect(trace.stats.cost_usd).toBeGreaterThan(0);
 
     // agent_runs row populated for A5 to aggregate
     const [run] = await pg.handle.db.select().from(t.agentRuns).where(eq(t.agentRuns.id, runId));
     expect(run!.status).toBe('done');
     expect(run!.findingsCount).toBe(1);
     expect(run!.grounding).toBe('1/2 passed');
+    // The provider's reported cost is persisted, not dropped on the floor.
+    expect(run!.costUsd).toBeCloseTo(0.001, 6);
+
+    // …and surfaces on the run history the timeline renders.
+    const runs = (await app.inject({ method: 'GET', url: `/pulls/${pr.id}/runs` })).json();
+    expect(runs[0].cost_usd).toBeCloseTo(0.001, 6);
+
+    // …and on the review, joined via run_id for the verdict banner.
+    expect(review.cost_usd).toBeCloseTo(0.001, 6);
+    expect(review.tokens_in).toBe(100);
+
+    await app.close();
+  });
+
+  it('PR list COST is the sum across successful runs on the PR', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Sum', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+
+    // Two passes over the same PR ⇒ the list shows what the PR cost IN TOTAL,
+    // not just the latest run.
+    await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+    await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 2 });
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const listed = pulls.find((p: { id: string }) => p.id === pr.id);
+    expect(listed.cost_usd).toBeCloseTo(0.002, 6);
+
+    await app.close();
+  });
+
+  it('PR list COST counts only successful runs; a PR whose runs all failed reads null', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr: mixed } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const { pr: onlyFailed } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    // Move the second PR into the same repo so both show up in one list call.
+    await pg.handle.db
+      .update(t.pullRequests)
+      .set({ repoId: repo.id, number: 483 })
+      .where(eq(t.pullRequests.id, onlyFailed.id));
+
+    // Failed runs carry a cost on purpose (as a pre-fix backfill could have
+    // left them) to prove the STATUS filter, not the null, excludes them.
+    await pg.handle.db.insert(t.agentRuns).values([
+      { workspaceId, prId: mixed.id, status: 'done', model: 'gpt-4.1', costUsd: 0.01 },
+      { workspaceId, prId: mixed.id, status: 'failed', model: 'gpt-4.1', costUsd: 0.5 },
+      { workspaceId, prId: onlyFailed.id, status: 'failed', model: 'gpt-4.1', tokensIn: 0, tokensOut: 0, costUsd: 0 },
+      { workspaceId, prId: onlyFailed.id, status: 'cancelled', model: 'gpt-4.1', costUsd: null },
+    ]);
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const byId = (id: string) => pulls.find((p: { id: string }) => p.id === id);
+    expect(byId(mixed.id).cost_usd).toBeCloseTo(0.01, 6);
+    // All runs failed ⇒ empty ("—"), never "$0.0000".
+    expect(byId(onlyFailed.id).cost_usd).toBeNull();
+
+    await app.close();
+  });
+
+  it('a PR with no runs reports an UNKNOWN cost, not zero', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const listed = pulls.find((p: { id: string }) => p.id === pr.id);
+    // null ⇒ the UI renders "—". A 0 here would claim the PR was reviewed free.
+    expect(listed.cost_usd).toBeNull();
 
     await app.close();
   });

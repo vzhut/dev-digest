@@ -60,7 +60,9 @@ export class ReviewRepository {
   }
 
   /** Reviews for a PR (newest first), each with its findings. */
-  reviewsForPull(prId: string): Promise<{ review: ReviewRow; findings: FindingRow[] }[]> {
+  reviewsForPull(
+    prId: string,
+  ): Promise<{ review: ReviewRow; findings: FindingRow[]; usage: reviewRepo.ReviewUsage }[]> {
     return reviewRepo.reviewsForPull(this.db, prId);
   }
 
@@ -155,6 +157,8 @@ export class ReviewRepository {
       durationMs: number;
       tokensIn: number;
       tokensOut: number;
+      /** USD billed. Null = unknown (unpriced model / no usage returned). */
+      costUsd?: number | null;
       findingsCount: number;
       grounding: string;
       /** Review score (0-100); null on failed/cancelled runs. */

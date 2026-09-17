@@ -166,6 +166,31 @@ describe('AI contracts parse fixtures', () => {
       log: [{ t: '00.00', kind: 'info', msg: 'started' }],
     });
     expect(trace.tool_calls).toHaveLength(1);
+    // A trace written before cost tracking has no `cost_usd` key at all. It
+    // must still parse — hence `nullish()` on RunStats.cost_usd, not
+    // `nullable()`. Regression guard for opening old runs' traces.
+    expect(trace.stats.cost_usd ?? null).toBeNull();
+  });
+
+  it('RunStats carries the run cost when present', () => {
+    const trace = RunTrace.parse({
+      config: { agent: 'Security Reviewer', model: 'gpt-4.1', source: 'local' },
+      stats: {
+        duration_ms: 8200,
+        tokens_in: 14820,
+        tokens_out: 1240,
+        cost_usd: 0.06,
+        findings: 3,
+        grounding: '3/3 passed',
+      },
+      prompt_assembly: { system: 's', user: 'u' },
+      tool_calls: [],
+      raw_output: '{}',
+      memory_pulled: [],
+      specs_read: [],
+      log: [],
+    });
+    expect(trace.stats.cost_usd).toBe(0.06);
   });
 });
 

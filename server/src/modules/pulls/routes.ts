@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { PrMeta, PrDetail, GitHubClient, PrReviewComment } from '@devdigest/shared';
 import { PrCommentInput } from '@devdigest/shared';
 import * as t from '../../db/schema.js';
@@ -129,6 +129,34 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
       }
     }
 
+    // Total USD per PR for the list's COST column — SUCCESSFUL (status='done')
+    // runs only. Failed/cancelled runs have no trustworthy usage (they record
+    // tokens 0), so counting them could turn a PR whose runs all failed into
+    // "$0". Same batch shape as the score query above: one grouped IN-query, no
+    // N+1. No done runs ⇒ no row ⇒ null ⇒ the UI renders "—", never $0.00.
+    const costByPr = new Map<string, number | null>();
+    if (prIds.length > 0) {
+      const costRows = await container.db
+        // Raw sum, NOT `.mapWith(Number)` — that would coerce SQL NULL to 0 and
+        // turn "we don't know" into "it was free".
+        .select({
+          prId: t.agentRuns.prId,
+          total: sql<number | null>`sum(${t.agentRuns.costUsd})`,
+        })
+        .from(t.agentRuns)
+        .where(
+          and(
+            eq(t.agentRuns.workspaceId, workspaceId),
+            inArray(t.agentRuns.prId, prIds),
+            eq(t.agentRuns.status, 'done'),
+          ),
+        )
+        .groupBy(t.agentRuns.prId);
+      for (const c of costRows) {
+        if (c.prId) costByPr.set(c.prId, c.total ?? null);
+      }
+    }
+
     const now = Date.now();
     return rows.map((r) => {
       const review = latestReviewByPr.get(r.id);
@@ -153,6 +181,7 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
         opened_at: r.openedAt?.toISOString() ?? null,
         updated_at: r.updatedAt?.toISOString() ?? null,
         score: review ? review.score : null,
+        cost_usd: costByPr.get(r.id) ?? null,
       };
     });
   });
