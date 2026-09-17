@@ -1,10 +1,14 @@
 {
-  "name": "Open a PR from the list and load its review detail",
-  "description": "From the seeded repo's PR list, click into PR #482 and confirm the detail route loads with the PR title and review surface. Exercises nested routing (/repos/<id>/pulls/<number>) and the per-PR detail fetch. Assumes a freshly-seeded DB where the demo repo acme/payments-api (PR #482) is the first repo — guaranteed by the e2e-web.yml workflow's fresh seed; run locally against a clean DB (see e2e/README.md).",
+  "name": "Open a PR from the list (after previewing its findings) and load its review detail",
+  "description": "From the seeded repo's PR list, click into PR #482 and confirm the detail route loads with the PR title and review surface. Exercises nested routing (/repos/<id>/pulls/<number>) and the per-PR detail fetch. Assumes a freshly-seeded DB where the demo repo acme/payments-api (PR #482) is the first repo — guaranteed by the e2e-web.yml workflow's fresh seed; run locally against a clean DB (see e2e/README.md). Before opening the PR it hovers the FINDINGS column's severity icons and checks the read-only popover (spec specs/findings-popover.md): the seeded latest review has 2 findings, and the WARNING title only exists in the popover on this page. Escape closes it before the row click.",
   "steps": [
     { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
     { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
     { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
+    { "cmd": ["find", "role", "button", "hover", "--name", "2 findings in this run"], "label": "hover the FINDINGS severity icons of PR #482" },
+    { "cmd": ["find", "role", "tooltip", "text"], "assert": { "stdoutIncludes": "2 FINDINGS IN THIS RUN" }, "label": "findings popover opens with the run's finding count" },
+    { "cmd": ["wait", "--text", "N+1 query in user list endpoint"], "label": "popover previews the seeded WARNING finding" },
+    { "cmd": ["press", "Escape"], "label": "close the popover" },
     { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
     { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },

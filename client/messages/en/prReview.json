@@ -26,8 +26,14 @@
     "blockers": " · {count} blockers",
     "prScore": "PR SCORE"
   },
+  "findingsPopover": {
+    "title": "{count, plural, one {# finding} other {# findings}} in this run"
+  },
   "panel": {
     "hideLowConfidence": "Hide low confidence",
+    "severityFilterGroup": "Filter findings by severity",
+    "severityFilter": "Show only {severity} findings ({count})",
+    "shownCount": "{count, plural, one {# finding shown} other {# findings shown}}",
     "noMatchTitle": "No findings match",
     "noMatchBody": "Adjust the filters above, or run a review to generate findings."
   },
@@ -91,6 +97,7 @@
       "author": "Author",
       "size": "Size",
       "score": "Score",
+      "findings": "Findings",
       "status": "Status",
       "cost": "Cost",
       "updated": "Updated"

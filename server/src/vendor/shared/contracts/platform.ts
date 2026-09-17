@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Provider } from './knowledge.js';
+import { FindingPreview } from './findings.js';
 
 /**
  * Platform / scaffolding DTOs owned by F1:
@@ -173,6 +174,9 @@ export const PrMeta = z.object({
   // Total USD across SUCCESSFUL (status='done') agent runs on this PR (list
   // endpoint only; null when the PR has no priced successful run — renders "—").
   cost_usd: z.number().nullish(),
+  // Findings of the latest review (list endpoint only). null/absent = never
+  // reviewed; [] = latest review found nothing.
+  latest_findings: z.array(FindingPreview).nullish(),
 });
 export type PrMeta = z.infer<typeof PrMeta>;
 

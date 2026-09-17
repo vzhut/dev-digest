@@ -1,7 +1,8 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../../../db/client.js';
 import * as t from '../../../db/schema.js';
 import type { RunSummary, RunTrace } from '@devdigest/shared';
+import { findingPreviewsByReview } from '../../_shared/finding-previews.js';
 
 // ---- in-flight / history --------------------------------------------------
 
@@ -48,6 +49,20 @@ export async function listRunsForPull(
     .leftJoin(t.agents, eq(t.agents.id, t.agentRuns.agentId))
     .where(and(eq(t.agentRuns.workspaceId, workspaceId), eq(t.agentRuns.prId, prId)))
     .orderBy(desc(t.agentRuns.ranAt));
+
+  // Each run's review (reviews.run_id — no FK) and its finding previews for
+  // the timeline popover: two batched queries regardless of run count.
+  const runIds = rows.map(({ run }) => run.id);
+  const reviewIdByRun = new Map<string, string>();
+  if (runIds.length > 0) {
+    const reviewRows = await db
+      .select({ id: t.reviews.id, runId: t.reviews.runId })
+      .from(t.reviews)
+      .where(and(eq(t.reviews.workspaceId, workspaceId), inArray(t.reviews.runId, runIds)));
+    for (const rv of reviewRows) if (rv.runId) reviewIdByRun.set(rv.runId, rv.id);
+  }
+  const findingsByReview = await findingPreviewsByReview(db, [...reviewIdByRun.values()]);
+
   return rows.map(({ run, agentName }) => ({
     run_id: run.id,
     agent_id: run.agentId,
@@ -65,6 +80,9 @@ export async function listRunsForPull(
     ran_at: run.ranAt ? run.ranAt.toISOString() : null,
     score: run.score,
     blockers: run.blockers,
+    findings: reviewIdByRun.has(run.id)
+      ? (findingsByReview.get(reviewIdByRun.get(run.id)!) ?? [])
+      : null,
   }));
 }
 

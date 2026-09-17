@@ -15,6 +15,8 @@ import {
   Settings,
   Repo,
   PrDetail,
+  PrMeta,
+  RunSummary,
 } from '@devdigest/shared';
 
 /**
@@ -231,5 +233,59 @@ describe('platform DTOs', () => {
         commits: [],
       }),
     ).not.toThrow();
+  });
+
+  it('PrMeta.latest_findings + RunSummary.findings carry previews and stay optional', () => {
+    const preview = {
+      id: 'f1',
+      severity: 'CRITICAL',
+      category: 'security',
+      title: 'Hardcoded Stripe secret key in commit',
+      file: 'src/config.ts',
+      start_line: 12,
+      end_line: 12,
+      confidence: 0.98,
+      summary: 'Line 12 contains a literal `sk_live_` Stripe key.',
+    };
+    const pr = {
+      number: 482,
+      title: 't',
+      author: 'a',
+      branch: 'b',
+      base: 'main',
+      head_sha: 'sha',
+      additions: 1,
+      deletions: 0,
+      files_count: 1,
+      status: 'open',
+    };
+    expect(PrMeta.parse({ ...pr, latest_findings: [preview] }).latest_findings).toHaveLength(1);
+    expect(PrMeta.parse({ ...pr, latest_findings: null }).latest_findings).toBeNull();
+    expect(PrMeta.parse(pr).latest_findings).toBeUndefined();
+
+    const run = {
+      run_id: 'run1',
+      agent_id: null,
+      agent_name: null,
+      provider: null,
+      model: null,
+      status: 'done',
+      error: null,
+      duration_ms: null,
+      tokens_in: null,
+      tokens_out: null,
+      cost_usd: null,
+      findings_count: 1,
+      grounding: null,
+      ran_at: null,
+      score: 65,
+      blockers: 1,
+    };
+    expect(RunSummary.parse({ ...run, findings: [preview] }).findings).toHaveLength(1);
+    expect(RunSummary.parse(run).findings).toBeUndefined();
+    // A preview is a projection, not a full finding: rationale is not accepted in place of summary.
+    expect(() =>
+      RunSummary.parse({ ...run, findings: [{ ...preview, summary: undefined, rationale: 'x' }] }),
+    ).toThrow();
   });
 });
