@@ -4,6 +4,8 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Badge, Icon, CircularScore, type IconName } from "@devdigest/ui";
 import type { RunSummary, PrCommit } from "@devdigest/shared";
+import { RunCostBadge } from "@/components/run-cost-badge";
+import { FindingsPopover } from "@/components/findings-popover";
 
 /**
  * PR timeline — every agent run interleaved with the PR's commits, newest-first
@@ -189,14 +191,33 @@ export function RunHistory({
                 </div>
               )}
               {settled && (
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  {t("runStatus.findings", { count: r.findings_count ?? 0 })}
-                  {(r.blockers ?? 0) > 0 ? t("runStatus.blockers", { count: r.blockers ?? 0 }) : ""}
+                <div style={{ display: "flex", alignItems: "center", fontSize: 12, color: "var(--text-muted)" }}>
+                  {/* Severity icons + hover preview when the run's review has
+                      findings; otherwise the plain count ("0 finding(s)", or a
+                      run whose findings weren't loaded). */}
+                  {r.findings && r.findings.length > 0 ? (
+                    <FindingsPopover findings={r.findings} />
+                  ) : (
+                    t("runStatus.findings", { count: r.findings_count ?? 0 })
+                  )}
+                  {(r.blockers ?? 0) > 0 && (
+                    <span style={{ whiteSpace: "pre" }}>{t("runStatus.blockers", { count: r.blockers ?? 0 })}</span>
+                  )}
                 </div>
               )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
               {r.ran_at && <span>{new Date(r.ran_at).toLocaleTimeString()}</span>}
+              {/* Only settled runs have final usage; a running one would show a
+                  half-counted figure that keeps changing. */}
+              {settled && (
+                <RunCostBadge
+                  variant="detailed"
+                  cost={r.cost_usd}
+                  tokensIn={r.tokens_in}
+                  tokensOut={r.tokens_out}
+                />
+              )}
             </div>
             <button
               type="button"

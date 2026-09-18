@@ -99,6 +99,8 @@ export function FindingCard({
             >
               {t("finding.accept")}
             </Button>
+            {/* Labelled "Reject" (L01 acceptance criteria); the underlying action
+                and column keep their API names: `dismiss` / `dismissed_at`. */}
             <Button
               kind="ghost"
               size="sm"

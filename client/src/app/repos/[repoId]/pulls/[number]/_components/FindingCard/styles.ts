@@ -4,13 +4,16 @@ import type { CSSProperties } from "react";
 export const s = {
   card: (focused: boolean, sevColor: string, muted: boolean): CSSProperties => ({
     borderRadius: 8,
-    // All-longhand (never mix `border` shorthand with `borderLeft` — React warns
-    // about updating shorthand + non-shorthand on the same rerender).
+    // Per-side longhands only. `borderColor` is itself a shorthand of the four
+    // side colours, so toggling it next to `borderLeftColor` (focus change via
+    // j/k or the severity filter) still trips React's shorthand warning.
     borderStyle: "solid",
-    borderColor: focused ? sevColor : "var(--border)",
+    borderTopColor: focused ? sevColor : "var(--border)",
+    borderRightColor: focused ? sevColor : "var(--border)",
+    borderBottomColor: focused ? sevColor : "var(--border)",
+    borderLeftColor: sevColor,
     borderWidth: 1,
     borderLeftWidth: 3,
-    borderLeftColor: sevColor,
     background: "var(--bg-elevated)",
     overflow: "hidden",
     opacity: muted ? 0.6 : 1,

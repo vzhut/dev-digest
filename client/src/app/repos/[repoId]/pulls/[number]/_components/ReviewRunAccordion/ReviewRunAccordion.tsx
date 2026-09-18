@@ -10,6 +10,7 @@ import { Icon, Badge } from "@devdigest/ui";
 import type { ReviewRecord, Verdict } from "@devdigest/shared";
 import { FindingsPanel } from "../FindingsPanel";
 import { VerdictBanner } from "../VerdictBanner";
+import { RunCostBadge } from "@/components/run-cost-badge";
 import { useDeleteReview } from "../../../../../../../lib/hooks/reviews";
 
 const VERDICT_COLOR: Record<string, string> = {
@@ -103,6 +104,13 @@ export function ReviewRunAccordion({
             {review.score}
           </Badge>
         )}
+        {/* What the run behind this review cost (joined in via `run_id`). */}
+        <RunCostBadge
+          variant="detailed"
+          cost={review.cost_usd}
+          tokensIn={review.tokens_in}
+          tokensOut={review.tokens_out}
+        />
         <span className="mono" style={{ fontSize: 12, color: "var(--text-muted)" }}>
           {formatWhen(review.created_at)}
         </span>

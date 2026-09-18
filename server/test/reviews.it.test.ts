@@ -202,12 +202,200 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     expect(trace.config.model).toBe('gpt-4.1');
     expect(trace.stats.grounding).toBe('1/2 passed');
     expect(trace.log.length).toBeGreaterThan(0);
+    // Cost reaches the trace stats (the drawer's COST tile reads this).
+    expect(trace.stats.cost_usd).toBeGreaterThan(0);
 
     // agent_runs row populated for A5 to aggregate
     const [run] = await pg.handle.db.select().from(t.agentRuns).where(eq(t.agentRuns.id, runId));
     expect(run!.status).toBe('done');
     expect(run!.findingsCount).toBe(1);
     expect(run!.grounding).toBe('1/2 passed');
+    // The provider's reported cost is persisted, not dropped on the floor.
+    expect(run!.costUsd).toBeCloseTo(0.001, 6);
+
+    // …and surfaces on the run history the timeline renders.
+    const runs = (await app.inject({ method: 'GET', url: `/pulls/${pr.id}/runs` })).json();
+    expect(runs[0].cost_usd).toBeCloseTo(0.001, 6);
+    // …and the timeline popover gets the run's grounded findings as previews.
+    expect(runs[0].findings).toHaveLength(1);
+    expect(runs[0].findings[0]).toMatchObject({ severity: 'CRITICAL', file: 'src/config.ts', start_line: 11 });
+
+    // …and on the review, joined via run_id for the verdict banner.
+    expect(review.cost_usd).toBeCloseTo(0.001, 6);
+    expect(review.tokens_in).toBe(100);
+
+    await app.close();
+  });
+
+  it('PR list COST is the sum across successful runs on the PR', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Sum', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+
+    // Two passes over the same PR ⇒ the list shows what the PR cost IN TOTAL,
+    // not just the latest run.
+    await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+    await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 2 });
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const listed = pulls.find((p: { id: string }) => p.id === pr.id);
+    expect(listed.cost_usd).toBeCloseTo(0.002, 6);
+
+    await app.close();
+  });
+
+  it('PR list COST counts only successful runs; a PR whose runs all failed reads null', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr: mixed } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const { pr: onlyFailed } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    // Move the second PR into the same repo so both show up in one list call.
+    await pg.handle.db
+      .update(t.pullRequests)
+      .set({ repoId: repo.id, number: 483 })
+      .where(eq(t.pullRequests.id, onlyFailed.id));
+
+    // Failed runs carry a cost on purpose (as a pre-fix backfill could have
+    // left them) to prove the STATUS filter, not the null, excludes them.
+    await pg.handle.db.insert(t.agentRuns).values([
+      { workspaceId, prId: mixed.id, status: 'done', model: 'gpt-4.1', costUsd: 0.01 },
+      { workspaceId, prId: mixed.id, status: 'failed', model: 'gpt-4.1', costUsd: 0.5 },
+      { workspaceId, prId: onlyFailed.id, status: 'failed', model: 'gpt-4.1', tokensIn: 0, tokensOut: 0, costUsd: 0 },
+      { workspaceId, prId: onlyFailed.id, status: 'cancelled', model: 'gpt-4.1', costUsd: null },
+    ]);
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const byId = (id: string) => pulls.find((p: { id: string }) => p.id === id);
+    expect(byId(mixed.id).cost_usd).toBeCloseTo(0.01, 6);
+    // All runs failed ⇒ empty ("—"), never "$0.0000".
+    expect(byId(onlyFailed.id).cost_usd).toBeNull();
+
+    await app.close();
+  });
+
+  it('a PR with no runs reports an UNKNOWN cost, not zero', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const listed = pulls.find((p: { id: string }) => p.id === pr.id);
+    // null ⇒ the UI renders "—". A 0 here would claim the PR was reviewed free.
+    expect(listed.cost_usd).toBeNull();
+
+    await app.close();
+  });
+
+  /** Insert a review (+ findings) directly — deterministic data for the preview tests. */
+  async function insertReview(
+    prId: string,
+    opts: {
+      createdAt: Date;
+      runId?: string;
+      findings?: { severity: string; file: string; startLine: number; title: string; rationale?: string }[];
+    },
+  ) {
+    const [review] = await pg.handle.db
+      .insert(t.reviews)
+      .values({ workspaceId, prId, runId: opts.runId, kind: 'review', verdict: 'comment', score: 80, createdAt: opts.createdAt })
+      .returning();
+    if (opts.findings?.length) {
+      await pg.handle.db.insert(t.findings).values(
+        opts.findings.map((f) => ({
+          reviewId: review!.id,
+          file: f.file,
+          startLine: f.startLine,
+          endLine: f.startLine,
+          severity: f.severity,
+          category: 'bug',
+          title: f.title,
+          rationale: f.rationale ?? 'why',
+          confidence: 0.9,
+        })),
+      );
+    }
+    return review!;
+  }
+
+  it('PR list FINDINGS: null when never reviewed, [] when the latest review is clean, else only the latest review', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { repo, pr: unreviewed } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const { pr: clean } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const { pr: mixed } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    for (const [pr, number] of [[clean, 483], [mixed, 484]] as const) {
+      await pg.handle.db.update(t.pullRequests).set({ repoId: repo.id, number }).where(eq(t.pullRequests.id, pr.id));
+    }
+
+    // clean: an OLDER review had a finding, the latest found nothing ⇒ [].
+    await insertReview(clean.id, {
+      createdAt: new Date('2026-01-01'),
+      findings: [{ severity: 'CRITICAL', file: 'old.ts', startLine: 1, title: 'stale' }],
+    });
+    await insertReview(clean.id, { createdAt: new Date('2026-01-02') });
+
+    // mixed: the latest review's findings, inserted out of order, one long rationale.
+    await insertReview(mixed.id, {
+      createdAt: new Date('2026-01-01'),
+      findings: [{ severity: 'WARNING', file: 'old.ts', startLine: 1, title: 'from an older run' }],
+    });
+    await insertReview(mixed.id, {
+      createdAt: new Date('2026-01-02'),
+      findings: [
+        { severity: 'SUGGESTION', file: 'a.ts', startLine: 5, title: 'sugg' },
+        { severity: 'WARNING', file: 'b.ts', startLine: 9, title: 'warn b' },
+        { severity: 'CRITICAL', file: 'z.ts', startLine: 3, title: 'crit', rationale: 'r'.repeat(500) },
+        { severity: 'WARNING', file: 'a.ts', startLine: 7, title: 'warn a' },
+      ],
+    });
+
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
+    const byId = (id: string) => pulls.find((p: { id: string }) => p.id === id);
+
+    expect(byId(unreviewed.id).latest_findings).toBeNull();
+    expect(byId(clean.id).latest_findings).toEqual([]);
+
+    const previews = byId(mixed.id).latest_findings;
+    // Severity first, then file, then line; the older review's finding is absent.
+    expect(previews.map((f: { title: string }) => f.title)).toEqual(['crit', 'warn a', 'warn b', 'sugg']);
+    expect(previews[0].summary).toHaveLength(201); // 200 chars + "…"
+    expect(previews[0]).not.toHaveProperty('rationale');
+
+    await app.close();
+  });
+
+  it('PR run history: a run carries its own review findings; a run without a review carries null', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const [done, clean, failed] = await pg.handle.db
+      .insert(t.agentRuns)
+      .values([
+        { workspaceId, prId: pr.id, status: 'done', model: 'gpt-4.1', ranAt: new Date('2026-01-03') },
+        { workspaceId, prId: pr.id, status: 'done', model: 'gpt-4.1', ranAt: new Date('2026-01-02') },
+        { workspaceId, prId: pr.id, status: 'failed', model: 'gpt-4.1', ranAt: new Date('2026-01-01') },
+      ])
+      .returning();
+    await insertReview(pr.id, {
+      createdAt: new Date('2026-01-03'),
+      runId: done!.id,
+      findings: [
+        { severity: 'WARNING', file: 'a.ts', startLine: 2, title: 'warn' },
+        { severity: 'CRITICAL', file: 'a.ts', startLine: 1, title: 'crit' },
+      ],
+    });
+    await insertReview(pr.id, { createdAt: new Date('2026-01-02'), runId: clean!.id });
+
+    const runs = (await app.inject({ method: 'GET', url: `/pulls/${pr.id}/runs` })).json();
+    const byId = (id: string) => runs.find((r: { run_id: string }) => r.run_id === id);
+
+    expect(byId(done!.id).findings.map((f: { title: string }) => f.title)).toEqual(['crit', 'warn']);
+    expect(byId(clean!.id).findings).toEqual([]);
+    expect(byId(failed!.id).findings).toBeNull();
 
     await app.close();
   });

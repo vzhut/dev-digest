@@ -5,9 +5,9 @@
  * and shows the review score ring.
  */
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import type { RunSummary } from "@devdigest/shared";
+import type { FindingPreview, RunSummary } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 import { RunHistory } from "./RunHistory";
 
@@ -25,6 +25,7 @@ function run(o: Partial<RunSummary>): RunSummary {
     duration_ms: 1000,
     tokens_in: 100,
     tokens_out: 50,
+    cost_usd: 0.0013,
     findings_count: 0,
     grounding: "0/0 passed",
     ran_at: "2026-06-11T18:44:34.000Z",
@@ -71,5 +72,70 @@ describe("RunHistory — outcome badge", () => {
   it("a running run reads 'running'", () => {
     renderRuns([run({ status: "running", score: null, blockers: null })]);
     expect(screen.getByText("running")).toBeInTheDocument();
+  });
+});
+
+describe("RunHistory — run cost", () => {
+  it("a settled run shows total tokens and cost", () => {
+    renderRuns([run({ status: "done", tokens_in: 9000, tokens_out: 119, cost_usd: 0.0013 })]);
+    expect(screen.getByText("9,119 tok · $0.0013")).toBeInTheDocument();
+  });
+
+  it("an unpriced run shows '—', never $0.00", () => {
+    renderRuns([run({ status: "done", tokens_in: 9000, tokens_out: 119, cost_usd: null })]);
+    expect(screen.getByText("9,119 tok · —")).toBeInTheDocument();
+    expect(screen.queryByText(/\$0\.00/)).not.toBeInTheDocument();
+  });
+
+  it("a running run shows no cost — its usage is not final yet", () => {
+    renderRuns([run({ status: "running", score: null, blockers: null })]);
+    expect(screen.queryByText(/tok ·/)).not.toBeInTheDocument();
+  });
+});
+
+describe("RunHistory — findings popover", () => {
+  const preview = (id: string, severity: FindingPreview["severity"]): FindingPreview => ({
+    id,
+    severity,
+    category: "security",
+    title: `Finding ${id}`,
+    file: "src/config.ts",
+    start_line: 12,
+    end_line: 12,
+    confidence: 0.9,
+    summary: `Summary ${id}`,
+  });
+  const findingsTrigger = () => screen.queryByRole("button", { name: /findings? in this run/ });
+
+  it("a settled run with findings shows severity icons, keeps the blockers text, and previews on hover", () => {
+    renderRuns([
+      run({
+        status: "done",
+        findings_count: 3,
+        blockers: 2,
+        score: 38,
+        findings: [preview("c1", "CRITICAL"), preview("c2", "CRITICAL"), preview("w1", "WARNING")],
+      }),
+    ]);
+    const trigger = findingsTrigger()!;
+    expect(trigger.textContent).toBe("21"); // 2 CRITICAL, 1 WARNING
+    expect(screen.queryByText(/finding\(s\)/)).not.toBeInTheDocument();
+    expect(screen.getByText(/2 blockers/)).toBeInTheDocument();
+
+    fireEvent.mouseEnter(trigger);
+    const popover = screen.getByRole("tooltip");
+    expect(within(popover).getByText("3 findings in this run")).toBeInTheDocument();
+    expect(within(popover).getByText("Finding w1")).toBeInTheDocument();
+  });
+
+  it("a settled run with an empty review keeps the plain count", () => {
+    renderRuns([run({ status: "done", findings_count: 0, blockers: 0, score: 95, findings: [] })]);
+    expect(findingsTrigger()).not.toBeInTheDocument();
+    expect(screen.getByText("0 finding(s)")).toBeInTheDocument();
+  });
+
+  it("an unsettled run never shows icons, even if previews are present", () => {
+    renderRuns([run({ status: "running", findings: [preview("c1", "CRITICAL")] })]);
+    expect(findingsTrigger()).not.toBeInTheDocument();
   });
 });

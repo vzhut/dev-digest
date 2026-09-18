@@ -62,6 +62,28 @@ export const Finding = z.object({
 });
 export type Finding = z.infer<typeof Finding>;
 
+/** Max chars of `rationale` carried as a preview's `summary`. */
+export const FINDING_PREVIEW_SUMMARY_MAX = 200;
+
+/**
+ * FindingPreview — read-only projection of a finding for hover previews (PR
+ * list FINDINGS column, PR timeline run tiles). `summary` is the rationale cut
+ * to FINDING_PREVIEW_SUMMARY_MAX chars. Spec: specs/findings-popover.md
+ */
+export const FindingPreview = Finding.pick({
+  id: true,
+  severity: true,
+  category: true,
+  title: true,
+  file: true,
+  start_line: true,
+  end_line: true,
+  confidence: true,
+}).extend({
+  summary: z.string(),
+});
+export type FindingPreview = z.infer<typeof FindingPreview>;
+
 /** Review — the consolidated structured output of a single agent run. */
 export const Review = z.object({
   verdict: Verdict,

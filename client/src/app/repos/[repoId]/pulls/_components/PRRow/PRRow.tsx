@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Icon, Avatar, Badge, CircularScore } from "@devdigest/ui";
 import type { PrMeta } from "@/lib/types";
+import { RunCostBadge } from "@/components/run-cost-badge";
+import { FindingsPopover } from "@/components/findings-popover";
 import { SIZE_COLOR, STATUS_META } from "../../constants";
 import { relativeTime, sizeOf } from "../../helpers";
 import { s } from "../../styles";
@@ -53,10 +55,28 @@ export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {
           <span style={s.muted}>—</span>
         )}
       </div>
+      <div style={s.findingsCell}>
+        {/* Latest review's findings: null = never reviewed, [] = clean review.
+            The popover stops its own clicks, so hovering/tapping it never
+            triggers this row's navigation. */}
+        {pr.latest_findings == null ? (
+          <span style={s.muted}>—</span>
+        ) : pr.latest_findings.length === 0 ? (
+          <span className="tnum" style={s.muted}>
+            0
+          </span>
+        ) : (
+          <FindingsPopover findings={pr.latest_findings} />
+        )}
+      </div>
       <div>
         <Badge dot color={st.c} bg="transparent">
           {t(`list.status.${st.labelKey}`)}
         </Badge>
+      </div>
+      <div>
+        {/* Total spend across every agent run on this PR. */}
+        <RunCostBadge cost={pr.cost_usd} />
       </div>
       <div style={s.updatedCell}>{relativeTime(pr.updated_at)}</div>
     </div>
