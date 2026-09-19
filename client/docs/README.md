@@ -6,3 +6,4 @@ Linked from `client/AGENTS.md` via *Use when*. Index each document here.
 
 - [`data-flow.md`](data-flow.md) — `api.ts` → hooks → components, the query keys and polling rules behind the PR page, a review run seen from the client, derived-only UI.
 - [`findings-popover.md`](findings-popover.md) — why the findings preview is portalled, measured and closed the way it is (portal click bubbling, capture-phase scroll, placement algorithm).
+- [`improvement-plan.md`](improvement-plan.md) — prioritised findings from reviewing `client/src` against the frontend-architecture, react-best-practices and next-best-practices skills (2026-09-19), with a suggested commit order.
