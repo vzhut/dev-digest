@@ -18,6 +18,12 @@ export class ApiError extends Error {
   }
 }
 
+/** Message to show for a failed request: the server's own message for an
+    ApiError, otherwise the caller's localized fallback (network error, bug). */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
