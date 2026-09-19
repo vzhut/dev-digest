@@ -32,6 +32,17 @@ _No entries yet._
 
 ## Tool & Library Notes
 
+### A Server Component that imports `@devdigest/ui` crashes every page under `next dev`, but `next build` passes
+
+`src/app/_components/NotFoundView/NotFoundView.tsx:1-3` · fix commit `a5a4d72` · 2026-09-19
+
+Symptom: after adding a server-component `app/not-found.tsx` that imported `EmptyState` from `@devdigest/ui`, `./scripts/e2e.sh` ended with `web never became reachable on :3100`. The dev server log repeated `⨯ TypeError: Super expression must either be null or a function at …/src/vendor/ui/charts/LineChart.tsx`, and `GET / 500`. `pnpm exec next build` and `next start` served the same code fine, including the 404 page.
+
+`@devdigest/ui`'s `index.ts` re-exports `charts/`, which pulls in recharts' class components (`extends React.Component`). In the React Server Components graph `React.Component` is not available, so evaluating the barrel on the server throws. `next dev` evaluates `not-found` for every route, so one server import took down the whole app.
+
+Keep every `@devdigest/ui` import in a `'use client'` file. Server files (`page.tsx`, `layout.tsx`, `not-found.tsx`) render a client View from `_components` and don't touch the UI kit, which is also the thin-page rule in the `frontend-architecture` skill. Check a new server file with `next dev` + `curl`, not only `next build`.
+
+
 ### A click inside a portalled popover still fires the clickable row it came from
 
 `src/components/findings-popover/FindingsPopover.tsx:138-146` · 2026-09-17
