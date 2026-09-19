@@ -15,4 +15,5 @@ Search `server/docs/`, `server/specs/`, `server/INSIGHTS.md` first.
 
 ## Use when
 - API map, DI flow, env table → read `server/README.md`
+- Where server code goes / what it may import (routes → service → repository, ports & adapters) → use the `onion-architecture` skill (`.claude/skills/onion-architecture/`)
 - Deep-dives → read `server/docs/` · behaviour specs → read `server/specs/` · findings → read `server/INSIGHTS.md`

@@ -1,0 +1,55 @@
+{
+  "skill_name": "onion-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "name": "new-endpoint-repo-stats",
+      "prompt": "I need a new endpoint in the server: GET /repos/:id/stats that returns { pr_count, reviewed_pr_count, total_cost_usd } for one repo (workspace-scoped). Write the code — tell me which files you'd create or change and give me their full contents. Don't modify the repo, just put the files in the output folder mirroring server/src paths.",
+      "expected_output": "Thin route in modules/<m>/routes.ts, a service method, Drizzle only in a repository, a pure helper for the cost/aggregation if any, NotFoundError for a missing repo, and tests split into unit + .it.",
+      "files": [],
+      "assertions": [
+        "Route handler contains no drizzle-orm / db/schema import and no container.db usage",
+        "Drizzle queries live in a repository file (repository.ts or *.repo.ts)",
+        "A service method sits between the route and the repository",
+        "Missing repo is signalled by throwing NotFoundError (not reply.status(404))",
+        "Queries are scoped by workspaceId",
+        "Proposes at least one DB-backed test named *.it.test.ts for the repository/query",
+        "No cross-module import of another module's internals (../<other-module>/)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "review-fat-labels-route",
+      "prompt": "Колега відкрив PR з новим модулем labels для сервера — диф у файлі inputs/labels.diff. Зроби code review з точки зору архітектури бекенду і запиши його в review.md: що не так і як це має виглядати.",
+      "expected_output": "Flags: drizzle in route, Octokit constructed inline instead of GitHubClient port from container, process.env instead of SecretsProvider, cross-module import of reviews/constants, reply.status for errors instead of AppError, business rule (severity threshold) inline instead of pure helper; proposes route/service/repository/helper split and GitHubClient port extension + mock.",
+      "files": [
+        "inputs/labels.diff"
+      ],
+      "assertions": [
+        "Flags Drizzle/container.db queries inside the route handler",
+        "Flags `new Octokit` inline and asks to use the GitHubClient port from the container (extend the port + mock)",
+        "Flags process.env.GITHUB_TOKEN and points to SecretsProvider/container",
+        "Flags cross-module import from ../reviews/constants.js",
+        "Flags reply.status(404/502) error rendering and asks for AppError/NotFoundError/ExternalServiceError thrown",
+        "Asks to move the severity-threshold rule into a pure, unit-tested helper",
+        "Proposes a routes → service → repository split for the module"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "design-slack-notifier",
+      "prompt": "we want the server to post a short summary to a Slack channel whenever a review run completes. how should i wire this into the server so it fits our architecture? give me a plan plus the key code snippets (write to plan.md in the outputs folder), don't edit the repo",
+      "expected_output": "Notifier port in shared adapters, Slack adapter in src/adapters, mock in adapters/mocks.ts, container getter + override using SecretsProvider, called from the review service/executor on completion, not from a route; failure isolated; tests with the mock.",
+      "files": [],
+      "assertions": [
+        "Defines a Notifier-style port interface (not calling Slack directly from a service)",
+        "Puts the Slack implementation in src/adapters/<kind>/",
+        "Adds a mock implementation to src/adapters/mocks.ts (or equivalent) for tests",
+        "Wires construction in platform/container.ts with an override slot in ContainerOverrides",
+        "Reads the Slack token through SecretsProvider, not process.env",
+        "Triggers the notification from the review service/executor on run completion, not from a route handler",
+        "Notification failure does not fail the review run (isolated / logged)"
+      ]
+    }
+  ]
+}
