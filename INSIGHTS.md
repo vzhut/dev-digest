@@ -9,7 +9,13 @@ _No entries yet._
 
 ## What Doesn't Work
 
-_No entries yet._
+### Eval prompts that extend already-clean code don't show whether a skill works
+
+`.claude/skills/onion-architecture/evals/evals.json` · 2026-09-19
+
+The first skill-creator eval loop for `onion-architecture` scored 100% with the skill and 100% without it (21/21 assertions each). The runs without the skill still put Drizzle in a repository, took the GitHub token through `SecretsProvider`, and threw `NotFoundError`. Two things steered them there. `AGENTS.md` / `server/AGENTS.md` already state the DI, secrets and Zod rules. The `repos` module the prompt extended is already split into route, service and repository, so the agent copies the precedent in front of it. The skill only made a visible difference in things the assertions didn't check: unit tests for pure mappers, reusing `countBlockers`, and leaving known deviations alone.
+
+To measure an architecture skill, write prompts that extend code with a **bad** precedent, such as adding an endpoint to `server/src/modules/pulls/routes.ts`, where handlers query `container.db` inline. Assert on what the agent does differently from its surroundings, not on what it would copy anyway.
 
 ## Codebase Patterns
 
@@ -39,6 +45,12 @@ Edit `AGENTS.md`. Anything written into a `CLAUDE.md` is seen by Claude only and
 `.claude/skills/README.md:3` · `git ls-files | grep -i cursor` → empty · 2026-09-19
 
 The skills README says `.cursor/skills/ → ../.claude/skills` gives Cursor the same skills, but no `.cursor/` directory is committed. Cursor sees no project skills, only the pointer in `AGENTS.md` telling agents to read `.claude/skills/*/SKILL.md` as plain docs. Not fixed: either commit the symlink (with the same Windows caveat as above) or correct the README.
+
+### skill-creator rejects a SKILL.md `description` over 1024 characters
+
+`.claude/skills/onion-architecture/SKILL.md:3` · 2026-09-19
+
+`python -m scripts.quick_validate <skill-dir>` fails with `Description is too long (1042 characters). Maximum is 1024 characters.` The limit is the Agent Skills frontmatter limit. skill-creator's advice to make descriptions "pushy", with trigger phrases and exclusions, pushes them right up against it. `onion-architecture` ended at 1022 and `frontend-architecture` is at 872. Trim the neighbour-skill exclusions first; they are the least useful for triggering. The validator also needs PyYAML, which isn't installed in the pyenv Python here (`ModuleNotFoundError: No module named 'yaml'`). Run it from a throwaway venv: `python3 -m venv v && v/bin/pip install pyyaml`.
 
 ## Recurring Errors & Fixes
 
