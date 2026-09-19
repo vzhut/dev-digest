@@ -13,4 +13,5 @@ Search `client/docs/`, `client/specs/`, `client/INSIGHTS.md` first.
 
 ## Use when
 - Page/route map, commands → read `client/README.md`
+- Where a new file goes, splitting a component, moving code to shared → read `.claude/skills/frontend-architecture/SKILL.md`
 - Deep-dives → read `client/docs/` · UI/flow specs → read `client/specs/` · findings → read `client/INSIGHTS.md`
