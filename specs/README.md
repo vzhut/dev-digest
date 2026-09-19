@@ -4,4 +4,5 @@ Intended behaviour for features touching several packages (a review flow end to 
 Not here: single-package behaviour → `<package>/specs/`.
 Linked from `AGENTS.md` via *Use when*. Index each spec here.
 
+- [`frontend-architecture-skill.md`](frontend-architecture-skill.md) — the `frontend-architecture` agent skill: where client code lives, splitting, promotion, import boundaries (skills + `client/AGENTS.md`).
 - [`findings-popover.md`](findings-popover.md) — severity icons + read-only "N findings in this run" popover on the PR list and the PR Timeline (contract + server + client).
