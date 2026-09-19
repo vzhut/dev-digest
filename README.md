@@ -149,6 +149,16 @@ Server tests split by filename: `*.it.test.ts` are DB-backed (testcontainers
 Postgres); everything else is hermetic. The browser e2e flows live in
 [`e2e/`](e2e/README.md) and run deterministically (no LLM).
 
+## AI agent instructions
+
+[`AGENTS.md`](AGENTS.md) (root + one per package) is the single source of truth for every
+coding agent — Codex, Cursor, Copilot's coding agent, Windsurf, Zed and Jules read it natively.
+Tool-specific files only point to it; edit `AGENTS.md`, never the shims:
+
+- `CLAUDE.md` (root + per package) — `@AGENTS.md` import, because Claude Code reads only `CLAUDE.md`.
+- `.github/copilot-instructions.md` — pointer + essentials for Copilot surfaces that ignore `AGENTS.md`.
+- Gemini CLI: set `"context": { "fileName": "AGENTS.md" }` in `.gemini/settings.json`; Aider: `read: AGENTS.md` in `.aider.conf.yml`.
+
 ## Troubleshooting
 
 - **`relation ... does not exist` / API errors on first run** — migrations weren't

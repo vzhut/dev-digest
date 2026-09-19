@@ -26,7 +26,19 @@ Mirror every contract edit into both folders by hand. Don't copy whole files ove
 
 ## Tool & Library Notes
 
-_No entries yet._
+### Claude Code ignores `AGENTS.md`, so every `CLAUDE.md` is just an `@AGENTS.md` import
+
+`AGENTS.md:3` · `CLAUDE.md:1` · 2026-09-19
+
+`AGENTS.md` (root + one per package) is the single agent guide: Codex, Cursor, Copilot's coding agent, Windsurf and Zed load it natively, nearest file wins. Claude Code does not read `AGENTS.md`, only `CLAUDE.md`, so each `CLAUDE.md` holds just `@AGENTS.md` (Claude's import syntax). An import was chosen over a symlink because symlinks check out as plain text files on Windows without `core.symlinks`.
+
+Edit `AGENTS.md`. Anything written into a `CLAUDE.md` is seen by Claude only and drifts from the other tools. `.github/copilot-instructions.md` repeats a few essentials on purpose, because Copilot Chat on github.com follows no imports. Update it when verify commands or do-not-touch paths change.
+
+### The documented `.cursor/skills` symlink doesn't exist
+
+`.claude/skills/README.md:3` · `git ls-files | grep -i cursor` → empty · 2026-09-19
+
+The skills README says `.cursor/skills/ → ../.claude/skills` gives Cursor the same skills, but no `.cursor/` directory is committed. Cursor sees no project skills, only the pointer in `AGENTS.md` telling agents to read `.claude/skills/*/SKILL.md` as plain docs. Not fixed: either commit the symlink (with the same Windows caveat as above) or correct the README.
 
 ## Recurring Errors & Fixes
 

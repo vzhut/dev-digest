@@ -2,7 +2,7 @@
 
 Intended UI behaviour: screen and flow specs, empty/loading/error states, keyboard shortcuts.
 Not here: what the pages already do → `../README.md` · executable browser checks → `../../e2e/specs/`.
-Linked from `client/CLAUDE.md` via *Use when*. Index each spec here.
+Linked from `client/AGENTS.md` via *Use when*. Index each spec here.
 
 - [`run-cost-display.md`](run-cost-display.md) — cost formatting ladder and the four surfaces that show run cost (PR list, Timeline, Review runs header, Trace Stats).
 - [`run-severity-filter.md`](run-severity-filter.md) — severity counter pills + filter inside an expanded review run (PR detail → Agent runs → Review runs).

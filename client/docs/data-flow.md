@@ -16,7 +16,7 @@ component ──► hook (src/lib/hooks/<domain>.ts, TanStack Query) ──► a
   an `ApiError(message, status, code, details)`, and network failure is
   `status 0, code "network_error"`. The UI branches on these to choose between a toast, an inline error or a full-screen error.
 - **Hooks** own query keys, polling and cache invalidation. Components never
-  build URLs or call `fetch` (`../CLAUDE.md`).
+  build URLs or call `fetch` (`../AGENTS.md`).
 - **Types** come from `@devdigest/shared` (the client's own copy in
   `src/vendor/shared/`). They are never re-declared locally.
 
