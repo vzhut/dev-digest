@@ -14,10 +14,9 @@ import { PrDetailHeader } from "./_components/PrDetailHeader";
 import { OverviewTab } from "./_components/OverviewTab";
 import { FindingsTab } from "./_components/FindingsTab";
 import { DiffTab } from "./_components/DiffTab";
-import RunTraceDrawer from "./_components/RunTraceDrawer";
+import { RunTraceDrawer } from "./_components/RunTraceDrawer";
 import { usePullDetail, usePulls } from "../../../../../lib/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun } from "../../../../../lib/hooks/reviews";
+import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun, useInvalidatePrRuns } from "../../../../../lib/hooks/reviews";
 import { useActiveRepo, useRepoNotFound } from "../../../../../lib/repo-context";
 import { ApiError } from "../../../../../lib/api";
 import { githubPrUrl } from "../../../../../lib/github-urls";
@@ -41,21 +40,15 @@ export default function PRDetailPage() {
 
   // Live run tracking is SERVER-SOURCED (agent_runs status='running'): survives
   // navigation AND reload, and self-clears via polling when runs finish.
-  const qc = useQueryClient();
   const { data: activeRuns } = usePrActiveRuns(prId);
   const { data: prRuns } = usePrRuns(prId);
   const deleteRun = useDeleteRun(prId);
   const liveRunIds = (activeRuns ?? []).map((r) => r.run_id);
   const reviewRunning = liveRunIds.length > 0;
   const cancel = useCancelRun();
-  const invalidateActiveRuns = () => {
-    if (prId) qc.invalidateQueries({ queryKey: ["pr-active-runs", prId] });
-  };
   // When a run settles (done OR failed) refresh the full run history too, so a
   // just-failed run shows up in "Run history" immediately — no page reload.
-  const invalidateRunHistory = () => {
-    if (prId) qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
-  };
+  const invalidateRuns = useInvalidatePrRuns(prId);
 
   const tab = search.get("tab") ?? "overview";
   const traceRunId = search.get("trace");
@@ -130,7 +123,7 @@ export default function PRDetailPage() {
         githubUrl={repoFullName ? githubPrUrl(repoFullName, pr.number) : null}
         onSetTab={setTab}
         onRunStart={() => setTab("findings")}
-        onRunsStarted={() => invalidateActiveRuns()}
+        onRunsStarted={() => invalidateRuns.activeRuns()}
       />
 
       <div style={{ padding: "24px 32px 44px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1080, margin: "0 auto" }}>
@@ -154,8 +147,8 @@ export default function PRDetailPage() {
                 deleteRun.mutate(id);
             }}
             onRunDone={() => {
-              invalidateActiveRuns();
-              invalidateRunHistory();
+              invalidateRuns.activeRuns();
+              invalidateRuns.history();
               refetchReviews();
             }}
           />

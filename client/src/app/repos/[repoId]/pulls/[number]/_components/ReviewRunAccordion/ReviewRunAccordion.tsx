@@ -166,5 +166,3 @@ export function ReviewRunAccordion({
     </div>
   );
 }
-
-export default ReviewRunAccordion;
