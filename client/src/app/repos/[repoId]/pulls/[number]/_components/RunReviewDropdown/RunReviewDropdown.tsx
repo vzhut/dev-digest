@@ -58,7 +58,7 @@ export function RunReviewDropdown({
         hint: a.enabled ? a.model : `${a.model} · disabled`,
         onClick: () => kick({ agentId: a.id }),
       }))
-    : [{ label: "No agents yet — create one", icon: "Plus", muted: true, onClick: () => router.push("/agents") }];
+    : [{ label: t("runReview.noAgents"), icon: "Plus", muted: true, onClick: () => router.push("/agents") }];
 
   const items: DropdownItemDef[] = [
     // Merged/closed PRs can still be reviewed (informational only); lead with a

@@ -43,7 +43,8 @@
     "running": "Running…",
     "runReview": "Run Review",
     "mergedWarning": "Already merged — review is informational",
-    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code."
+    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code.",
+    "noAgents": "No agents yet — create one"
   },
   "runStatus": {
     "elapsed": "Running · {count} agent(s)",
@@ -113,5 +114,33 @@
     "goToReview": "Jump to this run’s findings below",
     "openTrace": "Open run trace & logs",
     "deleteRun": "Delete run"
+  },
+  "detail": {
+    "tabs": {
+      "overview": "Overview",
+      "findings": "Agent runs",
+      "diff": "Files changed"
+    },
+    "loadErrorTitle": "Couldn't load this pull request",
+    "loadErrorBody": "PR #{number} could not be loaded.",
+    "confirmDeleteRun": "Delete this run from history? (its logs are removed too)",
+    "description": "Description",
+    "showComments": "Show comments ({count})",
+    "hideComments": "Hide comments ({count})"
+  },
+  "findingsTab": {
+    "reviewInProgress": "Review in progress…",
+    "lethalTrifecta": "Lethal Trifecta detected",
+    "historyHint": "runs & commits · newest first",
+    "runsHint": "grouped by run · newest first",
+    "emptyTitle": "No findings yet",
+    "emptyBody": "Run a review to generate findings. Use Run Review ▾ above (run all enabled agents or a specific one).",
+    "deleteRun": "Delete this review run",
+    "reviewInProgressSub": "the agent is analyzing the diff — this can take a while on large PRs.",
+    "trifectaCount": "{count} finding(s)",
+    "timeline": "Timeline",
+    "reviewRuns": "Review runs",
+    "confirmDeleteReview": "Delete this \"{agent}\" review run and its findings?",
+    "agentFallback": "agent"
   }
 }

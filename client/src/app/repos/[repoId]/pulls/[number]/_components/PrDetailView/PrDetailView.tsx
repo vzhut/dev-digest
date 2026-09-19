@@ -4,6 +4,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
 import { Skeleton, ErrorState } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
@@ -30,6 +31,7 @@ import { RunTraceDrawer } from "../RunTraceDrawer";
 import { s } from "./styles";
 
 export function PrDetailView() {
+  const t = useTranslations("prReview");
   const params = useParams<{ repoId: string; number: string }>();
   const search = useSearchParams();
   const setParam = useSetSearchParam();
@@ -76,7 +78,7 @@ export function PrDetailView() {
   const repoFullName = activeRepo?.full_name ?? null;
   const crumb = [
     { label: repoName, mono: true, href: `/repos/${repoId}/pulls` },
-    { label: "Pull Requests", href: `/repos/${repoId}/pulls` },
+    { label: t("list.breadcrumb"), href: `/repos/${repoId}/pulls` },
     { label: `#${number}`, mono: true },
   ];
 
@@ -106,8 +108,8 @@ export function PrDetailView() {
       <AppShell crumb={crumb}>
         <ErrorState
           fullScreen
-          title="Couldn't load this pull request"
-          body={apiErrorMessage(error, `PR #${number} could not be loaded.`)}
+          title={t("detail.loadErrorTitle")}
+          body={apiErrorMessage(error, t("detail.loadErrorBody", { number }))}
           onRetry={() => refetch()}
         />
       </AppShell>
@@ -144,7 +146,7 @@ export function PrDetailView() {
             cancelMutation={cancel}
             onOpenTrace={(id) => setParam("trace", id)}
             onDelete={(id) => {
-              if (window.confirm("Delete this run from history? (its logs are removed too)"))
+              if (window.confirm(t("detail.confirmDeleteRun")))
                 deleteRun.mutate(id);
             }}
             onRunDone={() => {
