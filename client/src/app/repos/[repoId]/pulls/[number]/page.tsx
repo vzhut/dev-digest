@@ -8,18 +8,18 @@
 import React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, ErrorState } from "@devdigest/ui";
-import { AppShell } from "../../../../../components/app-shell";
+import { AppShell } from "@/components/app-shell";
 import { RepoNotFound } from "@/components/repo-not-found";
 import { PrDetailHeader } from "./_components/PrDetailHeader";
 import { OverviewTab } from "./_components/OverviewTab";
 import { FindingsTab } from "./_components/FindingsTab";
 import { DiffTab } from "./_components/DiffTab";
 import { RunTraceDrawer } from "./_components/RunTraceDrawer";
-import { usePullDetail, usePulls } from "../../../../../lib/hooks";
-import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun, useInvalidatePrRuns } from "../../../../../lib/hooks/reviews";
-import { useActiveRepo, useRepoNotFound } from "../../../../../lib/repo-context";
-import { ApiError } from "../../../../../lib/api";
-import { githubPrUrl } from "../../../../../lib/github-urls";
+import { usePullDetail, usePulls } from "@/lib/hooks/core";
+import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun, useInvalidatePrRuns } from "@/lib/hooks/reviews";
+import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
+import { ApiError } from "@/lib/api";
+import { githubPrUrl } from "@/lib/github-urls";
 import type { FindingRecord } from "@devdigest/shared";
 
 export default function PRDetailPage() {

@@ -11,7 +11,7 @@ import type { ReviewRecord, Verdict } from "@devdigest/shared";
 import { FindingsPanel } from "../FindingsPanel";
 import { VerdictBanner } from "../VerdictBanner";
 import { RunCostBadge } from "@/components/run-cost-badge";
-import { useDeleteReview } from "../../../../../../../lib/hooks/reviews";
+import { useDeleteReview } from "@/lib/hooks/reviews";
 
 const VERDICT_COLOR: Record<string, string> = {
   request_changes: "var(--crit)",
