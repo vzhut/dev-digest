@@ -47,7 +47,9 @@ Out of scope: how to write components/hooks (→ `react-best-practices`), Next.j
 
 - `.claude/skills/frontend-architecture/SKILL.md` — rules, placement table, checklist.
 - `.claude/skills/frontend-architecture/examples.md` — before/after on real client code.
-- `.claude/skills/frontend-architecture/references.md` — the sources the rules are based on.
+- `.claude/skills/frontend-architecture/references/sources.md` — the sources the rules are based on.
+- `.claude/skills/frontend-architecture/references/placement-map.md` — the current `client/src` inventory and the allowed-import lookup (added in v1.1.0).
+- `.claude/skills/frontend-architecture/README.md` — the human-facing overview; `evals/evals.json` — eval prompts (both added in v1.1.0).
 - `.claude/skills/frontend-architecture/CHANGELOG.md`.
 
 ## Delivery log

@@ -1,7 +1,8 @@
-# frontend-architecture — references
+# frontend-architecture — sources
 
-The sources each rule is based on. Links checked on 2026-09-19. Full research list (52 sources, with the ones
-we didn't use): [`docs/research/react-nextjs-architecture-sources.md`](../../../docs/research/react-nextjs-architecture-sources.md).
+The source each rule is based on, so a rule can be challenged against its origin rather than against opinion.
+Links checked on 2026-09-19. The file→placement inventory lives next door in [`placement-map.md`](placement-map.md). Full research list (52 sources, with the ones
+we didn't use): [`docs/research/react-nextjs-architecture-sources.md`](../../../../docs/research/react-nextjs-architecture-sources.md).
 
 | SKILL.md section | Rule | Source |
 |---|---|---|

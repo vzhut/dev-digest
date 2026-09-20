@@ -2,8 +2,8 @@
 name: frontend-architecture
 description: "Where code lives and how it is split in the DevDigest client (client/src — Next.js 15 App Router + React 19 + TanStack Query). Use this whenever you add a new page, component, hook, constant, helper, type, API call or business rule to the client and have to pick a file/folder for it; when a component or page.tsx has grown big and needs splitting; when code from one route is needed by another (moving it to src/components or src/lib); when asked about folder structure, utils/helpers/constants placement, where business logic should go, _components, index.ts/barrels or import paths; and when reviewing a client change for structure. Use it even if the user never says 'architecture' — any 'where should this go' or 'this file is too big' in client/ qualifies. Not for how to write React code itself (react-best-practices) or Next.js API mechanics (next-best-practices)."
 metadata:
-  version: 1.0.0
-  updated: 2026-09-19
+  version: 1.1.0
+  updated: 2026-09-20
   stack: next@15, react@19, "@tanstack/react-query@5", next-intl@3
 ---
 
@@ -13,9 +13,13 @@ Answers one question: **"I have this piece of code — where does it go, and how
 Paths are real `client/src` paths. The goal is that anyone (human or agent) can guess where a file is without searching,
 and that moving or deleting a feature touches one folder instead of five.
 
-- Before/after refactors on real files → read [examples.md](examples.md) when you're about to split a page/component,
+Bundled files, loaded only when they're needed:
+- [examples.md](examples.md) — before/after on real files. Read it when you're about to split a page/component,
   promote code to shared, or fix imports.
-- Why each rule exists (sources) → [references.md](references.md), only if a rule is challenged.
+- [references/placement-map.md](references/placement-map.md) — every `client/src` folder, what lives there and who
+  may import it. Read it to find where an existing thing lives, or to check an import before writing it.
+- [references/sources.md](references/sources.md) — the article or doc behind each rule. Read it only when a rule
+  is challenged.
 
 **Quick procedure** for any new or moved piece of code:
 1. What kind of thing is it? → row in §2.
@@ -189,9 +193,9 @@ create a child that takes 8+ props just to forward them — the boundary is wron
 ## 9. `index.ts`
 
 - `index.ts` is the folder's **public API**: named re-exports only — `export { DiffViewer } from "./DiffViewer"; export type { DiffCommentApi } from "./comments";`
-- **No `export *`** in new code. It makes every importer load every module in the folder (slower dev server and
-  tests, circular-import surprises) and silently turns internals into public API.
-  `lib/hooks/index.ts` is an existing `export *` barrel — tolerated, don't copy it, don't extend its use.
+- **No `export *`**, anywhere. It makes every importer load every module in the folder (slower dev server and
+  tests, circular-import surprises) and silently turns internals into public API. The last one
+  (`lib/hooks/index.ts`) was deleted in the improvement plan — import the domain file, `@/lib/hooks/reviews`.
 - Don't re-export internals (helpers, constants, sub-components) unless an outside consumer genuinely needs them.
 
 ## 10. Naming
@@ -221,19 +225,23 @@ Full list: `AGENTS.md` → *Naming conventions*. If this skill and `AGENTS.md` d
 9. Any hard-coded user-visible string, or wire type redefined instead of taken from `@devdigest/shared`?
 10. Tests moved along with promoted code?
 
-## Known debt — exists today, don't copy it
+## Accepted exceptions — real, and not precedents
 
-Fix when you touch the file; don't do drive-by refactors in unrelated changes.
+These are known and deliberate. Don't "fix" them in an unrelated change, and don't cite them as permission.
 
-- **Fat client pages:** `app/repos/[repoId]/pulls/page.tsx`, `app/repos/[repoId]/pulls/[number]/page.tsx`,
-  `app/agents/[id]/page.tsx`, `app/page.tsx` — logic belongs in a `_components/<Name>View`.
-- **Thin page marked `'use client'`:** `app/onboarding/page.tsx` — the directive belongs on `AddRepoView`, not the page.
-- **Deep relative imports** (`../../../../../lib/hooks`) across many route files — should be `@/…`.
-- **`export *` barrel** `lib/hooks/index.ts`.
-- **Default-exported components:** `RunTraceDrawer`, `ReviewRunAccordion`, `MermaidDiagram`, `RepoNotFound`.
+- **One-consumer shared modules:** `components/page-shell/`, `components/diff-viewer/`, `lib/feature-models.ts`.
+  By §7 they'd be route-local; moving them back is churn. Nothing new joins them without a second consumer.
+- **`components/mermaid-diagram/` has no consumer at all** — kept pending a product decision.
+- **`components/showcase/`** is rendered only by `src/test/smoke.test.tsx`; its labels are English on purpose.
+- **`src/vendor/ui/`** is exempt from everything here, including the inline-styles rule. It is vendored — don't edit it.
+
+Everything the v1.0.0 version of this skill listed as debt (fat pages, `'use client'` on a thin page, deep
+relative imports, the `lib/hooks` barrel, default-exported components) has since been fixed; see
+[`client/docs/improvement-plan.md`](../../../client/docs/improvement-plan.md). If you find a *new* instance,
+it is a review finding, not debt.
 
 ## Versioning
 
-`metadata.version` is SemVer; history in [CHANGELOG.md](CHANGELOG.md).
+`metadata.version` is SemVer; history in [CHANGELOG.md](CHANGELOG.md), the human-facing overview in [README.md](README.md).
 MAJOR — code that complied now doesn't (a placement rule changed) · MINOR — a new rule or section · PATCH — wording, examples, links.
 Bump the version and `updated` in the same commit as the change. Re-check the rules when the major version of anything in `stack` changes.

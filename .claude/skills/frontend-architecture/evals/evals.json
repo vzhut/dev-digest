@@ -1,0 +1,55 @@
+{
+  "skill_name": "frontend-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "name": "new-screen-placement",
+      "prompt": "Add a new screen to the DevDigest client at /repos/[repoId]/insights: it lists the repo's indexed files with a search box and a 'kind' filter, loading the data from GET /repos/:id/intel/files. Tell me every file you'd create with its full path and contents. Don't touch the repo — write the files into the output folder mirroring client/src paths.",
+      "expected_output": "Thin server page.tsx exporting metadata and rendering one View, the View under _components/<Name>View/ with 'use client', a data hook added to lib/hooks/repo-intel.ts over lib/api.ts, pure filtering in helpers.ts with a test, styles in styles.ts, strings in messages/en/*.json, imports via @/.",
+      "files": [],
+      "assertions": [
+        "page.tsx has no 'use client' directive and contains no hook call",
+        "page.tsx renders exactly one View component from _components and nothing else",
+        "The View file starts with 'use client'",
+        "Data loading goes through a hook in lib/hooks/<domain>.ts that calls lib/api.ts — no fetch() in a component",
+        "Filtering/search logic is a pure function in helpers.ts, not inline in the component body",
+        "Styles live in styles.ts as an exported `s` object rather than inline style={{…}}",
+        "User-visible strings come from next-intl messages, not hard-coded literals",
+        "Cross-area imports use the @/ alias, not ../../../ paths",
+        "The component is a named export; only page.tsx uses a default export"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "split-fat-component",
+      "prompt": "client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx is getting long — it holds the tab state, the run polling, the delete-run confirm and all the layout. How would you split it? Give me the resulting file list with contents in the output folder.",
+      "expected_output": "Pure logic to helpers.ts first, stateful logic to a use<Thing>.ts hook, only then JSX into _components/<Child>/ folders with index.ts + styles.ts; no renderX() factories; children stay in the same route tree, nothing promoted to src/components without a second consumer.",
+      "files": [],
+      "assertions": [
+        "Pure/derived logic is extracted to helpers.ts (or an existing lib module) before any JSX is moved",
+        "Stateful logic is extracted into a use<Thing>.ts hook rather than staying inline",
+        "New children live under the same route's _components/<Child>/ folder, each with its own file",
+        "No render<Something>() factory function is introduced inside the component",
+        "Nothing is moved to src/components/ or src/lib/ without a second consumer being named",
+        "Each new component folder gets index.ts with a named re-export (no export *)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "review-bad-precedent",
+      "prompt": "Ось патч з новим кодом у клієнті — inputs/insights-tab.diff. Зроби code review суто з точки зору архітектури фронтенду (де що лежить і як поділене) і запиши результат у review.md.",
+      "expected_output": "Flags: fetch() called inside the component instead of lib/api.ts + lib/hooks, business logic inline in the component body, a deep ../../../../ import, a component copied from another route's _components instead of being promoted to src/components, export * barrel, hard-coded user-visible strings, inline style objects. Says what the correct placement is for each.",
+      "files": [
+        "inputs/insights-tab.diff"
+      ],
+      "assertions": [
+        "Flags the direct fetch()/api call inside a component and points to lib/hooks/<domain>.ts",
+        "Flags importing another route's _components and asks for promotion to src/components/",
+        "Flags the deep relative import and asks for the @/ alias",
+        "Flags domain logic inside the component body and names helpers.ts / lib/<concept>.ts",
+        "Flags the hard-coded user-visible string and points to messages/en/<namespace>.json",
+        "Does not invent rules absent from the skill (e.g. demanding Tailwind classes or an Axios client)"
+      ]
+    }
+  ]
+}
