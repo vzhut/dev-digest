@@ -30,3 +30,49 @@ describe("useInvalidatePrRuns", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+// --- useRunEvents: SSE lifecycle -------------------------------------------
+import { act } from "@testing-library/react";
+import { useRunEvents } from "./reviews";
+
+class FakeEventSource {
+  static all: FakeEventSource[] = [];
+  onmessage: ((ev: MessageEvent) => void) | null = null;
+  onerror: (() => void) | null = null;
+  closed = false;
+  constructor(public url: string) {
+    FakeEventSource.all.push(this);
+  }
+  addEventListener() {}
+  close() {
+    this.closed = true;
+  }
+}
+
+describe("useRunEvents", () => {
+  it("calls onSettled exactly once, when every stream has ended", () => {
+    FakeEventSource.all = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const onSettled = vi.fn();
+    const { result, rerender } = renderHook(({ cb }) => useRunEvents(["r1", "r2"], { onSettled: cb }), {
+      initialProps: { cb: onSettled },
+    });
+    expect(result.current.running).toBe(true);
+    expect(FakeEventSource.all).toHaveLength(2);
+
+    act(() => FakeEventSource.all[0]!.onerror!());
+    expect(onSettled).not.toHaveBeenCalled(); // one stream still open
+
+    act(() => FakeEventSource.all[1]!.onerror!());
+    expect(result.current.running).toBe(false);
+    expect(onSettled).toHaveBeenCalledTimes(1);
+
+    // A parent re-render with a new callback identity must not fire it again.
+    const next = vi.fn();
+    rerender({ cb: next });
+    rerender({ cb: next });
+    expect(onSettled).toHaveBeenCalledTimes(1);
+    expect(next).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});

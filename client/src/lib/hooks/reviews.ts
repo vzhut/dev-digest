@@ -188,19 +188,26 @@ export function useFindingAction() {
  * `running` flag (true until the stream closes). Live status for the
  * RunReviewDropdown / Live Log. Multiple runIds are subscribed in parallel.
  */
-export function useRunEvents(runIds: string[]) {
+export function useRunEvents(runIds: string[], { onSettled }: { onSettled?: () => void } = {}) {
   const [events, setEvents] = React.useState<RunEvent[]>([]);
   const [running, setRunning] = React.useState(false);
+  // Re-subscribe only when the set of runs changes, not on every new array identity.
   const key = runIds.join(",");
+  const ids = React.useMemo(() => (key ? key.split(",") : []), [key]);
+  // Latest callback without re-subscribing: parents usually pass an inline arrow.
+  const onSettledRef = React.useRef(onSettled);
+  React.useEffect(() => {
+    onSettledRef.current = onSettled;
+  });
 
   React.useEffect(() => {
-    if (runIds.length === 0) return;
+    if (ids.length === 0) return;
     setEvents([]);
     setRunning(true);
     const sources: EventSource[] = [];
-    let open = runIds.length;
+    let open = ids.length;
 
-    for (const runId of runIds) {
+    for (const runId of ids) {
       const es = new EventSource(`${API_BASE}/runs/${runId}/events`);
       const onMsg = (ev: MessageEvent) => {
         try {
@@ -223,7 +230,11 @@ export function useRunEvents(runIds: string[]) {
       es.onerror = () => {
         es.close();
         open -= 1;
-        if (open <= 0) setRunning(false);
+        if (open <= 0) {
+          setRunning(false);
+          // Every stream ended (runs done or failed): notify once, from the event itself.
+          onSettledRef.current?.();
+        }
       };
       sources.push(es);
     }
@@ -232,8 +243,7 @@ export function useRunEvents(runIds: string[]) {
       for (const es of sources) es.close();
       setRunning(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [ids]);
 
   return { events, running };
 }

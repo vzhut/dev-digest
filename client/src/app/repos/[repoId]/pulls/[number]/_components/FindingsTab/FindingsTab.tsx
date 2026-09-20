@@ -4,7 +4,7 @@ import React, { useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Icon, Badge, Button, SectionLabel, EmptyState } from "@devdigest/ui";
 import { RunStatus } from "../RunStatus";
-import { RunHistory } from "../RunHistory/RunHistory";
+import { RunHistory } from "../RunHistory";
 import { ReviewRunAccordion } from "../ReviewRunAccordion";
 import { s } from "./styles";
 import type { FindingRecord, ReviewRecord, RunSummary, PrCommit } from "@devdigest/shared";
@@ -88,15 +88,15 @@ export function FindingsTab({
                   loading={cancelMutation.isPending}
                   onClick={handleCancelAll}
                 >
-                  Cancel
+                  {t("findingsTab.cancel")}
                 </Button>
                 <Button kind="ghost" size="sm" icon="FileText" onClick={handleOpenFirstTrace}>
-                  Open run trace
+                  {t("findingsTab.openTrace")}
                 </Button>
               </div>
             }
           >
-            Live review
+            {t("findingsTab.liveReview")}
           </SectionLabel>
           <RunStatus runIds={liveRunIds} onDone={onRunDone} />
         </div>

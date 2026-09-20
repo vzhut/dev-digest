@@ -61,7 +61,7 @@ export function PrDetailHeader({
               {pr.author}
             </span>
             <span style={s.branchChip}>
-              <Icon.GitBranch size={13} style={{ color: "var(--text-muted)" }} />
+              <Icon.GitBranch size={13} style={s.branchIcon} />
               <span className="mono" style={s.branchMono}>
                 {pr.branch}
               </span>
@@ -71,8 +71,8 @@ export function PrDetailHeader({
               </span>
             </span>
             <span className="mono tnum">
-              <span style={{ color: "var(--code-add-text)" }}>+{pr.additions}</span>{" "}
-              <span style={{ color: "var(--code-del-text)" }}>−{pr.deletions}</span>
+              <span style={s.additions}>+{pr.additions}</span>{" "}
+              <span style={s.deletions}>−{pr.deletions}</span>
             </span>
             <Badge dot bg="transparent" color={statusColor}>
               {pr.status}
@@ -89,7 +89,7 @@ export function PrDetailHeader({
               githubUrl && window.open(githubUrl, "_blank", "noopener,noreferrer")
             }
           >
-            View on GitHub
+            {t("detail.viewOnGitHub")}
           </Button>
           {prId && (
             <RunReviewDropdown
@@ -103,11 +103,8 @@ export function PrDetailHeader({
       </div>
       {(pr.status === "merged" || pr.status === "closed") && (
         <div style={s.staleBanner}>
-          <Icon.AlertTriangle size={13} style={{ color: "var(--warn)", flexShrink: 0 }} />
-          <span>
-            This PR is already {pr.status} — running a review is informational and won't affect the
-            merged code.
-          </span>
+          <Icon.AlertTriangle size={13} style={s.staleIcon} />
+          <span>{t("detail.closedBanner", { status: pr.status })}</span>
         </div>
       )}
       <Tabs

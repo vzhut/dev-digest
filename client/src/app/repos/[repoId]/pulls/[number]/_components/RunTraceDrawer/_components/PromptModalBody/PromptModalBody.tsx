@@ -6,6 +6,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { TextInput } from "@devdigest/ui";
+import { s } from "../../styles";
 
 /** Highlight every case-insensitive occurrence of `q` within a single line. */
 function highlightLine(line: string, q: string): React.ReactNode {
@@ -22,7 +23,7 @@ function highlightLine(line: string, q: string): React.ReactNode {
     }
     if (idx > i) parts.push(line.slice(i, idx));
     parts.push(
-      <mark key={idx} style={{ background: "var(--accent)", color: "var(--bg-primary)", borderRadius: 2 }}>
+      <mark key={idx} style={s.highlight}>
         {line.slice(idx, idx + q.length)}
       </mark>,
     );
@@ -41,30 +42,30 @@ export function PromptModalBody({ text }: { text: string }) {
     ? lines.map((line, n) => ({ line, n })).filter(({ line }) => line.toLowerCase().includes(ql))
     : [];
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "70vh" }}>
-      <div style={{ padding: "12px 24px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+    <div style={s.modalBody}>
+      <div style={s.modalSearch}>
         <TextInput
           value={q}
           onChange={setQ}
           placeholder={t("trace.prompt.search")}
           suffix={
             ql ? (
-              <span style={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+              <span style={s.matchCount}>
                 {shown.length} / {lines.length}
               </span>
             ) : undefined
           }
         />
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      <div style={s.modalScroll}>
         {ql && shown.length === 0 ? (
-          <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
+          <div style={s.noMatches}>
             {t("trace.prompt.noMatches", { q: q.trim() })}
           </div>
         ) : (
           <pre
             className="mono"
-            style={{ margin: 0, padding: "16px 24px", whiteSpace: "pre-wrap", fontSize: 12.5, lineHeight: 1.6 }}
+            style={s.promptText}
           >
             {ql ? shown.map(({ line, n }) => <div key={n}>{highlightLine(line, q)}</div>) : text || "—"}
           </pre>

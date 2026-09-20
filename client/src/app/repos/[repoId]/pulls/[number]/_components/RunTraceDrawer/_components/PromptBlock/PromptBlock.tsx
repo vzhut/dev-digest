@@ -35,7 +35,7 @@ export function PromptBlock({ label, text, color }: { label: string; text: strin
       <div onClick={() => setOpen((o) => !o)} style={s.promptHead}>
         <span style={s.promptDot(color)} />
         <span style={s.promptLabel}>{label}</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={s.promptActions}>
           <button
             type="button"
             title={t("trace.prompt.copy")}
@@ -60,7 +60,7 @@ export function PromptBlock({ label, text, color }: { label: string; text: strin
           >
             <Icon.ExternalLink size={12} />
           </button>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <span style={s.promptToggleLabel}>
             {open ? t("trace.collapse") : t("trace.expand")}
           </span>
         </span>

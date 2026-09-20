@@ -113,7 +113,8 @@
   "timeline": {
     "goToReview": "Jump to this run’s findings below",
     "openTrace": "Open run trace & logs",
-    "deleteRun": "Delete run"
+    "deleteRun": "Delete run",
+    "agentFallback": "Agent"
   },
   "detail": {
     "tabs": {
@@ -126,7 +127,9 @@
     "confirmDeleteRun": "Delete this run from history? (its logs are removed too)",
     "description": "Description",
     "showComments": "Show comments ({count})",
-    "hideComments": "Hide comments ({count})"
+    "hideComments": "Hide comments ({count})",
+    "closedBanner": "This PR is already {status} — running a review is informational and won't affect the merged code.",
+    "viewOnGitHub": "View on GitHub"
   },
   "findingsTab": {
     "reviewInProgress": "Review in progress…",
@@ -141,6 +144,11 @@
     "timeline": "Timeline",
     "reviewRuns": "Review runs",
     "confirmDeleteReview": "Delete this \"{agent}\" review run and its findings?",
-    "agentFallback": "agent"
+    "agentFallback": "agent",
+    "accordionFindings": "{count, plural, one {# finding} other {# findings}}",
+    "accordionBlockers": " · {count, plural, one {# blocker} other {# blockers}}",
+    "cancel": "Cancel",
+    "openTrace": "Open run trace",
+    "liveReview": "Live review"
   }
 }
