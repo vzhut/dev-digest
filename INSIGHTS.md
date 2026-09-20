@@ -46,6 +46,22 @@ Edit `AGENTS.md`. Anything written into a `CLAUDE.md` is seen by Claude only and
 
 The skills README says `.cursor/skills/ → ../.claude/skills` gives Cursor the same skills, but no `.cursor/` directory is committed. Cursor sees no project skills, only the pointer in `AGENTS.md` telling agents to read `.claude/skills/*/SKILL.md` as plain docs. Not fixed: either commit the symlink (with the same Windows caveat as above) or correct the README.
 
+### `react-best-practices` prescribes a stack the client doesn't use
+
+`.claude/skills/react-best-practices/SKILL.md` (Tailwind, Axios, Data Fetching, Performance sections) · 2026-09-19
+
+The skill tells agents to use Tailwind utility classes with no inline `style={}`, an Axios instance with interceptors, `useApiQuery`/`useApiMutation` core hooks, `react-error-boundary`, Vite `manualChunks` and `React.lazy` routes. None of these exist in `client/`: styling is a per-component `styles.ts` exporting `s` (Tailwind v4 is installed via `client/postcss.config.mjs` but has ~31 `className` uses), HTTP is `fetch` in `client/src/lib/api.ts`, data hooks are plain TanStack Query in `client/src/lib/hooks/<domain>.ts`, and the app is Next.js, not Vite.
+
+An agent that follows the skill literally rewrites styles to Tailwind or adds Axios. Where the two disagree, follow `AGENTS.md` and the `frontend-architecture` skill; treat those sections of `react-best-practices` as not applicable until the skill is aligned (tracked in `client/docs/improvement-plan.md`, "The skills themselves").
+
+### Multi-flag variables don't word-split in the Bash tool's zsh, so `grep` checks return nothing
+
+2026-09-19
+
+The shell behind the agent's Bash tool here is zsh. `S="--include=*.ts --include=*.tsx"; grep -rn foo $S app` passes the whole string as **one** argument, so `grep` looks for a file literally named that, finds nothing and prints nothing. A codebase audit built this way reports every check as clean. The same session hit a second silent no-op: macOS BSD `sed` treats `\?` in `sed 's/\.tsx\?$//'` literally, so the substitution never matched.
+
+Run multi-step shell audits under `bash <<'EOF' … EOF` (bash word-splits unquoted variables), or pass flags inline. On macOS use `sed -E` with `?`, or `${var%.tsx}` parameter expansion. Sanity-check that a "no findings" grep can find a known hit before trusting it.
+
 ### skill-creator rejects a SKILL.md `description` over 1024 characters
 
 `.claude/skills/onion-architecture/SKILL.md:3` · 2026-09-19
