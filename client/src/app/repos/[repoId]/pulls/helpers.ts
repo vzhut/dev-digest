@@ -7,12 +7,16 @@ export function sizeOf(pr: PrMeta): SizeInfo {
   return { size, lines };
 }
 
-/** Compact relative time for the list's UPDATED column (e.g. "3h", "2d"). */
-export function relativeTime(iso: string | null | undefined): string {
+/**
+ * Compact relative time for the list's UPDATED column (e.g. "3h", "2d").
+ * `now` is injectable so the function is pure and testable; the list renders
+ * client-side only, so reading the clock here can't desync from SSR output.
+ */
+export function relativeTime(iso: string | null | undefined, now: number = Date.now()): string {
   if (!iso) return "—";
   const then = Date.parse(iso);
   if (Number.isNaN(then)) return "—";
-  const m = Math.max(0, Math.round((Date.now() - then) / 60_000));
+  const m = Math.max(0, Math.round((now - then) / 60_000));
   if (m < 1) return "now";
   if (m < 60) return `${m}m`;
   const h = Math.round(m / 60);
