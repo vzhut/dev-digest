@@ -99,7 +99,7 @@ Implemented on branch `lesson-02`, 2026-09-19 → 2026-09-20. Status of every it
 | 13 named exports | done | `48cdb1d` — only Next's own route files default-export now |
 | 14 barrels | done | `198de37` — `lib/hooks` barrel dropped |
 | 16 showcase comment | done | `76d4b7b` |
-| 18 tests | partly | added: `RunHistory/helpers`, `ReviewRunAccordion`, `pulls/helpers`, `search-params`, `error`. Still untested: `ConfigTab`, `AddRepoView`, `PrDetailHeader` |
+| 18 tests | done for the named files | `RunHistory/helpers`, `ReviewRunAccordion`, `pulls/helpers`, `search-params`, `error`, and `2d754ab` for `ConfigTab`, `AddRepoView`, `PrDetailHeader`. The rest of the 47 components stay untested by design — tests follow the files being touched |
 | 19 a11y | done | every icon-only button carries `aria-label` |
 | 20 `relativeTime` | done | `76d4b7b` — `now` is injectable and unit-tested |
 | 15 mermaid-diagram | open | still has no consumer; needs a product decision before deleting (may be L03+ material) |
@@ -107,5 +107,5 @@ Implemented on branch `lesson-02`, 2026-09-19 → 2026-09-20. Status of every it
 | 21 `eslint-disable` comments | resolved | all three removed with #2/#11; no linter added |
 | skills section | open | `react-best-practices` still prescribes Tailwind/Axios/Vite — recorded in the root `INSIGHTS.md`, skill not yet aligned |
 
-Validation after the last slice: `cd client && pnpm typecheck` clean · `pnpm test` 23 files / 108 tests
+Validation after the last slice: `cd client && pnpm typecheck` clean · `pnpm test` 26 files / 122 tests
 green · `pnpm build` succeeds (8 routes) · `./scripts/e2e.sh` 7/7 flows passed.
