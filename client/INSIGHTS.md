@@ -28,7 +28,20 @@ const onScroll = (e: Event) => {
 
 ## Codebase Patterns
 
-_No entries yet._
+### An SSE subscription hook keys on a joined id string, not the array it is given
+
+`client/src/lib/hooks/reviews.ts:191-250` · 2026-09-20
+
+`useRunEvents(runIds)` is called with an inline array (`useRunEvents([run.id])`), so a dep of
+`[runIds]` re-runs the effect on every parent render: every EventSource is closed and reopened,
+`events` is reset to `[]` and the Live Log blinks. The old code hid this with
+`// eslint-disable-next-line react-hooks/exhaustive-deps` and `[key]`, where `key = runIds.join(",")`.
+
+The honest form keeps the joined string as the identity but derives the ids from it —
+`const ids = React.useMemo(() => (key ? key.split(",") : []), [key])` — and depends on `[ids]`.
+A callback prop (`onSettled`) can't go in the deps for the same reason, so it is held in a ref
+updated by an unconditional effect and read as `onSettledRef.current?.()` when the last stream
+closes. Result: no disabled lint rule, and the subscription survives parent re-renders.
 
 ## Tool & Library Notes
 
@@ -82,7 +95,15 @@ Check it with `pnpm test 2>&1 | grep -c "Updating a style property"`, which shou
 
 ## Session Notes
 
-_No entries yet._
+### 2026-09-20 — client improvement plan finished
+
+`client/docs/improvement-plan.md` "Delivery log" · every item but #15 (unused `mermaid-diagram`)
+and the `react-best-practices` skill alignment is implemented on `lesson-02`. The last slices:
+RunHistory split into `helpers.ts` + `_components/RunRow`/`CommitRow`, `useRunEvents` gained
+`onSettled`, remaining inline styles moved to `styles.ts` and the last PR-detail strings to
+`messages/en/prReview.json`. No `eslint-disable` and no `style={{…}}` are left outside the frozen
+`src/vendor/ui`. Validation: `pnpm typecheck`, `pnpm test` (23 files / 108 tests), `pnpm build`,
+`./scripts/e2e.sh` 7/7.
 
 ## Open Questions
 
