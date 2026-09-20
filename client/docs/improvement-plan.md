@@ -75,3 +75,37 @@ Effort: **S** < 1h · **M** a few hours · **L** a day+. Priority: **P1** risk o
 7. **Cleanup** — #15, #16, #19, #20; skill alignment items as a separate docs change.
 
 Validation for every slice: `cd client && pnpm test && pnpm typecheck`; e2e (`./scripts/e2e.sh`) after #4–#6 since they touch user-visible flows.
+
+---
+
+## Delivery log
+
+Implemented on branch `lesson-02`, 2026-09-19 → 2026-09-20. Status of every item:
+
+| # | Status | Where |
+|---|---|---|
+| 1 keys | done | `48cdb1d` — `key={f.path}`, tool-call and filtered-line keys |
+| 2 ConfigTab reset | done | `48cdb1d` — keyed `<ConfigTab key={agent.id}>` |
+| 3 query keys | done | `48cdb1d` — key builders + invalidation in `lib/hooks/reviews.ts` |
+| 4 i18n | done | `5e10caa` — strings moved to `messages/en/*`; the last PR-detail strings in `9712f4a` |
+| 5 error boundary | done | `8b9e9bb`, `a5a4d72` — `app/error.tsx`, `app/not-found.tsx` rendered from client Views |
+| 6 thin pages | done | `f14cae1` — `HomeView`, `PullsView`, `PrDetailView`, `AgentEditorView`, per-page `metadata` |
+| 7 search-param hook | done | `f14cae1` — `lib/search-params.ts` (+ test) |
+| 8 `apiErrorMessage` | done | `f14cae1` — `lib/api.ts`, used by all four Views |
+| 9 `@/` imports | done | `198de37` |
+| 10 inline styles | done | `9712f4a` — no `style={{…}}` left outside the frozen `vendor/ui` |
+| 11 effects as events | done | `9712f4a` — `useRunEvents(ids, { onSettled })`; no `eslint-disable` left in `src/` |
+| 12 RunHistory | done | `9712f4a` — `helpers.ts` + `_components/RunRow`, `CommitRow`, `styles.ts` |
+| 13 named exports | done | `48cdb1d` — only Next's own route files default-export now |
+| 14 barrels | done | `198de37` — `lib/hooks` barrel dropped |
+| 16 showcase comment | done | `76d4b7b` |
+| 18 tests | partly | added: `RunHistory/helpers`, `ReviewRunAccordion`, `pulls/helpers`, `search-params`, `error`. Still untested: `ConfigTab`, `AddRepoView`, `PrDetailHeader` |
+| 19 a11y | done | every icon-only button carries `aria-label` |
+| 20 `relativeTime` | done | `76d4b7b` — `now` is injectable and unit-tested |
+| 15 mermaid-diagram | open | still has no consumer; needs a product decision before deleting (may be L03+ material) |
+| 17 one-consumer shared modules | open (by design) | left as is per the plan |
+| 21 `eslint-disable` comments | resolved | all three removed with #2/#11; no linter added |
+| skills section | open | `react-best-practices` still prescribes Tailwind/Axios/Vite — recorded in the root `INSIGHTS.md`, skill not yet aligned |
+
+Validation after the last slice: `cd client && pnpm typecheck` clean · `pnpm test` 23 files / 108 tests
+green · `pnpm build` succeeds (8 routes) · `./scripts/e2e.sh` 7/7 flows passed.
