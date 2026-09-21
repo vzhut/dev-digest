@@ -1,0 +1,23 @@
+{
+  "name": "Skills page lists seeded skills and opens the editor",
+  "description": "Loads /skills, confirms the seeded skills render, opens one, checks the Stats empty state (no run_skills rows on a fresh seed), then checks the Test Quality Reviewer's Skills tab lists its linked skills. Read-only: no skill is created or changed, so the flows after it see the same data.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/skills"], "label": "load the skills page" },
+    { "cmd": ["wait", "--url", "/skills"], "label": "skills route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skills fetch settles" },
+    { "cmd": ["wait", "--text", "test-coverage-nudge"], "label": "seeded skill card is visible" },
+    { "cmd": ["wait", "--text", "api-contract-gate"], "label": "second seeded skill is visible" },
+    { "cmd": ["find", "text", "test-coverage-nudge", "click"], "label": "open the skill" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "editor loads" },
+    { "cmd": ["wait", "--text", "Apply when"], "label": "directive description is shown" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Stats"], "label": "open the Stats tab" },
+    { "cmd": ["wait", "--text", "No runs with this skill yet"], "label": "empty state, not zeros" },
+    { "cmd": ["open", "{BASE}/agents"], "label": "go to the agents page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["find", "text", "Test Quality Reviewer", "click"], "label": "open the Test Quality Reviewer" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agent editor loads" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Skills"], "label": "open the Skills tab" },
+    { "cmd": ["wait", "--text", "mocking-discipline"], "label": "linked skill is listed" },
+    { "cmd": ["wait", "--text", "2 of"], "label": "enabled counter reflects the two linked skills" }
+  ]
+}

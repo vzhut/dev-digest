@@ -92,6 +92,20 @@ Restored `agent_runs.cost_usd` (migration `0010`) and stopped `run-executor.ts` 
 join, the `backfill-cost` script, and the four client surfaces. Two findings recorded above: the
 entrypoint-guard no-op and the jsonb `.nullish()` rule.
 
+### 2026-09-21 — L02 skills wiring
+
+`server/package.json` · `server/pnpm-lock.yaml` · 2026-09-21
+
+`pnpm add` with pnpm 10 refuses to run because `server/node_modules` was linked by a pnpm 11 store; the
+agent had to use `npx pnpm@11 add @fastify/multipart fflate`, which rewrote ~120 lockfile lines. Use the
+same pnpm major that created `node_modules` before any dependency change.
+
+`server/src/modules/reviews/run-executor.ts` · `server/src/platform/trace-builder.ts` · 2026-09-21
+
+Skills reached no prompt before L02 because two call sites hardcoded `skills: null`; wiring only the
+prompt would have left the trace claiming no skill was used. `run_skills` is written before the run's
+`try`, so failed runs are attributed too.
+
 ## Open Questions
 
 _No entries yet._
