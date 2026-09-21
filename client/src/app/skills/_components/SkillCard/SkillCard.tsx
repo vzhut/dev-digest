@@ -3,7 +3,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon, Badge, Toggle } from "@devdigest/ui";
+import { Icon, Badge, Toggle, IconBtn } from "@devdigest/ui";
 import type { Skill } from "@devdigest/shared";
 import { isUntrusted, sourceIcon, typeTint } from "./helpers";
 import { s } from "./styles";
@@ -13,11 +13,13 @@ export function SkillCard({
   active,
   onClick,
   onToggle,
+  onDelete,
 }: {
   skill: Skill;
   active?: boolean;
   onClick?: () => void;
   onToggle?: (enabled: boolean) => void;
+  onDelete?: () => void;
 }) {
   const t = useTranslations("skills");
   const tint = typeTint(skill.type);
@@ -32,6 +34,11 @@ export function SkillCard({
         {onToggle && (
           <div onClick={(e) => e.stopPropagation()} aria-label={t("card.enabledToggle")}>
             <Toggle on={skill.enabled} onChange={onToggle} size={14} />
+          </div>
+        )}
+        {onDelete && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <IconBtn icon="Trash" size={26} label={t("card.delete", { name: skill.name })} onClick={onDelete} danger />
           </div>
         )}
       </div>

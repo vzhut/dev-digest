@@ -7,7 +7,10 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button, EmptyState, ErrorState, Skeleton, Icon } from "@devdigest/ui";
 import { AppShell } from "@/components/app-shell";
-import { useSkills, useUpdateSkill } from "@/lib/hooks/skills";
+import type { Skill } from "@devdigest/shared";
+import { useDeleteSkill, useSkills, useUpdateSkill } from "@/lib/hooks/skills";
+import { useToast } from "@/lib/toast";
+import { ConfirmModal } from "@/components/confirm-modal";
 import { SkillCard } from "../SkillCard";
 import { AddSkillDrawer } from "./_components/AddSkillDrawer";
 import { filterSkills } from "./helpers";
@@ -28,6 +31,9 @@ export function SkillsListView({
   const router = useRouter();
   const { data: skills, isLoading, isError, refetch } = useSkills();
   const update = useUpdateSkill();
+  const del = useDeleteSkill();
+  const toast = useToast();
+  const [deleting, setDeleting] = React.useState<Skill | null>(null);
   const [adding, setAdding] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -41,6 +47,24 @@ export function SkillsListView({
   return (
     <AppShell crumb={crumb}>
       <AddSkillDrawer open={adding} onClose={() => setAdding(false)} />
+      {deleting && (
+        <ConfirmModal
+          title={t("card.deleteTitle")}
+          body={t("config.confirmDelete", { name: deleting.name })}
+          confirmLabel={t("card.deleteConfirm")}
+          pending={del.isPending}
+          onClose={() => setDeleting(null)}
+          onConfirm={() =>
+            del.mutate(deleting.id, {
+              onSuccess: () => {
+                toast.success(t("config.deleted"));
+                if (deleting.id === activeId) router.push("/skills");
+                setDeleting(null);
+              },
+            })
+          }
+        />
+      )}
       <div style={s.layout}>
         <div style={s.list}>
           <div style={s.header}>
@@ -87,6 +111,7 @@ export function SkillsListView({
                   active={sk.id === activeId}
                   onClick={() => router.push(`/skills/${sk.id}?tab=${tab}`)}
                   onToggle={(enabled) => update.mutate({ id: sk.id, patch: { enabled } })}
+                  onDelete={() => setDeleting(sk)}
                 />
               ))}
             </div>

@@ -7,6 +7,7 @@ import { FormField, TextInput, SelectInput, Toggle, Button, Badge } from "@devdi
 import type { Skill, SkillType } from "@devdigest/shared";
 import { useUpdateSkill, useDeleteSkill } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
+import { ConfirmModal } from "@/components/confirm-modal";
 import { SKILL_TYPES } from "./constants";
 import { canSave, formFromSkill, isDirty, type SkillForm } from "./helpers";
 import { SkillBodyEditor } from "./_components/SkillBodyEditor";
@@ -22,6 +23,7 @@ export function ConfigTab({ skill }: { skill: Skill }) {
   // Parent keys this component by skill id + version, so it remounts with fresh values.
   const [form, setForm] = React.useState(() => formFromSkill(skill));
   const [message, setMessage] = React.useState("");
+  const [confirming, setConfirming] = React.useState(false);
   const dirty = isDirty(form, skill);
   const bodyChanged = form.body !== skill.body;
   const set =
@@ -50,7 +52,6 @@ export function ConfigTab({ skill }: { skill: Skill }) {
   };
 
   const remove = () => {
-    if (!window.confirm(t("config.confirmDelete", { name: skill.name }))) return;
     del.mutate(skill.id, {
       onSuccess: () => {
         toast.success(t("config.deleted"));
@@ -111,10 +112,20 @@ export function ConfigTab({ skill }: { skill: Skill }) {
           <div style={s.dangerTitle}>{t("config.deleteTitle")}</div>
           <div style={s.dangerText}>{t("config.deleteHint")}</div>
         </div>
-        <Button kind="danger" icon="Trash" onClick={remove} disabled={del.isPending} style={s.dangerBtn}>
+        <Button kind="danger" icon="Trash" onClick={() => setConfirming(true)} disabled={del.isPending} style={s.dangerBtn}>
           {t("config.delete")}
         </Button>
       </div>
+      {confirming && (
+        <ConfirmModal
+          title={t("config.deleteTitle")}
+          body={t("config.confirmDelete", { name: skill.name })}
+          confirmLabel={t("config.delete")}
+          pending={del.isPending}
+          onConfirm={remove}
+          onClose={() => setConfirming(false)}
+        />
+      )}
     </div>
   );
 }

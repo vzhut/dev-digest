@@ -211,6 +211,9 @@
   "card": {
     "noDescription": "No description",
     "enabledToggle": "Toggle skill enabled",
+    "delete": "Delete skill {name}",
+    "deleteTitle": "Delete skill",
+    "deleteConfirm": "Delete",
     "version": "v{version}",
     "agents": "{count, plural, one {# agent} other {# agents}}"
   }

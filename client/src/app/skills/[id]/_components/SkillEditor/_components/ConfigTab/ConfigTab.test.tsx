@@ -1,15 +1,17 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { Skill } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/skills.json";
+import common from "../../../../../../../../messages/en/common.json";
 import { ToastProvider } from "@/lib/toast";
 
 const mutate = vi.fn();
+const deleteMutate = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/hooks/skills", () => ({
   useUpdateSkill: () => ({ mutate, isPending: false, isSuccess: false, data: undefined }),
-  useDeleteSkill: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteSkill: () => ({ mutate: deleteMutate, isPending: false }),
 }));
 
 import { ConfigTab } from "./ConfigTab";
@@ -17,6 +19,7 @@ import { ConfigTab } from "./ConfigTab";
 afterEach(() => {
   cleanup();
   mutate.mockReset();
+  deleteMutate.mockReset();
 });
 
 const SKILL: Skill = {
@@ -32,7 +35,7 @@ const SKILL: Skill = {
 
 const wrap = (ui: React.ReactElement) =>
   render(
-    <NextIntlClientProvider locale="en" messages={{ skills: messages }}>
+    <NextIntlClientProvider locale="en" messages={{ skills: messages, common }}>
       <ToastProvider>{ui}</ToastProvider>
     </NextIntlClientProvider>,
   );
@@ -101,5 +104,19 @@ describe("Skill ConfigTab", () => {
     expect(screen.getByText("unsaved")).toBeInTheDocument();
     expect(screen.getByText("v3")).toBeInTheDocument();
     expect(screen.getByText(/Saving snapshots the body/)).toBeInTheDocument();
+  });
+
+  it("delete asks in a modal first: cancel keeps the skill, confirm deletes it", () => {
+    wrap(<ConfigTab skill={SKILL} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Delete$/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(deleteMutate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Delete$/ }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+    expect(deleteMutate).toHaveBeenCalledWith("s1", expect.anything());
   });
 });

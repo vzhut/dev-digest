@@ -53,4 +53,18 @@ describe("SkillCard", () => {
     again(4);
     expect(screen.getByText("4 agents")).toBeInTheDocument();
   });
+
+  it("has a Delete button that fires onDelete without opening the card", () => {
+    const onClick = vi.fn();
+    const onDelete = vi.fn();
+    wrap(<SkillCard skill={SKILL} onClick={onClick} onDelete={onDelete} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete skill pr-rubric" }));
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("renders no Delete button when onDelete is not provided", () => {
+    wrap(<SkillCard skill={SKILL} />);
+    expect(screen.queryByRole("button", { name: /Delete skill/ })).toBeNull();
+  });
 });

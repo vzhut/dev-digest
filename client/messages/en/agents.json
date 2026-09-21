@@ -3,6 +3,7 @@
     "noDescription": "No description",
     "skillCount": "{count} skills",
     "delete": "Delete agent",
+    "deleteConfirm": "Delete",
     "confirmDelete": "Delete agent \"{name}\"? This cannot be undone."
   },
   "list": {
