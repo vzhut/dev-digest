@@ -55,23 +55,40 @@ silent "R7 core pure import"      "$P_CORE_IMPURE" "import { z } from 'zod';"
 
 echo "== R8 secrets =="
 # Every provider this repo actually talks to, plus the shapes a contributor is likely to paste.
-fires  "R8 openai sk-proj"      "$P_SECRET_KEY" 'const k = "sk-proj-abcdefGHIJKL0123456789mnopQRSTUV0123456789wxyzABCD";'
-fires  "R8 openai sk-svcacct"   "$P_SECRET_KEY" 'const k = "sk-svcacct-abcdefGHIJKL0123456789mnopQRSTUVwxyzABCD";'
-fires  "R8 openai legacy sk-"   "$P_SECRET_KEY" 'const k = "sk-abcdefGHIJKL0123456789mnopQRSTUV0123456789wxyzABCD";'
-fires  "R8 anthropic sk-ant"    "$P_SECRET_KEY" 'const k = "sk-ant-api03-abcdefGHIJKL0123456789mnopQRSTUVwxyz";'
-fires  "R8 github classic ghp_" "$P_SECRET_KEY" 'const k = "ghp_abcdefGHIJKL0123456789mnopQRSTUV01";'
-fires  "R8 github fine-grained" "$P_SECRET_KEY" 'const k = "github_pat_11ABCDEFG0abcdefGHIJKL_0123456789mnopQRSTUV0123456789wxyzABCDEFGHIJKLMNOP";'
-fires  "R8 github oauth gho_"   "$P_SECRET_KEY" 'const k = "gho_abcdefGHIJKL0123456789mnopQRSTUV01";'
-fires  "R8 aws akia"            "$P_SECRET_KEY" 'const k = "AKIAIOSFODNN7EXAMPLE";'
-fires  "R8 aws asia"            "$P_SECRET_KEY" 'const k = "ASIAIOSFODNN7EXAMPLE";'
-fires  "R8 slack xoxb"          "$P_SECRET_KEY" 'const k = "xoxb-123456789012-1234567890123-abcdefGHIJKL0123456789mn";'
-fires  "R8 google AIza"         "$P_SECRET_KEY" 'const k = "AIzaSyA0123456789abcdefGHIJKLmnopQRSTUV";'
+#
+# The bodies are assembled from variables on purpose. A literal `sk-ant-api03-<40 chars>` in
+# this file is matched by the very pattern it tests, so R8 fired twelve CRITICALs on its own
+# test table and blocked the push that introduced it. Splitting the prefix from the body means
+# the SOURCE LINE carries no credential-shaped literal — `${B}` breaks the character class —
+# while the string the shell hands to grep is complete, so the assertion still tests the real
+# thing. An exemption for this path would have worked too, and would have been a place to hide
+# a real key.
+B='abcdefGHIJKL0123456789mnopQRSTUV0123456789wxyzABCD'
+fires  "R8 openai sk-proj"      "$P_SECRET_KEY" "const k = \"sk-proj-$B\";"
+fires  "R8 openai sk-svcacct"   "$P_SECRET_KEY" "const k = \"sk-svcacct-$B\";"
+fires  "R8 openai legacy sk-"   "$P_SECRET_KEY" "const k = \"sk-$B\";"
+fires  "R8 anthropic sk-ant"    "$P_SECRET_KEY" "const k = \"sk-ant-api03-$B\";"
+fires  "R8 github classic ghp_" "$P_SECRET_KEY" "const k = \"ghp_$B\";"
+fires  "R8 github fine-grained" "$P_SECRET_KEY" "const k = \"github_pat_11ABCDEFG0${B}_${B}\";"
+fires  "R8 github oauth gho_"   "$P_SECRET_KEY" "const k = \"gho_$B\";"
+fires  "R8 aws akia"            "$P_SECRET_KEY" "const k = \"A${_K:-K}IAIOSFODNN7EXAMPLE\";"
+fires  "R8 aws asia"            "$P_SECRET_KEY" "const k = \"A${_S:-S}IAIOSFODNN7EXAMPLE\";"
+N='123456789012-1234567890123'   # digits alone already satisfy the 20-char body, so they move out too
+fires  "R8 slack xoxb"          "$P_SECRET_KEY" "const k = \"xoxb-$N-$B\";"
+fires  "R8 google AIza"         "$P_SECRET_KEY" "const k = \"AIza$B\";"
 silent "R8 env var reference"   "$P_SECRET_KEY" 'const key = process.env.OPENAI_API_KEY;'
 silent "R8 placeholder"         "$P_SECRET_KEY" 'OPENAI_API_KEY=sk-your-key-here'
 silent "R8 prose about keys"    "$P_SECRET_KEY" 'Set OPENAI_API_KEY in .env before running the server.'
-fires  "R8 pem block"           "$P_SECRET_PEM" '-----BEGIN RSA PRIVATE KEY-----'
+fires  "R8 pem block"           "$P_SECRET_PEM" "-----${_P:-BEGIN} RSA PRIVATE KEY-----"
 fires  "R8 env file path"       "$P_SECRET_ENVFILE" 'server/.env.local'
 silent "R8 env in a doc name"   "$P_SECRET_ENVFILE" 'docs/environment.md'
+
+# The table above must not itself look like a leak, or this gate blocks every change to it.
+if grep -qE "$P_SECRET_KEY|$P_SECRET_PEM" "$HERE/self-test.sh"; then
+  bad "self-test.sh contains a literal that R8 matches — the secret gate will block its own test table"
+else
+  ok "self-test.sh carries no credential-shaped literal of its own"
+fi
 
 echo "== R9 tooling =="
 fires  "R9 eslint config"   "$P_TOOLING" 'client/eslint.config.mjs'
