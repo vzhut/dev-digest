@@ -22,9 +22,13 @@ export function buildRows(skills: Skill[], links: AgentSkillLink[]): SkillRow[] 
   return rows;
 }
 
-/** Skills that will really reach the prompt: checked AND globally enabled. */
+/** A row is enabled when it will really reach the prompt: checked on this agent AND globally enabled. */
+export function isEnabledRow(r: SkillRow): boolean {
+  return r.checked && r.skill.enabled;
+}
+
 export function countEnabled(rows: SkillRow[]): number {
-  return rows.filter((r) => r.checked && r.skill.enabled).length;
+  return rows.filter(isEnabledRow).length;
 }
 
 /** Move `id` one step up/down among the currently visible rows (filter-safe). */
@@ -50,6 +54,8 @@ export function dropRow(rows: SkillRow[], id: string, targetId: string): SkillRo
   const from = rows.findIndex((r) => r.skill.id === id);
   const to = rows.findIndex((r) => r.skill.id === targetId);
   if (from < 0 || to < 0) return rows;
+  // Only enabled skills take part in ordering: a disabled row is neither dragged nor a drop target.
+  if (!isEnabledRow(rows[from]!) || !isEnabledRow(rows[to]!)) return rows;
   const next = [...rows];
   const [moved] = next.splice(from, 1);
   next.splice(to, 0, moved!);

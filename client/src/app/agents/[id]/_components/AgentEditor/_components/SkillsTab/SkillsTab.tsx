@@ -6,7 +6,7 @@ import { Badge, Button, IconBtn, Skeleton, ErrorState, TextInput } from "@devdig
 import type { Agent, AgentSkillLink, Skill } from "@devdigest/shared";
 import { useSkills, useAgentSkills, useSetAgentSkills } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
-import { buildRows, countEnabled, dropRow, moveRow, toPayload, type SkillRow } from "./helpers";
+import { buildRows, countEnabled, dropRow, isEnabledRow, moveRow, toPayload, type SkillRow } from "./helpers";
 import { s } from "./styles";
 
 /** Skills tab — link, enable and reorder workspace skills for one agent. */
@@ -69,13 +69,18 @@ function SkillsEditor({ agent, skills, links }: { agent: Agent; skills: Skill[];
           {visible.map((r) => {
             const { skill } = r;
             const off = !skill.enabled;
+            const enabled = isEnabledRow(r);
             return (
               <li
                 key={skill.id}
                 data-testid={`skill-row-${skill.id}`}
-                draggable
-                onDragStart={() => setDragId(skill.id)}
+                draggable={enabled}
+                onDragStart={(e) => {
+                  if (!enabled) return e.preventDefault();
+                  setDragId(skill.id);
+                }}
                 onDragOver={(e) => {
+                  if (!enabled || !dragId) return; // only enabled rows are drop targets
                   e.preventDefault();
                   setOverId(skill.id);
                 }}
@@ -91,7 +96,7 @@ function SkillsEditor({ agent, skills, links }: { agent: Agent; skills: Skill[];
                 }}
                 style={{ ...s.row, ...(overId === skill.id && dragId !== skill.id ? s.rowDragOver : null) }}
               >
-                <span style={s.handle} title={t("skills.dragHandle", { name: skill.name })} aria-hidden>
+                <span style={enabled ? s.handle : s.handleOff} title={enabled ? t("skills.dragHandle", { name: skill.name }) : t("skills.dragDisabled")} aria-hidden>
                   ⠿
                 </span>
                 <label style={{ ...s.label, ...(off ? s.labelOff : null) }} title={off ? t("skills.disabledGloballyTitle") : undefined}>
@@ -104,13 +109,17 @@ function SkillsEditor({ agent, skills, links }: { agent: Agent; skills: Skill[];
                         <Badge>{t("skills.disabledGlobally")}</Badge>
                       </>
                     )}
+                    {" "}
+                    <Badge>{t(`skills.type.${skill.type}`)}</Badge>
                     <div style={s.desc}>{skill.description}</div>
                   </span>
                 </label>
-                <span style={s.arrows}>
-                  <IconBtn icon="ArrowUp" size={26} label={t("skills.moveUp", { name: skill.name })} onClick={() => setRows((rs) => moveRow(rs, visibleIds, skill.id, -1))} />
-                  <IconBtn icon="ArrowDown" size={26} label={t("skills.moveDown", { name: skill.name })} onClick={() => setRows((rs) => moveRow(rs, visibleIds, skill.id, 1))} />
-                </span>
+                {enabled && (
+                  <span style={s.arrows}>
+                    <IconBtn icon="ArrowUp" size={26} label={t("skills.moveUp", { name: skill.name })} onClick={() => setRows((rs) => moveRow(rs, visibleIds, skill.id, -1))} />
+                    <IconBtn icon="ArrowDown" size={26} label={t("skills.moveDown", { name: skill.name })} onClick={() => setRows((rs) => moveRow(rs, visibleIds, skill.id, 1))} />
+                  </span>
+                )}
               </li>
             );
           })}
