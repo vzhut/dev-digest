@@ -131,6 +131,40 @@ export const Skill = z.object({
 });
 export type Skill = z.infer<typeof Skill>;
 
+export const SkillVersion = z.object({
+  skill_id: z.string(),
+  version: z.number().int(),
+  body: z.string(),
+  created_at: z.string(),
+});
+export type SkillVersion = z.infer<typeof SkillVersion>;
+
+// Result of parsing an upload — shown in the preview BEFORE anything is saved.
+export const SkillImportPreview = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
+  body: z.string(),
+  /** Markdown files that were merged into the body. */
+  included_files: z.array(z.string()),
+  /** Everything else in the archive — listed, never read, never executed. */
+  ignored_files: z.array(z.string()),
+});
+export type SkillImportPreview = z.infer<typeof SkillImportPreview>;
+
+// Counts are over runs that really carried this skill (run_skills), not over
+// "agents that link it today". Attribution is run-level, never finding-level.
+export const SkillStats = z.object({
+  used_by: z.number().int(),
+  agents: z.array(z.object({ id: z.string(), name: z.string(), enabled: z.boolean() })),
+  runs_30d: z.number().int(),
+  findings_30d: z.number().int(),
+  /** null when nothing was ever accepted or dismissed — never rendered as 0%. */
+  accept_rate: z.number().min(0).max(1).nullable(),
+  findings_by_category: z.array(z.object({ category: z.string(), count: z.number().int() })),
+});
+export type SkillStats = z.infer<typeof SkillStats>;
+
 export const CommunitySkill = z.object({
   name: z.string(),
   repo: z.string(),
@@ -195,6 +229,7 @@ export const AgentSkillLink = z.object({
   agent_id: z.string(),
   skill_id: z.string(),
   order: z.number().int(),
+  enabled: z.boolean(),
 });
 export type AgentSkillLink = z.infer<typeof AgentSkillLink>;
 
