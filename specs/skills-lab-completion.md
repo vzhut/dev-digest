@@ -30,44 +30,44 @@ this spec is done and committed** — it reuses the modal, card and nav pieces b
 
 ## 2. Criteria — status
 
-Legend: **✓ code** = holds according to the code · **Gap** = needs a change (slice in §3) ·
+Legend (statuses updated after implementation — *done* = fixed and tested, *verified* = checked by reading/tests): **✓ code** = holds according to the code · **Gap** = needs a change (slice in §3) ·
 **Verify** = exists, unproven (L8) · **Run** = needs a live run (§4).
 
 | # | Criterion (short) | Status | Evidence / what is wrong |
 |---|---|---|---|
-| 1, 2 | `CLAUDE.md` = `@AGENTS.md` | **Gap** (L10) | Present in root, `server/`, `client/`, `reviewer-core/`, `e2e/`; each carries an extra HTML comment, criterion says a one-line import |
-| 3 | frontend-architecture skill | **Verify** (L8) | Folder exists; content never read against the criterion |
-| 4 | onion-architecture skill | **Verify** (L8) | same |
-| 5 | pr-self-review skill, Workflow type | **Verify** (L8) | File exists; type not checked |
-| 6 | Agents in SKILLS LAB | **Gap** (L1) | `client/src/vendor/ui/nav.ts:25` puts it in WORKSPACE |
+| 1, 2 | `CLAUDE.md` = `@AGENTS.md` | ✓ done (L10) | Present in root, `server/`, `client/`, `reviewer-core/`, `e2e/`; each carries an extra HTML comment, criterion says a one-line import |
+| 3 | frontend-architecture skill | ✓ verified (L8) | Folder exists; content never read against the criterion |
+| 4 | onion-architecture skill | ✓ verified (L8) | same |
+| 5 | pr-self-review skill, Workflow type | ✓ verified (L8) | File exists; type not checked |
+| 6 | Agents in SKILLS LAB | ✓ done (L1) | `client/src/vendor/ui/nav.ts:25` puts it in WORKSPACE |
 | 7 | Agents page cards | ✓ code | `AgentsListView` + `AgentCard` |
-| 8 | Skills CRUD on Postgres | **Verify** (L8) | `modules/skills` + `.it.test.ts`; the direct-DB check is manual |
+| 8 | Skills CRUD on Postgres | ✓ verified (L8) | `modules/skills` + `.it.test.ts`; the direct-DB check is manual |
 | 9 | Skills page cards (name, type, description, toggle) | ✓ code | `SkillCard` |
 | 10 | Click card → side preview | **Verify** (L8) | `/skills/:id` renders list + `detail` pane side by side |
-| 11 | Add → create or import | **Gap** (L4) | one Drawer with a mode switch |
-| 12 | Create form in a modal | **Gap** (L4) | it is a Drawer, not a modal |
+| 11 | Add → create or import | ✓ done (L4) | one Drawer with a mode switch |
+| 12 | Create form in a modal | ✓ done (L4) | it is a Drawer, not a modal |
 | 13 | Agent Skills tab: link / toggle / reorder | ✓ code | `SkillsTab` |
 | 14 | Reorder changes prompt order | **Verify** (L8) | wiring exists (`run-executor.ts:158-221`); never shown end-to-end |
 | 15 | Import `.md` / `.zip` with preview | ✓ code | `AddSkillDrawer` + `ImportPreview` |
 | 16 | ≥ 1 imported skill on the new agents | **Run** (E1) | fixture deliberately not seeded |
 | 17 | Control experiment — Test Quality | **Run** (E1) | not run |
 | 18 | Control experiment — API Contract | **Run** (E1) | not run |
-| 19 | Token count next to the skills block | **Gap** (L5) | `PromptBlock` takes `label/text/color` only |
+| 19 | Token count next to the skills block | ✓ done (L5) | `PromptBlock` takes `label/text/color` only |
 | 20 | Disabled skill → no block | **Verify** (L8) | block renders iff `prompt_assembly.skills != null` |
-| 21 | pr-self-review manual on a mixed diff; hook off | **Gap** (L9) | `.claude/settings.json` registers a PreToolUse hook on Bash |
-| 22 | Card shows version + agent count | **Gap** (L2) | neither is rendered; DTO has no count |
-| 23 | Delete button on the card | **Gap** (L3) | delete lives only in the Config tab |
-| 24 | Delete confirm is a modal | **Gap** (L3) | `window.confirm` (`ConfigTab.tsx:53`) |
-| 25 | Tabs Config / Preview / Versioning | **Gap** (L7) | label is "Versions" |
+| 21 | pr-self-review manual on a mixed diff; hook off | ✓ done (L9) | `.claude/settings.json` registers a PreToolUse hook on Bash |
+| 22 | Card shows version + agent count | ✓ done (L2) | neither is rendered; DTO has no count |
+| 23 | Delete button on the card | ✓ done (L3) | delete lives only in the Config tab |
+| 24 | Delete confirm is a modal | ✓ done (L3) | `window.confirm` (`ConfigTab.tsx:53`) |
+| 25 | Tabs Config / Preview / Versioning | ✓ done (L7) | label is "Versions" |
 | 26–29 | Rendered preview, version list, Diff, Restore | ✓ code | `PreviewTab` (`Markdown`), `VersionsTab` (`diffLines`, restore) |
 | 30 | Search in the agent Skills tab | ✓ code | `filter` input in `SkillsTab` |
-| 31 | Drag only enabled rows | **Gap** (L6) | every `<li>` is `draggable` (`SkillsTab.tsx:76`) |
+| 31 | Drag only enabled rows | ✓ done (L6) | every `<li>` is `draggable` (`SkillsTab.tsx:76`) |
 | 32 | Agent tile: name, description, model, toggle, skill count | ✓ code | `AgentCard` |
-| 33 | Agent delete button removes the DB row | **Verify** (L8) | button exists |
-| 34 | Agent delete confirm is a modal | **Gap** (L3) | `window.confirm` (`AgentCard.tsx:44`) |
-| 35 | Exactly 2 agent tabs | **Verify** (L8) | `TABS` — confirm |
-| 36 | Config fields incl. strategy + model list | **Verify** (L8) | imports suggest yes |
-| 37 | Skills tab shows all skills with a **type label** | **Gap** (L6) | list is complete, per-row type label missing |
+| 33 | Agent delete button removes the DB row | ✓ verified (L8) | button exists |
+| 34 | Agent delete confirm is a modal | ✓ done (L3) | `window.confirm` (`AgentCard.tsx:44`) |
+| 35 | Exactly 2 agent tabs | ✓ verified (L8) | `TABS` — confirm |
+| 36 | Config fields incl. strategy + model list | ✓ verified (L8) | imports suggest yes |
+| 37 | Skills tab shows all skills with a **type label** | ✓ done (L6) | list is complete, per-row type label missing |
 
 ---
 
@@ -210,6 +210,6 @@ The homework reuses PR #1 for the four-skill rerun (it removes a field with no d
 |---|---|
 | Initiation | Audit of criteria 1–37 against the code (§2): 14 gaps, 10 unproven, 3 need a run, 10 hold. |
 | Planning | This document; decisions D1–D8. Demo repo `vzhut/api-contract-demo` and both PRs created (§4.1). |
-| Implementation | — |
-| Validation | — |
+| Implementation | L1 `54ed53d`, L10 `bf4be8c`, L9 `d14b3ac`, L7 `c84e610`, L2 `9b55905`, L3 `d5426d1`, L4 `bcf712a`, L5 `16dd8f1`, L6 `757b43a`, all on `lesson-02-laba`. Extras: `frontend-architecture` names `vendor/ui/nav.ts` as the one sanctioned vendor edit; `pr-self-review` v1.2.1 (R11 false positive — a second translator variable overrode the `t` scope, 12 bogus CRITICALs). Local `core.hooksPath` also unset (L9). |
+| Validation | client 176 tests + typecheck, server 133 unit + 51 integration + typecheck, e2e 8/8 (skills flow extended: card version/agent count, Add menu, Versioning tab, list beside editor), `pr-self-review --base 0d22f74`: gates clean, skill review PASS (one MEDIUM — ConfirmModal inline styles — fixed). **Verified by reading/tests:** 3, 4, 5 (skill contents), 8 and 33 (new `.it.test` against Postgres), 35, 36. **Still owed:** manual browser pass for 10, 14, 20 and the E1 runs for 16, 17, 18. |
 | Completion | — |
