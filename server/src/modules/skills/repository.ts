@@ -100,6 +100,10 @@ export class SkillsRepository {
           version: current.version,
           body: current.body,
           message: current.versionMessage,
+        }).onConflictDoUpdate({
+          // A stale row at this version (e.g. an older seed) must not block the edit.
+          target: [t.skillVersions.skillId, t.skillVersions.version],
+          set: { body: current.body, message: current.versionMessage },
         });
         values.version = current.version + 1;
       }

@@ -54,4 +54,15 @@ export function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
+/** True only for a clash on the (workspace, name) index — not any other unique constraint. */
+export function isNameViolation(err: unknown): boolean {
+  let e: unknown = err;
+  for (let i = 0; i < 3 && e && typeof e === 'object'; i++) {
+    const { code, constraint_name: constraint } = e as { code?: string; constraint_name?: string };
+    if (code === PG_UNIQUE_VIOLATION && constraint === 'skills_workspace_name_uq') return true;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 export type { SkillStats };

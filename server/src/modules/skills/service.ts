@@ -5,7 +5,7 @@ import { SkillsRepository, type SkillPatch, type SkillRow } from './repository.j
 import {
   bodyChanged,
   computeAcceptRate,
-  isUniqueViolation,
+  isNameViolation,
   statsWindowStart,
   toSkillDto,
   toSkillVersionDto,
@@ -120,7 +120,7 @@ export class SkillsService {
       const row = await this.repo.update(workspaceId, id, patch, changed);
       return row ? toSkillDto(row) : undefined;
     } catch (err) {
-      if (input.name !== undefined && isUniqueViolation(err)) throw nameTaken(input.name);
+      if (input.name !== undefined && isNameViolation(err)) throw nameTaken(input.name);
       throw err;
     }
   }
@@ -173,7 +173,7 @@ export class SkillsService {
       const row = await this.repo.insert({ workspaceId, ...input });
       return toSkillDto(row);
     } catch (err) {
-      if (isUniqueViolation(err)) throw nameTaken(input.name);
+      if (isNameViolation(err)) throw nameTaken(input.name);
       throw err;
     }
   }

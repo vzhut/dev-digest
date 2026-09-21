@@ -378,10 +378,6 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
           version: 1,
         })
         .returning();
-      await db
-        .insert(t.skillVersions)
-        .values({ skillId: skill!.id, version: 1, body: sk.body })
-        .onConflictDoNothing();
     }
     const [agent] = await db
       .select()

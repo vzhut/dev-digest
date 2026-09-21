@@ -118,6 +118,21 @@ d('skills module', () => {
     await app.close();
   });
 
+  it('editing the body succeeds even when a stale skill_versions row exists at the current version', async () => {
+    const app = await makeApp();
+    const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ body: 'one' }) })).json();
+    // Older seeds wrote a v1 snapshot of the CURRENT body; the next snapshot must not collide with it.
+    await pg.handle.db.insert(t.skillVersions).values({ skillId: s.id, version: 1, body: 'one' });
+    const put = await app.inject({
+      method: 'PUT',
+      url: `/skills/${s.id}`,
+      payload: { name: s.name, body: 'two', message: 'edit' },
+    });
+    expect(put.statusCode).toBe(200);
+    expect(put.json()).toMatchObject({ version: 2, body: 'two' });
+    await app.close();
+  });
+
   it('restore appends a new version with the old body', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ body: 'one' }) })).json();
