@@ -130,6 +130,8 @@ export const Skill = z.object({
   evidence_files: z.array(z.string()).nullish(),
   /** Message of the current version (why it was saved). */
   message: z.string().nullish(),
+  /** Agents this skill is linked to (enabled or not). Set on list/get; absent on write responses. */
+  agent_count: z.number().int().nullish(),
 });
 export type Skill = z.infer<typeof Skill>;
 

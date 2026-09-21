@@ -1,4 +1,4 @@
-/* SkillCard — name, directive description, type / source / vetting badges, enabled toggle. */
+/* SkillCard — name, directive description, type / source / vetting badges, version, agent count, enabled toggle. */
 "use client";
 
 import React from "react";
@@ -44,6 +44,10 @@ export function SkillCard({
           <SrcIcon size={12} />
           {t(`listItem.source.${skill.source}`)}
         </span>
+        <span style={s.stat} title={t("card.version", { version: skill.version })}>
+          {t("card.version", { version: skill.version })}
+        </span>
+        <span style={s.stat}>{t("card.agents", { count: skill.agent_count ?? 0 })}</span>
         {isUntrusted(skill) && (
           <span title={t("listItem.vettingTitle")}>
             <Badge color="var(--warn, var(--text-secondary))" bg="var(--warn-bg)" icon="AlertTriangle">

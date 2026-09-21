@@ -37,4 +37,20 @@ describe("SkillCard", () => {
     fireEvent.click(screen.getByText("pr-rubric"));
     expect(onClick).toHaveBeenCalled();
   });
+
+  it("shows the version and how many agents use the skill (0, 1, many)", () => {
+    const { rerender } = wrap(<SkillCard skill={{ ...SKILL, version: 3 }} />);
+    expect(screen.getByText("v3")).toBeInTheDocument();
+    expect(screen.getByText("0 agents")).toBeInTheDocument(); // missing count renders as 0, never blank
+    const again = (n: number) =>
+      rerender(
+        <NextIntlClientProvider locale="en" messages={{ skills: messages }}>
+          <SkillCard skill={{ ...SKILL, version: 3, agent_count: n }} />
+        </NextIntlClientProvider>,
+      );
+    again(1);
+    expect(screen.getByText("1 agent")).toBeInTheDocument();
+    again(4);
+    expect(screen.getByText("4 agents")).toBeInTheDocument();
+  });
 });

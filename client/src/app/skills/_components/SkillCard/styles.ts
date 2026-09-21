@@ -23,6 +23,7 @@ export const s = {
     placeItems: "center",
     flexShrink: 0,
   }),
+  stat: { fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-mono)" } satisfies CSSProperties,
   source: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
   name: {
     fontFamily: "var(--font-mono)",

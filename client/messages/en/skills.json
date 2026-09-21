@@ -210,6 +210,8 @@
   },
   "card": {
     "noDescription": "No description",
-    "enabledToggle": "Toggle skill enabled"
+    "enabledToggle": "Toggle skill enabled",
+    "version": "v{version}",
+    "agents": "{count, plural, one {# agent} other {# agents}}"
   }
 }

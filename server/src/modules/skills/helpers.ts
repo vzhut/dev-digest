@@ -3,7 +3,7 @@ import type { SkillRow, SkillVersionRow } from './repository.js';
 import { MS_PER_DAY, PG_UNIQUE_VIOLATION, STATS_WINDOW_DAYS } from './constants.js';
 
 /** Row → wire DTO (snake_case contract). */
-export function toSkillDto(row: SkillRow): Skill {
+export function toSkillDto(row: SkillRow, agentCount?: number): Skill {
   return {
     id: row.id,
     name: row.name,
@@ -15,6 +15,7 @@ export function toSkillDto(row: SkillRow): Skill {
     version: row.version,
     evidence_files: row.evidenceFiles ?? null,
     message: row.versionMessage ?? null,
+    ...(agentCount === undefined ? {} : { agent_count: agentCount }),
   };
 }
 

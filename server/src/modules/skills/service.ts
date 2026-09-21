@@ -60,12 +60,15 @@ export class SkillsService {
   }
 
   async list(workspaceId: string): Promise<Skill[]> {
-    return (await this.repo.list(workspaceId)).map(toSkillDto);
+    const [rows, counts] = await Promise.all([this.repo.list(workspaceId), this.repo.agentCounts(workspaceId)]);
+    return rows.map((row) => toSkillDto(row, counts.get(row.id) ?? 0));
   }
 
   async get(workspaceId: string, id: string): Promise<Skill | undefined> {
     const row = await this.repo.getById(workspaceId, id);
-    return row ? toSkillDto(row) : undefined;
+    if (!row) return undefined;
+    const counts = await this.repo.agentCounts(workspaceId, id);
+    return toSkillDto(row, counts.get(id) ?? 0);
   }
 
   async findByName(workspaceId: string, name: string): Promise<Skill | undefined> {

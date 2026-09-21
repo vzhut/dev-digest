@@ -166,6 +166,28 @@ d('skills module', () => {
     await app.close();
   });
 
+  it('list/get carry agent_count: 0 unlinked, counts every link (enabled or not)', async () => {
+    const app = await makeApp();
+    const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload() })).json();
+    const count = async () => {
+      const list = (await app.inject({ method: 'GET', url: '/skills' })).json() as { id: string; agent_count: number }[];
+      const one = (await app.inject({ method: 'GET', url: `/skills/${s.id}` })).json();
+      expect(one.agent_count).toBe(list.find((x) => x.id === s.id)!.agent_count);
+      return one.agent_count as number;
+    };
+    expect(await count()).toBe(0);
+
+    const agents = await pg.handle.db.select().from(t.agents).limit(2);
+    expect(agents.length).toBe(2);
+    await pg.handle.db.insert(t.agentSkills).values({ agentId: agents[0]!.id, skillId: s.id, order: 0 });
+    await pg.handle.db.insert(t.agentSkills).values({ agentId: agents[1]!.id, skillId: s.id, order: 0, enabled: false });
+    expect(await count()).toBe(2);
+
+    await pg.handle.db.delete(t.agentSkills).where(eq(t.agentSkills.skillId, s.id));
+    expect(await count()).toBe(0);
+    await app.close();
+  });
+
   it('workspace isolation: another workspace cannot see, edit, or collide with a skill', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ name: 'iso-1' }) })).json();
