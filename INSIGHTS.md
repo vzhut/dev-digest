@@ -17,6 +17,35 @@ The first skill-creator eval loop for `onion-architecture` scored 100% with the 
 
 To measure an architecture skill, write prompts that extend code with a **bad** precedent, such as adding an endpoint to `server/src/modules/pulls/routes.ts`, where handlers query `container.db` inline. Assert on what the agent does differently from its surroundings, not on what it would copy anyway.
 
+### A grep-based gate written for one quoting style can be dead on arrival
+
+`.claude/skills/pr-self-review/scripts/gates.sh:139` · 2026-09-21
+
+`pr-self-review`'s R11 gate is meant to be the CRITICAL that stops a missing i18n key from
+rendering raw in the UI. Its pattern was `t\('[a-zA-Z]+\.[a-zA-Z0-9_.]+'\)` — single quotes,
+no arguments. `client/src` has 302 double-quoted `t("…")` calls, 32 with arguments and 10 in
+the matched form, so the gate covered 3% of call sites and passed everything. It was reported
+as "verified" because the synthetic fixture used to test it was written in the same style as
+the pattern.
+
+Widening the quotes alone would have made it worse. next-intl keys are relative to the
+enclosing `useTranslations("<ns>")`, so `t("finding.accept")` in a component scoped to
+`prReview` means `prReview.json → finding → accept`. Treating the key's first segment as the
+namespace — which the original did — reports a CRITICAL for nearly every correct key in the
+repo. The rewrite resolves the namespace from the nearest scope at or above the call line.
+
+Two checks before trusting a grep gate: count how many real call sites the pattern matches
+(`grep -rhoE 'pattern' src | wc -l` against the whole package, not a fixture), and run it over
+every existing call site to prove it is silent on code that is already correct.
+
+Follow-up, 2026-09-21: acted on. The regexes now live in `.claude/skills/pr-self-review/scripts/patterns.sh`
+and `scripts/self-test.sh` asserts two things per pattern — its **reach** on the real tree, with
+a floor, and a **fire/silent fixture table**. Run against the v1.0.0 patterns the harness
+produces 11 failures, including this R11 bug and an R8 secret pattern that matched 3 of 10 real
+credential formats (it missed `sk-proj-`, `sk-ant-api03-` and `github_pat_` — the two providers
+this repo actually calls). Reach is the assertion that matters: a fixture written in the same
+style as the pattern will always agree with it.
+
 ## Codebase Patterns
 
 ### `@devdigest/shared` is two hand-synced copies, and the client copy has drifted
@@ -68,6 +97,78 @@ Run multi-step shell audits under `bash <<'EOF' … EOF` (bash word-splits unquo
 
 `python -m scripts.quick_validate <skill-dir>` fails with `Description is too long (1042 characters). Maximum is 1024 characters.` The limit is the Agent Skills frontmatter limit. skill-creator's advice to make descriptions "pushy", with trigger phrases and exclusions, pushes them right up against it. `onion-architecture` ended at 1022 and `frontend-architecture` is at 872. Trim the neighbour-skill exclusions first; they are the least useful for triggering. The validator also needs PyYAML, which isn't installed in the pyenv Python here (`ModuleNotFoundError: No module named 'yaml'`). Run it from a throwaway venv: `python3 -m venv v && v/bin/pip install pyyaml`.
 
+### A `PreToolUse` Bash hook must match an invocation, not the words anywhere in the command
+
+`.claude/skills/pr-self-review/scripts/match-publish-command.py:24` · 2026-09-20
+
+The `pr-self-review` gate blocks Bash calls that publish work. Both naive matchers failed on
+their very first real call, and both failures looked like a verdict rather than a bug: the hook
+printed "these changes have not been reviewed yet" for an edit that touched no code at all.
+
+A substring match (`case "$cmd" in *"git push"*`) fired on a heredoc writing a documentation
+line that contained the words. Anchoring on shell separators fixed that, then fired on an
+INSIGHTS.md entry quoting the example `git add . && git push` — the `&&` inside the quoted text
+is indistinguishable from a real separator once the command is one flat string.
+
+The hook receives the whole composite command in `tool_input.command`, so heredoc bodies, commit
+messages and grep patterns are all part of what gets matched. The fix is to delete the parts
+that are data before matching: heredoc bodies, then single- and double-quoted spans, then search
+for the invocation at the start of the string or right after a separator. Note `git -C dir push`
+and `git --git-dir=.git push` need the global-flag form `git(?:\s+-\S+(?:\s+\S+)?)*\s+push`.
+
+Erring towards letting a command through is the right bias for a gate like this: a missed push
+costs one unreviewed change, a false block costs trust in every verdict the skill produces.
+The matcher has a test table covering both sides — extend it rather than tweaking the regex blind.
+
+### Under `set -euo pipefail`, a grep that matches nothing kills the script
+
+`.claude/skills/pr-self-review/scripts/collect.sh:52` · 2026-09-21
+
+`collect.sh` computed its fingerprint with
+`untracked_files | grep -Ev "$EXCLUDE_RE" | while IFS= read -r f; do …`. `grep` exits 1 when
+nothing matches, `pipefail` propagates that as the pipeline's status, and `set -e` then killed
+the script — silently, before it printed or wrote anything, with exit code 1 and no output.
+
+The failing case is a change set with **no untracked files at all**: an ordinary branch of
+tracked edits, which is most branches. `check-marker.sh` calls
+`collect.sh --fingerprint-only`, so it got an empty fingerprint and the gate could never be
+satisfied for that change — the PASS marker it wanted could not be named. It went unnoticed
+because the `lesson-02` working tree always has untracked files, so every manual test hit the
+matching branch.
+
+Wrap any filter whose empty result is legitimate: `cmd | { grep -Ev "$RE" || true; }`. The
+sibling `all_files()` already had the `|| true` — the bug was one helper that didn't. When a
+`pipefail` script exits non-zero with no output at all, suspect an empty grep before anything
+else.
+
+### `${BASH_SOURCE[0]}` must be resolved before the script `cd`s to the repo root
+
+`.claude/skills/pr-self-review/scripts/gates.sh:17` · 2026-09-21
+
+Extracting the gate regexes into a sourced `patterns.sh` introduced a fresh version of the
+failure the extraction was meant to prevent. `gates.sh` does `cd "$(git rev-parse
+--show-toplevel)"` and only then computes
+`HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"`. Invoked by a relative path from a
+subdirectory — `cd server && bash ../.claude/skills/pr-self-review/scripts/gates.sh` — that
+relative path no longer resolves after the `cd`, so the source failed, every pattern variable
+was unset, and the script **exited 0**: a gate reporting no findings because it never ran.
+
+`set -u` did print `P_ONION_DB: unbound variable`, but `gates.sh` runs under `set -uo pipefail`
+without `-e` on purpose (a finding must not abort the remaining rules), so the unbound variable
+killed one pipeline and the script carried on to its `exit 0`.
+
+Resolve `HERE` on the first line after `set`, before any `cd`, and make a failed source fatal:
+
+```bash
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$(git rev-parse --show-toplevel)"
+. "$HERE/patterns.sh" || { echo "cannot source $HERE/patterns.sh" >&2; exit 67; }
+[ -n "${P_ONION_DB:-}" ] || { echo "patterns.sh loaded but empty" >&2; exit 67; }
+```
+
+The general rule for anything that gates a publish: a script that cannot do its job must exit
+non-zero. Silence has to mean "checked and clean", never "did not run".
+
 ## Recurring Errors & Fixes
 
 _No entries yet._
@@ -75,6 +176,22 @@ _No entries yet._
 ## Session Notes
 
 _No entries yet._
+
+### 2026-09-21 — pr-self-review eval benchmark
+
+Ran the eight-case eval suite for `pr-self-review`: scratch clone per case with `origin/main`
+pinned to HEAD so the change set is exactly one seeded edit, `node_modules` symlinked so the
+typecheck and unit-test gates really run, cases 1-7 executed twice (with the skill, and with no
+skill as the control), case 8 driven by a script since hook mechanics are deterministic.
+Assertion pass rate 97% with the skill against 63% without, and every verdict landed as
+specified, including PASS on both over-blocking controls. The instructive half is the control:
+without the skill the same diffs got BLOCK on five of seven cases, because there is no severity
+ceiling — "there are things to say about this" collapses into "don't push". That is the thing
+the skill actually buys, more than finding the defects, which the baseline also found.
+
+The run exposed two real defects in the skill, both recorded above and fixed in v1.1.0. Also
+enabled the git `pre-push` hook for this clone:
+`git config core.hooksPath .claude/skills/pr-self-review/scripts`.
 
 ## Open Questions
 
