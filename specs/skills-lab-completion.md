@@ -158,6 +158,8 @@ Also update `e2e/specs/08-skills.flow.json` for the new Add menu/modal and the `
 Same agent, model and diff on both sides; **all skills disabled on the agent** vs **enabled**. Protocol in `skills.md` §8.
 **PR source (D7):** a real GitHub repo — a small test repo or fork with a Fastify service — with two real PRs.
 
+**Calibration result (2026-09-21, via `POST /pulls/:id/review`):** PR #1, no skills: flagged in 7 of 8 runs (deepseek-v4-flash knows a renamed/removed field is breaking). PR #3, no skills: 0 findings ×3. PR #3 + `api-contract-gate`: findings ×3. Pick the experiment diff by running the baseline first.
+
 **Trap — the prompt can make the baseline non-silent.** On 2026-09-21 the baseline (no skills) still caught PR #1 in 3 of 4 runs because the seeded prompts contained the checklist; both prompts are now role-level (`server/INSIGHTS.md`). Run the baseline again after that change.
 
 **Trap — the baseline is not clean by default.** The seed already links `api-contract-gate`, `test-coverage-nudge`
@@ -167,7 +169,7 @@ confirm in the trace that no skills block exists (that is also criterion 20).
 | Agent | PR | Baseline (skills off) | With skills |
 |---|---|---|---|
 | Test Quality Reviewer (17) | adds a function with a failure branch and a **happy-path-only** test | expected 0/3 flag the uncovered branch | 3/3 flag the branch **and** a boundary case |
-| API Contract Reviewer (18) | renames `cost_usd` → `costUsd` **or** changes a route signature (`/runs/:id` → `/runs/:runId`, a method or status code) | expected 0/3 | 3/3 report the breaking change with file:line and before/after |
+| API Contract Reviewer (18) | **PR #3** — subtle contract changes (new enum value, nullable field, tightened validation, error-body rename). PR #1 (rename/removal/route move) was tried first and the baseline caught it in 7 of 8 runs | **0/3 (calibrated 2026-09-21: 0/0/0)** | 3/3 flag them with file:line and before/after (calibrated with `api-contract-gate` alone: 1 CRITICAL + 3–4 WARNING, 3/3) |
 
 - **Criterion 16:** `breaking-change-checklist` (`docs/skill-fixtures/`) is **imported through the UI** — preview → confirm, `install.sh` listed as ignored — then **enabled** (imported skills land disabled) and **linked** to the API Contract Reviewer.
 - Run each side **3×**; record findings, severity, cost/tokens from the trace. Pick a diff whose baseline is reliably silent.
@@ -179,7 +181,8 @@ confirm in the trace that no skills block exists (that is also criterion 20).
 
 | PR | Branch | Used for | What it does (not stated in the PR text) |
 |---|---|---|---|
-| [#1 Tidy the runs API](https://github.com/vzhut/api-contract-demo/pull/1) | `feat/tidy-runs-api` | 18, API Contract | renames `cost_usd` → `costUsd`, removes `tokens_out` with no deprecation, moves `GET /runs/:id` → `GET /v2/runs/:runId` and drops the old route |
+| [#1 Tidy the runs API](https://github.com/vzhut/api-contract-demo/pull/1) | `feat/tidy-runs-api` | homework (4 skills) — **not** the lab experiment: the obvious breaks are caught with no skills at all | renames `cost_usd` → `costUsd`, removes `tokens_out` with no deprecation, moves `GET /runs/:id` → `GET /v2/runs/:runId` and drops the old route |
+| [#3 Polish run responses](https://github.com/vzhut/api-contract-demo/pull/3) | `feat/polish-run-responses` | **18, API Contract (the experiment PR)** | adds enum value `cancelled`, makes `findings_count` nullable, tightens `pr_number` to `.max(9999)`, renames the 404 body `error` → `message`. Subtle contract changes the checklist names; a generic model does not flag them |
 | [#2 Add a budget guard for runs](https://github.com/vzhut/api-contract-demo/pull/2) | `feat/budget-guard` | 17, Test Quality | adds `checkBudget` with a throw branch, an over-budget branch and boundaries; its test covers **only** the happy path |
 
 The homework reuses PR #1 for the four-skill rerun (it removes a field with no deprecation, so `deprecation-policy` and `semver-discipline` have something to catch).
