@@ -88,7 +88,7 @@ Each slice: typecheck + tests of every touched package green, tests written alon
 - **Commit:** `docs: CLAUDE.md is a single @AGENTS.md import`
 
 ### L9 — hook off, skill manual-only · criterion 21
-- **Change:** remove the `PreToolUse` entry from `.claude/settings.json` (leave `$schema`); scripts under `.claude/skills/pr-self-review/scripts/` stay. Update the `AGENTS.md` "Use when" line and `specs/pr-self-review-skill.md` to say *manual-only*. Confirm the skill frontmatter does not auto-invoke on push.
+- **Change:** remove the `PreToolUse` entry from `.claude/settings.json` (leave `$schema`) **and** `git config --unset core.hooksPath` (the local git `pre-push` hook from the same skill would otherwise still block `git push`; it is local config, not committed); scripts under `.claude/skills/pr-self-review/scripts/` stay. Update the `AGENTS.md` "Use when" line and `specs/pr-self-review-skill.md` to say *manual-only*. Confirm the skill frontmatter does not auto-invoke on push.
 - **Check (by hand, in L8):** `git push --dry-run` is no longer blocked; run `/pr-self-review` on a diff that touches `client/` **and** `server/` and confirm the routing loads both skill sets (`references/routing.md`).
 - **Commit:** `chore(skills): pr-self-review is manual-only; drop the push hook`
 

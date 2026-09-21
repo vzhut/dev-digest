@@ -32,9 +32,11 @@ nothing.
 /pr-self-review --quiet              # verdict + CRITICAL only (what the hooks use)
 ```
 
-It also runs when a `git push`, `gh pr create`, `gh pr merge` or `gh pr ready` is blocked by
-the `PreToolUse` hook in `.claude/settings.json`. The hook itself never reviews anything: it
-just checks whether a PASS marker exists for the exact current diff, and blocks if not.
+It is **manual-only**: nothing in this repo runs it automatically. The `PreToolUse` hook and the git
+`pre-push` hook that used to gate `git push` / `gh pr create` / `gh pr merge` are switched off (the hook
+registration is gone from `.claude/settings.json`, `core.hooksPath` is unset). The scripts stay in
+`scripts/` — to re-enable the gate, restore the `PreToolUse` entry and run
+`git config core.hooksPath .claude/skills/pr-self-review/scripts`. Run the skill before publishing work.
 
 ## Tiers
 
