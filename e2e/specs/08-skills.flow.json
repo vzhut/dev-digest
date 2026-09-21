@@ -128,10 +128,26 @@
     {
       "cmd": [
         "wait",
+        "--text",
+        "api-contract-gate"
+      ],
+      "label": "the list stays beside the editor (side panel, not a page swap)"
+    },
+    {
+      "cmd": [
+        "wait",
         "--load",
         "networkidle"
       ],
       "label": "editor settles before switching tabs"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Stats"
+      ],
+      "label": "the tab bar is rendered before clicking a tab"
     },
     {
       "cmd": [
