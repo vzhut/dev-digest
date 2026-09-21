@@ -173,7 +173,7 @@ confirm in the trace that no skills block exists (that is also criterion 20).
 
 ### 4.1 The demo repo (created)
 
-[`vzhut/api-contract-demo`](https://github.com/vzhut/api-contract-demo) — **private**, a tiny Fastify + Zod runs API (typecheck and tests green on `main`). `main` is the clean baseline; both PRs stay open and are never merged. Their titles and bodies are deliberately neutral — the PR description is part of the prompt and must not hand the answer to the reviewer.
+[`vzhut/api-contract-demo`](https://github.com/vzhut/api-contract-demo) — **public**, a tiny Fastify + Zod runs API (typecheck and tests green on `main`). `main` is the clean baseline; both PRs stay open and are never merged. Their titles and bodies are deliberately neutral — the PR description is part of the prompt and must not hand the answer to the reviewer.
 
 | PR | Branch | Used for | What it does (not stated in the PR text) |
 |---|---|---|---|
@@ -189,7 +189,7 @@ The homework reuses PR #1 for the four-skill rerun (it removes a field with no d
 | # | Risk | Mitigation |
 |---|---|---|
 | R1 | **Experiment outcome is not guaranteed** — model output varies; the spec fixes the protocol, not the result. | If the baseline also catches the change, or the skilled run misses it, the *PR* is wrong: change the diff, never the criterion. Budget 2–3 attempts. |
-| R2 | ~~The real GitHub repo and PRs do not exist yet.~~ **Resolved 2026-09-21** — see §4.1. Remaining: add the repo in DevDigest and import both PRs before E1. | The repo is **private**: a mentor cannot open the PR links without access — make it public or invite them before the demo. |
+| R2 | ~~The real GitHub repo and PRs do not exist yet.~~ **Resolved 2026-09-21** — see §4.1. Remaining: add the repo in DevDigest and import both PRs before E1. | Made **public** on 2026-09-21: the server's fine-grained GitHub PAT could not read the new private repo (404 on PRs, 403 on clone). Public also lets the mentor open the PR links. |
 | R3 | L8 may surface more failures than this code-reading audit found. | Reserve time; one commit per fix. |
 | R4 | `agent_count` touches `@devdigest/shared` — two hand-synced copies. | Edit both `knowledge.ts` files; do not sync whole files (`AGENTS.md`). |
 | R5 | Removing `window.confirm` breaks existing tests that stub it. | Update them in L3, not later. |

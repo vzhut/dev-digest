@@ -75,11 +75,35 @@ case in `test/reviews.it.test.ts` and the failed-run assertion in `test/backfill
 
 ## Tool & Library Notes
 
-_No entries yet._
+
+### A fine-grained GitHub PAT only sees the repositories chosen when it was created
+
+`server/.env` (`GITHUB_TOKEN`) · `server/src/modules/repos/service.ts:55` · 2026-09-21
+
+A token starting `github_pat_` is fine-grained. A repository created after the token was issued is invisible to it,
+even the owner's own: `GET /repos/<owner>/<repo>/pulls` returns **404** (not 403) and `git clone` returns
+`403 Write access to repository not granted`. Neither message says "token scope". `gh` used a different OAuth
+token, which is why the same repo worked from the CLI. Fix: add the repo under the token's *Repository access*
+(needs Contents: read, Pull requests: read), or make the repo public. Also note the clone URL embeds the token
+(`https://x-access-token:<token>@github.com/…`), so a git error printed to the log contains it in clear text.
 
 ## Recurring Errors & Fixes
 
-_No entries yet._
+
+### A failed clone job crashes the whole API process
+
+`server/src/platform/jobs.ts:85` · `server/src/modules/repos/service.ts:98` · 2026-09-21
+
+Adding a repo the GitHub token cannot read (`POST /repos` for a private repo outside a fine-grained PAT's
+list) killed the API: the log ends with `GitError: … Write access to repository not granted … 403` and
+`Node.js v24.11.0`, after which the web app shows "network error" until `./scripts/dev.sh` is restarted.
+
+`JobRunner.enqueue` marks the row `failed`, then re-throws (`throw err`) inside the queued task, and returns that
+task as `done`. `RepoService.add` and `refresh` `await enqueue(...)` for the *insert* but discard `done`, so the
+rejection has no handler. Node 15+ turns an unhandled rejection into a process exit. The same pattern applies to
+every other caller of `enqueue`. Until callers attach a handler (or the runner swallows after recording the
+failure), a bad token, a deleted repo or a network blip on any job kind takes the server down. Repro:
+`POST /repos {url: "https://github.com/<owner>/<private-repo-outside-the-token>"}`.
 
 ## Session Notes
 
