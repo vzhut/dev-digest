@@ -87,4 +87,5 @@ Only Postgres runs in Docker (`docker-compose.yml`); API and web run on the host
 - Working inside a package → read that package's AGENTS.md: `server/AGENTS.md`, `client/AGENTS.md`, `reviewer-core/AGENTS.md`, `e2e/AGENTS.md`
 - Agent prompt templates, prompt assembly, output schema, scoring → read `docs/agent-prompts/`
 - Cross-package behaviour specs → read `specs/` · cross-package findings → read/append `INSIGHTS.md`
+- Before publishing work (push, PR create/merge) → the `pr-self-review` skill gates it; a `PreToolUse` hook blocks the command until that exact diff has a PASS. Spec: `specs/pr-self-review-skill.md`
 - Project skills catalog (Fastify, Drizzle, Next, Zod, …) → read `.claude/skills/README.md` (each `SKILL.md` is plain markdown any agent can follow)
