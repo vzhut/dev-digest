@@ -149,6 +149,8 @@ export const SkillImportPreview = z.object({
   included_files: z.array(z.string()),
   /** Everything else in the archive — listed, never read, never executed. */
   ignored_files: z.array(z.string()),
+  /** A skill with this name already exists in the workspace (D7). Set by the server, not the parser. */
+  name_taken: z.boolean().default(false),
 });
 export type SkillImportPreview = z.infer<typeof SkillImportPreview>;
 
