@@ -182,6 +182,14 @@ export class ReviewRepository {
     return runRepo.saveRunTrace(this.db, runId, trace);
   }
 
+  agentSkillLinks(agentId: string) {
+    return runRepo.agentSkillLinks(this.db, agentId);
+  }
+
+  insertRunSkills(runId: string, skillIds: string[]): Promise<void> {
+    return runRepo.insertRunSkills(this.db, runId, skillIds);
+  }
+
   getRunTrace(runId: string): Promise<RunTrace | undefined> {
     return runRepo.getRunTrace(this.db, runId);
   }

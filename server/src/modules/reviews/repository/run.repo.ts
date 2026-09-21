@@ -206,3 +206,34 @@ export async function getRunTrace(db: Db, runId: string): Promise<RunTrace | und
   const [row] = await db.select().from(t.runTraces).where(eq(t.runTraces.runId, runId));
   return row ? (row.trace as RunTrace) : undefined;
 }
+
+// ---- skills attribution (§5.4 / §3.3) --------------------------------------
+
+/** All skills linked to an agent with both enabled flags; gating/ordering is in helpers.resolveRunSkills. */
+export async function agentSkillLinks(db: Db, agentId: string) {
+  const rows = await db
+    .select({
+      order: t.agentSkills.order,
+      linkEnabled: t.agentSkills.enabled,
+      skill: {
+        id: t.skills.id,
+        name: t.skills.name,
+        body: t.skills.body,
+        source: t.skills.source,
+        enabled: t.skills.enabled,
+      },
+    })
+    .from(t.agentSkills)
+    .innerJoin(t.skills, eq(t.agentSkills.skillId, t.skills.id))
+    .where(eq(t.agentSkills.agentId, agentId));
+  return rows;
+}
+
+/** Record which skills were in a run's prompt (idempotent). */
+export async function insertRunSkills(db: Db, runId: string, skillIds: string[]): Promise<void> {
+  if (skillIds.length === 0) return;
+  await db
+    .insert(t.runSkills)
+    .values(skillIds.map((skillId) => ({ runId, skillId })))
+    .onConflictDoNothing();
+}

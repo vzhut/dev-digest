@@ -84,3 +84,32 @@ export function isConfigChange(
     patch.outputSchema !== undefined
   );
 }
+
+/** One entry of an agent's skill set; array index = `order`. */
+export interface SkillSetItem {
+  skill_id: string;
+  enabled: boolean;
+}
+
+/** Request body of POST /agents/:id/skills (any of the three accepted shapes). */
+export interface SetSkillsBodyInput {
+  skills?: { skill_id: string; enabled?: boolean }[];
+  skill_ids?: string[];
+  skill_id?: string;
+  order?: number;
+}
+
+export type NormalizedSkillsBody =
+  | { kind: 'set'; items: SkillSetItem[] }
+  | { kind: 'link'; skillId: string; order?: number };
+
+/** `skills` (per-item enabled) wins over `skill_ids` (all enabled) over single `skill_id`. */
+export function normalizeSkillsBody(body: SetSkillsBodyInput): NormalizedSkillsBody {
+  if (body.skills !== undefined) {
+    return { kind: 'set', items: body.skills.map((s) => ({ skill_id: s.skill_id, enabled: s.enabled ?? true })) };
+  }
+  if (body.skill_ids !== undefined) {
+    return { kind: 'set', items: body.skill_ids.map((skill_id) => ({ skill_id, enabled: true })) };
+  }
+  return { kind: 'link', skillId: body.skill_id!, ...(body.order !== undefined ? { order: body.order } : {}) };
+}
