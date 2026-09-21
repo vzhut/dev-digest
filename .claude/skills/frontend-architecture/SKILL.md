@@ -234,6 +234,7 @@ These are known and deliberate. Don't "fix" them in an unrelated change, and don
 - **`components/mermaid-diagram/` has no consumer at all** — kept pending a product decision.
 - **`components/showcase/`** is rendered only by `src/test/smoke.test.tsx`; its labels are English on purpose.
 - **`src/vendor/ui/`** is exempt from everything here, including the inline-styles rule. It is vendored — don't edit it.
+  The one sanctioned exception is **`src/vendor/ui/nav.ts`**: the sidebar entries (Skills, Agents, and the homework's Conventions) are app wiring, so adding or moving an item there is a deliberate one-line edit — say so in the commit body.
 
 Everything the v1.0.0 version of this skill listed as debt (fat pages, `'use client'` on a thin page, deep
 relative imports, the `lib/hooks` barrel, default-exported components) has since been fixed; see
