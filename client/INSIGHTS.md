@@ -93,6 +93,20 @@ borderLeftColor: sevColor,
 
 Check it with `pnpm test 2>&1 | grep -c "Updating a style property"`, which should print 0.
 
+### `apiFetch` labelled every body as JSON, so browser file uploads failed while curl and unit tests passed
+
+`client/src/lib/api.ts:36` · `client/src/lib/hooks/skills.ts:112` · 2026-09-21
+
+Importing `breaking-change-checklist.zip` through the UI showed "Request body size did not match Content-Length"
+(a `.md` fared no better: "Body is not valid JSON but content-type is set to 'application/json'"). The same file
+posted with `curl -F` returned 200, and every test was green: the drawer tests mock `useImportPreview`, and the
+server tests post multipart directly, so nothing exercised the one place the header is decided.
+
+`apiFetch` adds `content-type: application/json` whenever `init.body != null`. A `FormData` body needs the browser
+to write `multipart/form-data; boundary=…` itself; a hand-set JSON header overrides it and Fastify parses binary
+multipart bytes as JSON. Fixed by skipping the header for `FormData` (`api.test.ts` pins it). Reproduce without a
+browser: `curl -H 'content-type: application/json' --data-binary @x.zip $API/skills/import/preview`.
+
 ## Session Notes
 
 ### 2026-09-20 — client improvement plan finished
