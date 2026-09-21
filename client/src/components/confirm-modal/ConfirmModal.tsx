@@ -5,6 +5,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Button, Modal } from "@devdigest/ui";
+import { s } from "./styles";
 
 const WIDTH = 440;
 
@@ -32,7 +33,7 @@ export function ConfirmModal({
       title={title}
       onClose={pending ? undefined : onClose}
       footer={
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <div style={s.footer}>
           <Button kind="secondary" onClick={onClose} disabled={pending}>
             {t("actions.cancel")}
           </Button>
@@ -42,7 +43,7 @@ export function ConfirmModal({
         </div>
       }
     >
-      <p style={{ margin: 0, padding: "18px 24px", fontSize: 13.5, lineHeight: 1.5, color: "var(--text-secondary)" }}>{body}</p>
+      <p style={s.body}>{body}</p>
     </Modal>
   );
 }
