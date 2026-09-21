@@ -37,13 +37,13 @@ describe('skills helpers', () => {
   it('maps rows to snake_case DTOs', () => {
     const dto = toSkillDto({
       id: 'i', workspaceId: 'w', name: 'n', description: 'd', type: 'rubric', source: 'manual',
-      body: 'b', enabled: true, version: 2, evidenceFiles: null, createdAt: new Date(),
+      body: 'b', enabled: true, version: 2, evidenceFiles: null, versionMessage: 'why', createdAt: new Date(),
     } as never);
     expect(dto).toEqual({
       id: 'i', name: 'n', description: 'd', type: 'rubric', source: 'manual',
-      body: 'b', enabled: true, version: 2, evidence_files: null,
+      body: 'b', enabled: true, version: 2, evidence_files: null, message: 'why',
     });
-    const v = toSkillVersionDto({ skillId: 's', version: 1, body: 'x', createdAt: new Date('2026-01-01T00:00:00Z') });
-    expect(v).toEqual({ skill_id: 's', version: 1, body: 'x', created_at: '2026-01-01T00:00:00.000Z' });
+    const v = toSkillVersionDto({ skillId: 's', version: 1, body: 'x', message: null, createdAt: new Date('2026-01-01T00:00:00Z') });
+    expect(v).toEqual({ skill_id: 's', version: 1, body: 'x', message: null, created_at: '2026-01-01T00:00:00.000Z' });
   });
 });

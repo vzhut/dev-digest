@@ -128,6 +128,8 @@ export const Skill = z.object({
   enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
+  /** Message of the current version (why it was saved). */
+  message: z.string().nullish(),
 });
 export type Skill = z.infer<typeof Skill>;
 
@@ -135,6 +137,7 @@ export const SkillVersion = z.object({
   skill_id: z.string(),
   version: z.number().int(),
   body: z.string(),
+  message: z.string().nullish(),
   created_at: z.string(),
 });
 export type SkillVersion = z.infer<typeof SkillVersion>;

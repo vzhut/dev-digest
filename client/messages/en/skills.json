@@ -176,7 +176,10 @@
     "savedToast": "Skill saved (v{version})",
     "delete": "Delete",
     "confirmDelete": "Delete skill \"{name}\"? Agents using it will lose it.",
-    "deleted": "Skill deleted"
+    "deleted": "Skill deleted",
+    "message": "Version message",
+    "messageHint": "Required. Describe what you changed and why — it labels this version in the history.",
+    "messagePlaceholder": "e.g. Tighten the auth check wording"
   },
   "previewTab": {
     "empty": "This skill has no body yet."
@@ -192,7 +195,8 @@
     "restoring": "Restoring…",
     "restored": "Restored as a new version",
     "diffTitle": "Changes from v{version} to the current body",
-    "noChanges": "Identical to the current body."
+    "noChanges": "Identical to the current body.",
+    "noMessage": "(no message)"
   },
   "card": {
     "noDescription": "No description",

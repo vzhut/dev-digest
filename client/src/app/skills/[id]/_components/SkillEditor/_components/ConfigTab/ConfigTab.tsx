@@ -8,7 +8,7 @@ import type { Skill, SkillType } from "@devdigest/shared";
 import { useUpdateSkill, useDeleteSkill } from "@/lib/hooks/skills";
 import { useToast } from "@/lib/toast";
 import { SKILL_TYPES } from "./constants";
-import { canSave, formFromSkill, type SkillForm } from "./helpers";
+import { canSave, formFromSkill, isDirty, type SkillForm } from "./helpers";
 import { s } from "./styles";
 
 /** Config tab — name, directive description, type, markdown body, global enabled, save/delete. */
@@ -20,6 +20,8 @@ export function ConfigTab({ skill }: { skill: Skill }) {
   const del = useDeleteSkill();
   // Parent keys this component by skill id + version, so it remounts with fresh values.
   const [form, setForm] = React.useState(() => formFromSkill(skill));
+  const [message, setMessage] = React.useState("");
+  const dirty = isDirty(form, skill);
   const set =
     <K extends keyof SkillForm>(key: K) =>
     (value: SkillForm[K]) =>
@@ -29,8 +31,13 @@ export function ConfigTab({ skill }: { skill: Skill }) {
 
   const save = () =>
     update.mutate(
-      { id: skill.id, patch: form },
-      { onSuccess: (data) => toast.success(t("config.savedToast", { version: data.version })) },
+      { id: skill.id, patch: { ...form, message: message.trim() } },
+      {
+        onSuccess: (data) => {
+          setMessage("");
+          toast.success(t("config.savedToast", { version: data.version }));
+        },
+      },
     );
 
   const remove = () => {
@@ -64,8 +71,13 @@ export function ConfigTab({ skill }: { skill: Skill }) {
       <FormField label={t("config.body")} hint={t("config.bodyHint")}>
         <Textarea value={form.body} onChange={set("body")} rows={14} mono />
       </FormField>
+      {dirty && (
+        <FormField label={t("config.message")} hint={t("config.messageHint")} required>
+          <TextInput value={message} onChange={setMessage} placeholder={t("config.messagePlaceholder")} />
+        </FormField>
+      )}
       <div style={s.actions}>
-        <Button kind="primary" icon="Check" onClick={save} disabled={update.isPending || !canSave(form)}>
+        <Button kind="primary" icon="Check" onClick={save} disabled={update.isPending || !dirty || !canSave(form, message)}>
           {update.isPending ? t("config.saving") : t("config.save")}
         </Button>
         <Button kind="secondary" icon="Trash" onClick={remove} disabled={del.isPending}>

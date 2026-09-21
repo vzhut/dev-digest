@@ -1,6 +1,6 @@
 import type { Container } from '../../platform/container.js';
 import type { Skill, SkillStats, SkillType, SkillVersion } from '@devdigest/shared';
-import { AppError, NotFoundError } from '../../platform/errors.js';
+import { AppError, NotFoundError, ValidationError } from '../../platform/errors.js';
 import { SkillsRepository, type SkillPatch, type SkillRow } from './repository.js';
 import {
   bodyChanged,
@@ -32,6 +32,8 @@ export interface UpdateSkillInput {
   type?: SkillType;
   body?: string;
   enabled?: boolean;
+  /** Required (non-blank) when the body changes — it labels the new version. */
+  message?: string;
 }
 
 export interface ImportedSkillInput {
@@ -90,6 +92,7 @@ export class SkillsService {
       description: input.description,
       type: input.type,
       body: input.body,
+      message: 'Imported update',
     });
     if (!updated) throw new NotFoundError('Skill not found');
     return updated;
@@ -108,7 +111,12 @@ export class SkillsService {
     if (input.type !== undefined) patch.type = input.type;
     if (input.enabled !== undefined) patch.enabled = input.enabled;
     const changed = bodyChanged(current.body, input.body);
-    if (changed) patch.body = input.body as string;
+    if (changed) {
+      const message = input.message?.trim();
+      if (!message) throw new ValidationError('A version message is required when the body changes');
+      patch.body = input.body as string;
+      patch.versionMessage = message;
+    }
     try {
       const row = await this.repo.update(workspaceId, id, patch, changed);
       return row ? toSkillDto(row) : undefined;
@@ -133,10 +141,14 @@ export class SkillsService {
     workspaceId: string,
     id: string,
     version: number,
+    message?: string,
   ): Promise<Skill | undefined> {
     const old = await this.repo.getVersion(workspaceId, id, version);
     if (!old) return undefined;
-    return this.update(workspaceId, id, { body: old.body });
+    return this.update(workspaceId, id, {
+      body: old.body,
+      message: message?.trim() || `Restored from v${version}`,
+    });
   }
 
   /** 30-day stats over runs that really carried this skill. undefined when unknown skill. */

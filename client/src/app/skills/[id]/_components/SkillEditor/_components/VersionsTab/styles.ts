@@ -15,7 +15,8 @@ export const s = {
     background: "var(--bg-elevated)",
     marginBottom: 8,
   } satisfies CSSProperties,
-  rowDate: { fontSize: 12, color: "var(--text-muted)", flex: 1 } satisfies CSSProperties,
+  rowDate: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  rowMessage: { fontSize: 13, color: "var(--text-secondary)", flex: 1 } satisfies CSSProperties,
   diff: {
     margin: "0 0 12px",
     padding: 10,

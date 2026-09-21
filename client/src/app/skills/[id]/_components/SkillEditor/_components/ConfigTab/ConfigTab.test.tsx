@@ -43,11 +43,33 @@ describe("Skill ConfigTab", () => {
     expect(screen.getByText(/when does this skill apply/i)).toBeInTheDocument();
   });
 
-  it("saves the edited form", () => {
+  it("hides the version message until something changes, and Save is disabled", () => {
+    wrap(<ConfigTab skill={SKILL} />);
+    expect(screen.queryByText("Version message")).not.toBeInTheDocument();
+    expect(screen.getByText("Save skill").closest("button")).toBeDisabled();
+  });
+
+  it("requires a version message once a field changes", () => {
     wrap(<ConfigTab skill={SKILL} />);
     fireEvent.change(screen.getByDisplayValue("pr-rubric"), { target: { value: "renamed" } });
+    expect(screen.getByText("Version message")).toBeInTheDocument();
+    const save = screen.getByText("Save skill").closest("button")!;
+    expect(save).toBeDisabled();
+    fireEvent.change(screen.getByPlaceholderText(/Tighten the auth check/), { target: { value: "   " } });
+    expect(save).toBeDisabled();
+    fireEvent.click(save);
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it("saves the edited form with the version message", () => {
+    wrap(<ConfigTab skill={SKILL} />);
+    fireEvent.change(screen.getByDisplayValue("pr-rubric"), { target: { value: "renamed" } });
+    fireEvent.change(screen.getByPlaceholderText(/Tighten the auth check/), { target: { value: " rename for clarity " } });
     fireEvent.click(screen.getByText("Save skill"));
     expect(mutate).toHaveBeenCalledTimes(1);
-    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ id: "s1", patch: { name: "renamed", body: "# Rule" } });
+    expect(mutate.mock.calls[0]?.[0]).toMatchObject({
+      id: "s1",
+      patch: { name: "renamed", body: "# Rule", message: "rename for clarity" },
+    });
   });
 });

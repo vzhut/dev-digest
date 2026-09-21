@@ -28,6 +28,7 @@ export interface SkillPatch {
   type?: SkillType;
   body?: string;
   enabled?: boolean;
+  versionMessage?: string;
 }
 
 export interface SkillStatsRaw {
@@ -98,6 +99,7 @@ export class SkillsRepository {
           skillId: id,
           version: current.version,
           body: current.body,
+          message: current.versionMessage,
         });
         values.version = current.version + 1;
       }
@@ -126,6 +128,7 @@ export class SkillsRepository {
         skillId: t.skillVersions.skillId,
         version: t.skillVersions.version,
         body: t.skillVersions.body,
+        message: t.skillVersions.message,
         createdAt: t.skillVersions.createdAt,
       })
       .from(t.skillVersions)
@@ -144,6 +147,7 @@ export class SkillsRepository {
         skillId: t.skillVersions.skillId,
         version: t.skillVersions.version,
         body: t.skillVersions.body,
+        message: t.skillVersions.message,
         createdAt: t.skillVersions.createdAt,
       })
       .from(t.skillVersions)

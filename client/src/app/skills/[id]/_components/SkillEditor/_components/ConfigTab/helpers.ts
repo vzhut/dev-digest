@@ -18,7 +18,13 @@ export function formFromSkill(skill: Skill): SkillForm {
   };
 }
 
-/** Save needs a non-blank name; anything else is server-validated. */
-export function canSave(form: SkillForm): boolean {
-  return form.name.trim().length > 0;
+/** True when any config field differs from the saved skill. */
+export function isDirty(form: SkillForm, skill: Skill): boolean {
+  const saved = formFromSkill(skill);
+  return (Object.keys(saved) as (keyof SkillForm)[]).some((k) => form[k] !== saved[k]);
+}
+
+/** Save needs a non-blank name and a non-blank version message; the server validates the rest. */
+export function canSave(form: SkillForm, message: string): boolean {
+  return form.name.trim().length > 0 && message.trim().length > 0;
 }

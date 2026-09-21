@@ -17,6 +17,8 @@ export const skills = pgTable('skills', {
   enabled: boolean('enabled').notNull().default(true),
   version: integer('version').notNull().default(1),
   evidenceFiles: jsonb('evidence_files').$type<string[]>(),
+  // Message of the CURRENT version; copied onto the skill_versions snapshot when superseded.
+  versionMessage: text('version_message'),
   createdAt: now(),
 }, (t) => ({
   nameUq: uniqueIndex('skills_workspace_name_uq').on(t.workspaceId, t.name),
@@ -30,6 +32,7 @@ export const skillVersions = pgTable(
       .references(() => skills.id, { onDelete: 'cascade' }),
     version: integer('version').notNull(),
     body: text('body').notNull(),
+    message: text('message'),
     createdAt: now(),
   },
   (t) => ({ pk: primaryKey({ columns: [t.skillId, t.version] }) }),

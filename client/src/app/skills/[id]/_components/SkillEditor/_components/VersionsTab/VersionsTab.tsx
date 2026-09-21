@@ -28,6 +28,7 @@ export function VersionsTab({ skill }: { skill: Skill }) {
       <div style={s.row}>
         <Badge mono>{t("versions.version", { version: skill.version })}</Badge>
         <Badge color="var(--ok)">{t("versions.current")}</Badge>
+        {skill.message && <span style={s.rowMessage}>{skill.message}</span>}
       </div>
       {isLoading && <Skeleton height={44} />}
       {!isLoading && (versions ?? []).length === 0 && <p style={s.muted}>{t("versions.empty")}</p>}
@@ -40,6 +41,7 @@ export function VersionsTab({ skill }: { skill: Skill }) {
               <div style={s.row}>
                 <Badge mono>{t("versions.version", { version: v.version })}</Badge>
                 <span style={s.rowDate}>{new Date(v.created_at).toLocaleString()}</span>
+                <span style={s.rowMessage}>{v.message || t("versions.noMessage")}</span>
                 <Button kind="ghost" size="sm" onClick={() => setOpen(open === v.version ? null : v.version)}>
                   {open === v.version ? t("versions.hide") : t("versions.view")}
                 </Button>

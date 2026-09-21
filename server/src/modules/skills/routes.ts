@@ -40,7 +40,10 @@ const UpdateSkillBody = z.object({
   type: SkillType.optional(),
   body: z.string().optional(),
   enabled: z.boolean().optional(),
+  message: z.string().optional(),
 });
+
+const RestoreBody = z.object({ message: z.string().optional() }).nullish();
 
 export default async function skillsRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
@@ -99,10 +102,10 @@ export default async function skillsRoutes(appBase: FastifyInstance) {
 
   app.post(
     '/skills/:id/versions/:version/restore',
-    { schema: { params: VersionParams } },
+    { schema: { params: VersionParams, body: RestoreBody } },
     async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      const skill = await service.restoreVersion(workspaceId, req.params.id, req.params.version);
+      const skill = await service.restoreVersion(workspaceId, req.params.id, req.params.version, req.body?.message);
       if (!skill) throw new NotFoundError('Skill version not found');
       return skill;
     },

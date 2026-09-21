@@ -92,10 +92,10 @@ d('skills module', () => {
     await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { description: 'meta only' } });
     expect((await app.inject({ method: 'GET', url: `/skills/${s.id}/versions` })).json()).toHaveLength(0);
 
-    const put = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two' } });
-    expect(put.json()).toMatchObject({ body: 'two', version: 2 });
+    const put = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two', message: 'tighten wording' } });
+    expect(put.json()).toMatchObject({ body: 'two', version: 2, message: 'tighten wording' });
     // same body again → no new version
-    await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two' } });
+    await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two', message: 'm2' } });
 
     const versions = (await app.inject({ method: 'GET', url: `/skills/${s.id}/versions` })).json();
     expect(versions).toHaveLength(1);
@@ -103,10 +103,23 @@ d('skills module', () => {
     await app.close();
   });
 
+  it('a body change without a version message is rejected; metadata-only edits need none', async () => {
+    const app = await makeApp();
+    const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ body: 'one' }) })).json();
+    for (const message of [undefined, '   ']) {
+      const bad = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two', message } });
+      expect(bad.statusCode).toBeGreaterThanOrEqual(400);
+      expect(bad.statusCode).toBeLessThan(500);
+    }
+    const meta = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { description: 'new desc' } });
+    expect(meta.json()).toMatchObject({ version: 1 });
+    await app.close();
+  });
+
   it('restore appends a new version with the old body', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ body: 'one' }) })).json();
-    await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two' } });
+    await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two', message: 'm2' } });
 
     const restored = await app.inject({ method: 'POST', url: `/skills/${s.id}/versions/1/restore` });
     expect(restored.statusCode).toBe(200);
@@ -122,7 +135,7 @@ d('skills module', () => {
   it('delete cascades agent_skills, skill_versions and run_skills', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload() })).json();
-    await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'changed' } });
+    await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'changed', message: 'c' } });
     const workspaceId = await defaultWorkspaceId();
     const [agent] = await pg.handle.db.select().from(t.agents).limit(1);
     await pg.handle.db.insert(t.agentSkills).values({ agentId: agent!.id, skillId: s.id, order: 0 });
