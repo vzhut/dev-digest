@@ -47,3 +47,18 @@ describe('skills helpers', () => {
     expect(v).toEqual({ skill_id: 's', version: 1, body: 'x', message: null, created_at: '2026-01-01T00:00:00.000Z' });
   });
 });
+
+describe('toSkillDto agent_count', () => {
+  const row = {
+    id: 's1', workspaceId: 'w', name: 'n', description: 'd', type: 'rubric', source: 'manual', body: 'b',
+    enabled: true, version: 1, evidenceFiles: null, versionMessage: null, createdAt: new Date(),
+  } as Parameters<typeof toSkillDto>[0];
+
+  it('omits agent_count on write responses (no count given)', () => {
+    expect('agent_count' in toSkillDto(row)).toBe(false);
+  });
+  it('carries the count when given, including 0', () => {
+    expect(toSkillDto(row, 0).agent_count).toBe(0);
+    expect(toSkillDto(row, 3).agent_count).toBe(3);
+  });
+});

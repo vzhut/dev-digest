@@ -166,7 +166,7 @@ if not os.path.exists(added):
     sys.exit(0)
 
 CALL = re.compile(r"""\bt\(\s*["']([A-Za-z0-9_][A-Za-z0-9_.]*)["']\s*[,)]""")
-SCOPE = re.compile(r"""\b(?:useTranslations|getTranslations)\(\s*["']([A-Za-z0-9_.]+)["']""")
+SCOPE = re.compile(r"""\bt\s*=\s*(?:await\s+)?(?:useTranslations|getTranslations)\(\s*["']([A-Za-z0-9_.]+)["']""")
 
 scopes_cache = {}
 def scopes(path):
