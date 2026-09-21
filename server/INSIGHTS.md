@@ -54,6 +54,23 @@ inserts missing agents, so an existing workspace needs `PUT /agents/:id` (or the
 Do not judge a skill by a run on an agent whose prompt already contains the same checklist. Also expect run-to-run
 variance: the same diff gave 0 findings once and 4 blockers three times, so a single baseline run proves nothing.
 
+### Reviewing a freshly synced PR before opening it runs on an EMPTY diff and approves it
+
+`server/src/modules/reviews/diff-loader.ts:9` · `server/src/modules/pulls/routes.ts:27` · 2026-09-21
+
+Three runs started through `POST /pulls/:id/review` right after the PR list synced came back `approved`, 0 findings,
+`grounding 0/0 passed` — on a PR whose other runs found 3 issues. The tell was in the run row: `tokens_in` 994 against
+2118 for the same agent on the same PR, and `run_traces.trace->'prompt_assembly'->>'user'` was 560 characters instead of
+5751, i.e. the prompt held no diff. A calibration built on those runs ("baseline finds nothing") was wrong and was reported
+as valid before the token counts were checked.
+
+`loadDiff` tries a local `git diff base...head` and, when that throws (the shallow clone does not have the PR head yet),
+falls back to the `pr_files` patches. `GET /repos/:id/pulls` stores PR metadata only; `pr_files` is filled when the PR
+detail is opened (`GET /pulls/:id`). With neither source there is nothing to review and the model dutifully returns an
+empty findings list, which the UI shows as a clean approval. Prime it first (open the PR page, or `GET /pulls/:id`), and
+sanity-check a run: `tokens_in` and the `prompt_assembly.user` length must reflect the diff. A run with 0 findings and
+`0/0 passed` grounding is not evidence of a clean PR.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
