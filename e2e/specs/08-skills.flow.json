@@ -1,24 +1,237 @@
 {
   "name": "Skills page lists seeded skills and opens the editor",
-  "description": "Loads /skills, confirms the seeded skills render, opens one, checks the Stats empty state (no run_skills rows on a fresh seed), then checks the Test Quality Reviewer's Skills tab lists its linked skills. Read-only: no skill is created or changed, so the flows after it see the same data.",
+  "description": "Loads /skills, confirms the seeded skills render, opens one, checks the Stats empty state (no run_skills rows on a fresh seed), then checks the Test Quality Reviewer's Skills tab lists its linked skills. It also checks the card's version + agent count, the Add menu (Create opens a modal that is then cancelled) and the Versioning tab. Read-only: no skill is created or changed, so the flows after it see the same data.",
   "steps": [
-    { "cmd": ["open", "{BASE}/skills"], "label": "load the skills page" },
-    { "cmd": ["wait", "--url", "/skills"], "label": "skills route reached" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "skills fetch settles" },
-    { "cmd": ["wait", "--text", "test-coverage-nudge"], "label": "seeded skill card is visible" },
-    { "cmd": ["wait", "--text", "api-contract-gate"], "label": "second seeded skill is visible" },
-    { "cmd": ["find", "text", "test-coverage-nudge", "click"], "label": "open the skill" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "editor loads" },
-    { "cmd": ["wait", "--text", "Apply when"], "label": "directive description is shown" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "editor settles before switching tabs" },
-    { "cmd": ["find", "role", "button", "click", "--name", "Stats", "--exact"], "label": "open the Stats tab" },
-    { "cmd": ["wait", "--text", "No runs with this skill yet"], "label": "empty state, not zeros" },
-    { "cmd": ["open", "{BASE}/agents"], "label": "go to the agents page" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
-    { "cmd": ["find", "text", "Test Quality Reviewer", "click"], "label": "open the Test Quality Reviewer" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "agent editor loads" },
-    { "cmd": ["find", "role", "button", "click", "--name", "Skills", "--exact"], "label": "open the Skills tab" },
-    { "cmd": ["wait", "--text", "mocking-discipline"], "label": "linked skill is listed" },
-    { "cmd": ["wait", "--text", "2 of"], "label": "enabled counter reflects the two linked skills" }
+    {
+      "cmd": [
+        "open",
+        "{BASE}/skills"
+      ],
+      "label": "load the skills page"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/skills"
+      ],
+      "label": "skills route reached"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "skills fetch settles"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "test-coverage-nudge"
+      ],
+      "label": "seeded skill card is visible"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "api-contract-gate"
+      ],
+      "label": "second seeded skill is visible"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "1 agent"
+      ],
+      "label": "card shows how many agents use the skill"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Add Skill"
+      ],
+      "label": "open the Add Skill menu"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Import from file"
+      ],
+      "label": "menu offers Import"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Create skill",
+        "--exact"
+      ],
+      "label": "choose Create"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Create a skill"
+      ],
+      "label": "create opens a modal"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Cancel",
+        "--exact"
+      ],
+      "label": "cancel without creating anything"
+    },
+    {
+      "cmd": [
+        "find",
+        "text",
+        "test-coverage-nudge",
+        "click"
+      ],
+      "label": "open the skill"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "editor loads"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Apply when"
+      ],
+      "label": "directive description is shown"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "editor settles before switching tabs"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Stats",
+        "--exact"
+      ],
+      "label": "open the Stats tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "No runs with this skill yet"
+      ],
+      "label": "empty state, not zeros"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Versioning",
+        "--exact"
+      ],
+      "label": "open the Versioning tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Version history"
+      ],
+      "label": "history tab renders"
+    },
+    {
+      "cmd": [
+        "open",
+        "{BASE}/agents"
+      ],
+      "label": "go to the agents page"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "agents fetch settles"
+    },
+    {
+      "cmd": [
+        "find",
+        "text",
+        "Test Quality Reviewer",
+        "click"
+      ],
+      "label": "open the Test Quality Reviewer"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "agent editor loads"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Skills",
+        "--exact"
+      ],
+      "label": "open the Skills tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "mocking-discipline"
+      ],
+      "label": "linked skill is listed"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "2 of"
+      ],
+      "label": "enabled counter reflects the two linked skills"
+    }
   ]
 }
