@@ -158,6 +158,8 @@ Also update `e2e/specs/08-skills.flow.json` for the new Add menu/modal and the `
 Same agent, model and diff on both sides; **all skills disabled on the agent** vs **enabled**. Protocol in `skills.md` §8.
 **PR source (D7):** a real GitHub repo — a small test repo or fork with a Fastify service — with two real PRs.
 
+**Trap — the prompt can make the baseline non-silent.** On 2026-09-21 the baseline (no skills) still caught PR #1 in 3 of 4 runs because the seeded prompts contained the checklist; both prompts are now role-level (`server/INSIGHTS.md`). Run the baseline again after that change.
+
 **Trap — the baseline is not clean by default.** The seed already links `api-contract-gate`, `test-coverage-nudge`
 and `mocking-discipline`. For the "without skills" run disable **every** skill on the agent (per-agent `enabled`) and
 confirm in the trace that no skills block exists (that is also criterion 20).
@@ -212,4 +214,5 @@ The homework reuses PR #1 for the four-skill rerun (it removes a field with no d
 | Planning | This document; decisions D1–D8. Demo repo `vzhut/api-contract-demo` and both PRs created (§4.1). |
 | Implementation | L1 `54ed53d`, L10 `bf4be8c`, L9 `d14b3ac`, L7 `c84e610`, L2 `9b55905`, L3 `d5426d1`, L4 `bcf712a`, L5 `16dd8f1`, L6 `757b43a`, all on `lesson-02-laba`. Extras: `frontend-architecture` names `vendor/ui/nav.ts` as the one sanctioned vendor edit; `pr-self-review` v1.2.1 (R11 false positive — a second translator variable overrode the `t` scope, 12 bogus CRITICALs). Local `core.hooksPath` also unset (L9). |
 | Validation | client 176 tests + typecheck, server 133 unit + 51 integration + typecheck, e2e 8/8 (skills flow extended: card version/agent count, Add menu, Versioning tab, list beside editor), `pr-self-review --base 0d22f74`: gates clean, skill review PASS (one MEDIUM — ConfirmModal inline styles — fixed). **Verified by reading/tests:** 3, 4, 5 (skill contents), 8 and 33 (new `.it.test` against Postgres), 35, 36. **Still owed:** manual browser pass for 10, 14, 20 and the E1 runs for 16, 17, 18. |
+| Manual pass (2026-09-21) | Checklist steps S1–E4 walked by the author. Found and fixed: import upload failed in the browser (`apiFetch` sent JSON content-type for FormData, `fb0c4b1`); the E2 baseline was not silent (prompts trimmed to role level, DB agents updated via `PUT /agents/:id`, agent version 2). Steps to redo: B5–B8, D7–D8, E2–E10. |
 | Completion | — |

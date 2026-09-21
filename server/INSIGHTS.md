@@ -38,6 +38,22 @@ actually landed rather than trusting a clean `pnpm db:migrate`.
 
 **Update 2026-09-17:** `seed.ts` now uses the same `pathToFileURL` guard. It showed up as a real failure: `./scripts/e2e.sh` ran `pnpm db:seed` against the isolated Postgres. That step printed only the pnpm banner, with no "✓ seeded", and exited 0. The API then answered every request with `No system user found — run \`pnpm db:seed\`.`, and all 7 e2e flows failed. The tell is a missing "✓ seeded" line. After the fix, 7/7 flows pass.
 
+### A detailed reviewer prompt makes the with/without-skills experiment vacuous
+
+`server/src/db/seed-prompts.ts` (`API_CONTRACT_REVIEWER_PROMPT`) · `docs/agent-prompts/api-contract-reviewer.md` · 2026-09-21
+
+With every skill unticked, API Contract Reviewer still flagged the `cost_usd → costUsd` rename, the removed
+`tokens_out` and the moved route on PR #1 in 3 of 4 runs (2, 0, 4 and 4 blockers), so the baseline was not silent and
+the control experiment (criteria 17/18) could show no difference. The cause was the prompt itself: its "What to look
+for" list was the breaking-change checklist, with `cost_usd` → `costUsd` as a literal example, and the severity levels
+defined CRITICAL as exactly those changes. Test Quality Reviewer had the same shape (uncovered branches, boundaries).
+
+Skills only add signal when the prompt leaves room for them. Both prompts are now role-level: who you are, scope,
+severity and verdict conventions, and "apply the rules in Skills / rules". The DB row is what runs, and the seed only
+inserts missing agents, so an existing workspace needs `PUT /agents/:id` (or the Config tab) to pick the change up.
+Do not judge a skill by a run on an agent whose prompt already contains the same checklist. Also expect run-to-run
+variance: the same diff gave 0 findings once and 4 blockers three times, so a single baseline run proves nothing.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
