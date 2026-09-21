@@ -7,14 +7,16 @@
     "searchPlaceholder": "Search skills…",
     "loadError": "Could not load skills.",
     "menu": {
+      "create": "Create skill",
+      "import": "Import from file",
       "fromFile": "Import from file",
       "fromUrl": "Import from URL",
       "community": "Search community skills…"
     },
     "empty": {
       "title": "No skills yet",
-      "body": "Import a skill from a file, a URL, or the community catalog.",
-      "cta": "Import from file"
+      "body": "Create a skill by hand, or use Add Skill → Import from file to bring one in.",
+      "cta": "Create skill"
     },
     "selectPrompt": {
       "title": "Select a skill",
@@ -50,10 +52,10 @@
     }
   },
   "add": {
-    "title": "Add a skill",
-    "subtitle": "Create one by hand or import a .md file or .zip archive",
-    "modeManual": "Create manually",
-    "modeImport": "Import from file",
+    "title": "Import a skill",
+    "subtitle": "Upload a .md file or .zip archive",
+    "createTitle": "Create a skill",
+    "createSubtitle": "Write a skill by hand — it is added to the workspace, ready to attach to agents",
     "name": "Name",
     "namePlaceholder": "pr-quality-rubric",
     "description": "Description",

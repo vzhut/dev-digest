@@ -15,7 +15,12 @@ const SKILLS: Skill[] = [
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/app-shell", () => ({ AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("@/lib/toast", () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn() }) }));
-vi.mock("./_components/AddSkillDrawer", () => ({ AddSkillDrawer: () => null }));
+vi.mock("./_components/AddSkillDrawer", () => ({
+  AddSkillDrawer: ({ open }: { open: boolean }) => (open ? <div data-testid="import-drawer" /> : null),
+}));
+vi.mock("./_components/CreateSkillModal", () => ({
+  CreateSkillModal: () => <div role="dialog" aria-label="create-skill" />,
+}));
 vi.mock("@/lib/hooks/skills", () => ({
   useSkills: () => ({ data: SKILLS, isLoading: false, isError: false, refetch: vi.fn() }),
   useUpdateSkill: () => ({ mutate: vi.fn() }),
@@ -65,5 +70,24 @@ describe("SkillsListView delete", () => {
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));
     expect(deleteMutate).toHaveBeenCalledWith("s2", expect.anything());
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("SkillsListView add menu", () => {
+  it("Add Skill offers Create and Import; Create opens the modal, Import the drawer", () => {
+    wrap(<SkillsListView />);
+    expect(screen.queryByText("Import from file")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Add Skill/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Create skill" }));
+    expect(screen.getByRole("dialog", { name: "create-skill" })).toBeInTheDocument();
+    expect(screen.queryByTestId("import-drawer")).toBeNull();
+  });
+
+  it("Import opens the drawer, not the create modal", () => {
+    wrap(<SkillsListView />);
+    fireEvent.click(screen.getByRole("button", { name: /Add Skill/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Import from file" }));
+    expect(screen.getByTestId("import-drawer")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "create-skill" })).toBeNull();
   });
 });
