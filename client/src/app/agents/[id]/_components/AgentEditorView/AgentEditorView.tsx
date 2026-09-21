@@ -12,9 +12,10 @@ import { apiErrorMessage } from "@/lib/api";
 import { useSetSearchParam } from "@/lib/search-params";
 import { AgentCard } from "../../../_components/AgentCard";
 import { AgentEditor } from "../AgentEditor";
+import { TABS } from "../AgentEditor/constants";
 import { s } from "./styles";
 
-const VALID_TABS = ["config"];
+const VALID_TABS: string[] = TABS.map((tb) => tb.key);
 
 export function AgentEditorView() {
   const t = useTranslations("agents");

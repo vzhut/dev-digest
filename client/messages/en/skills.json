@@ -30,6 +30,58 @@
       "body": "It may have been deleted."
     }
   },
+  "stats": {
+    "loadError": "Could not load stats.",
+    "usedBy": "USED BY",
+    "usedByValue": "{count, plural, one {# agent} other {# agents}}",
+    "agentsUsing": "AGENTS USING THIS SKILL",
+    "agentEnabled": "enabled",
+    "agentDisabled": "disabled",
+    "noAgents": "No agent links this skill yet.",
+    "runs": "RUNS (30d)",
+    "findings": "FINDINGS (30d)",
+    "acceptRate": "ACCEPT RATE",
+    "unknown": "—",
+    "caveat": "Findings from runs where this skill was part of the prompt. An agent's other skills shared those runs — this is not a per-skill attribution.",
+    "byCategory": "FINDINGS BY CATEGORY",
+    "empty": {
+      "title": "No runs with this skill yet",
+      "body": "Stats appear after an agent with this skill enabled completes a run."
+    }
+  },
+  "add": {
+    "title": "Add a skill",
+    "subtitle": "Create one by hand or import a .md file or .zip archive",
+    "modeManual": "Create manually",
+    "modeImport": "Import from file",
+    "name": "Name",
+    "namePlaceholder": "pr-quality-rubric",
+    "description": "Description",
+    "descriptionHint": "Write it as an instruction to the agent: when does this skill apply?",
+    "type": "Type",
+    "body": "Skill body (Markdown)",
+    "create": "Create skill",
+    "creating": "Creating…",
+    "cancel": "Cancel",
+    "pickFile": "Choose a .md or .zip file",
+    "fileHint": "Nothing is saved until you confirm the preview.",
+    "parsing": "Reading file…",
+    "failed": "Could not add the skill.",
+    "preview": {
+      "title": "Import preview",
+      "included": "Included (merged into the body)",
+      "ignored": "Ignored files",
+      "ignoredNote": "Listed only — not imported, not executed.",
+      "none": "none",
+      "nameTaken": "A skill named \"{name}\" already exists.",
+      "renameLabel": "Save under a different name",
+      "updateExisting": "Update the existing skill with a new version instead",
+      "confirm": "Confirm import",
+      "confirmUpdate": "Update existing skill",
+      "confirming": "Saving…",
+      "disabledNotice": "The imported skill is saved disabled — vet it, then enable it by hand."
+    }
+  },
   "drawer": {
     "title": "Add a skill",
     "subtitle": "Import from a file, a URL, or search vetted community skills",
@@ -97,5 +149,53 @@
     "bodyLabel": "Skill body (Markdown)",
     "bodyHint": "Saving a changed body creates a new immutable version.",
     "version": "v{version}"
+  },
+  "editor": {
+    "skillFallback": "Skill",
+    "listTitle": "Skills",
+    "add": "Add Skill",
+    "tabs": {
+      "config": "Config",
+      "preview": "Preview",
+      "stats": "Stats",
+      "versions": "Versions"
+    }
+  },
+  "config": {
+    "title": "Configuration",
+    "name": "Name",
+    "description": "Description",
+    "descriptionHint": "Write it as an instruction to the agent: when does this skill apply? This is the interface other agents see.",
+    "type": "Type",
+    "body": "Skill body (Markdown)",
+    "bodyHint": "Saving a changed body creates a new immutable version.",
+    "enabled": "Enabled",
+    "save": "Save skill",
+    "saving": "Saving…",
+    "saved": "Saved (v{version})",
+    "savedToast": "Skill saved (v{version})",
+    "delete": "Delete",
+    "confirmDelete": "Delete skill \"{name}\"? Agents using it will lose it.",
+    "deleted": "Skill deleted"
+  },
+  "previewTab": {
+    "empty": "This skill has no body yet."
+  },
+  "versions": {
+    "title": "Version history",
+    "empty": "No earlier versions yet. A new version is created whenever the body changes.",
+    "current": "current",
+    "version": "v{version}",
+    "view": "Show diff",
+    "hide": "Hide diff",
+    "restore": "Restore",
+    "restoring": "Restoring…",
+    "restored": "Restored as a new version",
+    "diffTitle": "Changes from v{version} to the current body",
+    "noChanges": "Identical to the current body."
+  },
+  "card": {
+    "noDescription": "No description",
+    "enabledToggle": "Toggle skill enabled"
   }
 }
