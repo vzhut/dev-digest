@@ -24,7 +24,7 @@ export function isDirty(form: SkillForm, skill: Skill): boolean {
   return (Object.keys(saved) as (keyof SkillForm)[]).some((k) => form[k] !== saved[k]);
 }
 
-/** Save needs a non-blank name and a non-blank version message; the server validates the rest. */
-export function canSave(form: SkillForm, message: string): boolean {
-  return form.name.trim().length > 0 && message.trim().length > 0;
+/** Save needs a non-blank name; the version message is optional and the server validates the rest. */
+export function canSave(form: SkillForm): boolean {
+  return form.name.trim().length > 0;
 }

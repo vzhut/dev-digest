@@ -1,6 +1,6 @@
 import type { Container } from '../../platform/container.js';
 import type { Skill, SkillStats, SkillType, SkillVersion } from '@devdigest/shared';
-import { AppError, NotFoundError, ValidationError } from '../../platform/errors.js';
+import { AppError, NotFoundError } from '../../platform/errors.js';
 import { SkillsRepository, type SkillPatch, type SkillRow } from './repository.js';
 import {
   bodyChanged,
@@ -32,7 +32,7 @@ export interface UpdateSkillInput {
   type?: SkillType;
   body?: string;
   enabled?: boolean;
-  /** Required (non-blank) when the body changes — it labels the new version. */
+  /** Optional label for the new version (only used when the body changes). */
   message?: string;
 }
 
@@ -112,10 +112,9 @@ export class SkillsService {
     if (input.enabled !== undefined) patch.enabled = input.enabled;
     const changed = bodyChanged(current.body, input.body);
     if (changed) {
-      const message = input.message?.trim();
-      if (!message) throw new ValidationError('A version message is required when the body changes');
       patch.body = input.body as string;
-      patch.versionMessage = message;
+      // Blank → null: the history then shows "(no message)" instead of an empty label.
+      patch.versionMessage = input.message?.trim() || null;
     }
     try {
       const row = await this.repo.update(workspaceId, id, patch, changed);

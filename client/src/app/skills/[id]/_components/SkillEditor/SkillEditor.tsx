@@ -14,11 +14,11 @@ import { s } from "./styles";
 
 export function SkillEditor({ skill, tab, onTab }: { skill: Skill; tab: string; onTab: (t: string) => void }) {
   const t = useTranslations("skills");
-  const tabs = TABS.map((tb) => ({ key: tb.key, label: t(tb.labelKey), icon: tb.icon }));
+  const tabs = TABS.map((tb) => ({ key: tb.key, label: t(tb.labelKey) }));
   return (
     <div style={s.wrap}>
       <div style={s.tabsBar}>
-        <Tabs tabs={tabs} value={tab} onChange={onTab} pad="0 24px" />
+        <Tabs tabs={tabs} value={tab} onChange={onTab} pad="0 28px" />
       </div>
       <div style={s.body}>
         {tab === "config" && <ConfigTab key={`${skill.id}:${skill.version}`} skill={skill} />}

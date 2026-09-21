@@ -14,3 +14,21 @@ export function hasNoRuns(stats: SkillStats): boolean {
 export function maxCategoryCount(cats: SkillStats["findings_by_category"]): number {
   return Math.max(1, ...cats.map((c) => c.count));
 }
+
+/** Palette cycled across category segments in the donut. */
+export const CATEGORY_COLORS = [
+  "var(--crit)",
+  "var(--warn)",
+  "var(--accent)",
+  "var(--info)",
+  "var(--ok)",
+  "var(--sugg)",
+];
+
+export function categorySegments(cats: SkillStats["findings_by_category"]) {
+  return cats.map((c, i) => ({
+    label: c.category,
+    value: c.count,
+    color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] ?? "var(--accent)",
+  }));
+}

@@ -28,7 +28,7 @@ export interface SkillPatch {
   type?: SkillType;
   body?: string;
   enabled?: boolean;
-  versionMessage?: string;
+  versionMessage?: string | null;
 }
 
 export interface SkillStatsRaw {

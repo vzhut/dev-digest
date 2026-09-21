@@ -103,16 +103,18 @@ d('skills module', () => {
     await app.close();
   });
 
-  it('a body change without a version message is rejected; metadata-only edits need none', async () => {
+  it('the version message is optional: blank/absent stores null, metadata-only edits are unaffected', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ body: 'one' }) })).json();
-    for (const message of [undefined, '   ']) {
-      const bad = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two', message } });
-      expect(bad.statusCode).toBeGreaterThanOrEqual(400);
-      expect(bad.statusCode).toBeLessThan(500);
-    }
+    const none = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'two' } });
+    expect(none.statusCode).toBe(200);
+    expect(none.json()).toMatchObject({ version: 2, message: null });
+    const blank = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'three', message: '   ' } });
+    expect(blank.json()).toMatchObject({ version: 3, message: null });
+    const kept = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { body: 'four', message: ' why ' } });
+    expect(kept.json()).toMatchObject({ version: 4, message: 'why' });
     const meta = await app.inject({ method: 'PUT', url: `/skills/${s.id}`, payload: { description: 'new desc' } });
-    expect(meta.json()).toMatchObject({ version: 1 });
+    expect(meta.json()).toMatchObject({ version: 4, message: 'why' });
     await app.close();
   });
 

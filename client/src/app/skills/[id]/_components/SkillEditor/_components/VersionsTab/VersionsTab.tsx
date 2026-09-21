@@ -22,34 +22,60 @@ export function VersionsTab({ skill }: { skill: Skill }) {
   const doRestore = (version: number) =>
     restore.mutate({ id: skill.id, version }, { onSuccess: () => toast.success(t("versions.restored")) });
 
+  const older = (versions ?? []).filter((v) => v.version !== skill.version);
+
   return (
     <div style={s.wrap}>
-      <h2 style={s.h2}>{t("versions.title")}</h2>
-      <div style={s.row}>
-        <Badge mono>{t("versions.version", { version: skill.version })}</Badge>
-        <Badge color="var(--ok)">{t("versions.current")}</Badge>
-        {skill.message && <span style={s.rowMessage}>{skill.message}</span>}
+      <div style={s.head}>
+        <h2 style={s.h2}>{t("versions.title")}</h2>
+        <Badge>{t("versions.count", { count: older.length + 1 })}</Badge>
       </div>
-      {isLoading && <Skeleton height={44} />}
-      {!isLoading && (versions ?? []).length === 0 && <p style={s.muted}>{t("versions.empty")}</p>}
-      {(versions ?? [])
-        .filter((v) => v.version !== skill.version)
-        .map((v) => {
-          const lines = open === v.version ? diffLines(v.body, skill.body) : [];
+      <p style={s.subtitle}>{t("versions.subtitle")}</p>
+      <div style={s.list}>
+        <div style={s.card}>
+          <div style={s.row}>
+            <span style={{ ...s.chip, ...s.chipCurrent }} className="mono">
+              {t("versions.version", { version: skill.version })}
+            </span>
+            <div style={s.text}>
+              <div style={skill.message ? s.title : s.titleMuted}>{skill.message || t("versions.noMessage")}</div>
+            </div>
+            <Badge dot color="var(--ok)">
+              {t("versions.current")}
+            </Badge>
+          </div>
+        </div>
+        {isLoading && <Skeleton height={44} />}
+        {!isLoading && older.length === 0 && <p style={s.muted}>{t("versions.empty")}</p>}
+        {older.map((v) => {
+          const isOpen = open === v.version;
+          const lines = isOpen ? diffLines(v.body, skill.body) : [];
           return (
-            <div key={v.version}>
+            <div key={v.version} style={s.card}>
               <div style={s.row}>
-                <Badge mono>{t("versions.version", { version: v.version })}</Badge>
-                <span style={s.rowDate}>{new Date(v.created_at).toLocaleString()}</span>
-                <span style={s.rowMessage}>{v.message || t("versions.noMessage")}</span>
-                <Button kind="ghost" size="sm" onClick={() => setOpen(open === v.version ? null : v.version)}>
-                  {open === v.version ? t("versions.hide") : t("versions.view")}
-                </Button>
-                <Button kind="secondary" size="sm" disabled={restore.isPending} onClick={() => doRestore(v.version)}>
-                  {restore.isPending ? t("versions.restoring") : t("versions.restore")}
-                </Button>
+                <span style={s.chip} className="mono">
+                  {t("versions.version", { version: v.version })}
+                </span>
+                <div style={s.text}>
+                  <div style={v.message ? s.title : s.titleMuted}>{v.message || t("versions.noMessage")}</div>
+                  <div style={s.date}>{v.created_at.slice(0, 10)}</div>
+                </div>
+                <div style={s.actions}>
+                  <Button kind="ghost" size="sm" icon="Eye" onClick={() => setOpen(isOpen ? null : v.version)}>
+                    {isOpen ? t("versions.hide") : t("versions.view")}
+                  </Button>
+                  <Button
+                    kind="secondary"
+                    size="sm"
+                    icon="History"
+                    disabled={restore.isPending}
+                    onClick={() => doRestore(v.version)}
+                  >
+                    {restore.isPending ? t("versions.restoring") : t("versions.restore")}
+                  </Button>
+                </div>
               </div>
-              {open === v.version && (
+              {isOpen && (
                 <div style={s.diff} className="mono">
                   <div style={s.diffTitle}>{t("versions.diffTitle", { version: v.version })}</div>
                   {hasChanges(lines) ? (
@@ -67,6 +93,7 @@ export function VersionsTab({ skill }: { skill: Skill }) {
             </div>
           );
         })}
+      </div>
     </div>
   );
 }

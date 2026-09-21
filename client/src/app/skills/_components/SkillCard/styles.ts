@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { TypeTint } from "./helpers";
 
 /** Co-located styles for SkillCard. */
 export const s = {
@@ -6,26 +7,29 @@ export const s = {
     padding: 14,
     borderRadius: 8,
     cursor: "pointer",
-    border: "1px solid " + (active ? "var(--border-strong)" : "var(--border)"),
+    border: "1px solid " + (active ? "var(--accent)" : "var(--border)"),
     background: active ? "var(--bg-hover)" : "var(--bg-elevated)",
-    opacity: enabled ? 1 : 0.6,
+    opacity: enabled ? 1 : 0.55,
     marginBottom: 10,
   }),
   headerRow: { display: "flex", alignItems: "center", gap: 10 } satisfies CSSProperties,
-  iconBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    background: "var(--accent-bg)",
-    color: "var(--accent)",
+  iconBox: (tint: TypeTint): CSSProperties => ({
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    background: tint.bg,
+    color: tint.fg,
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
-  } satisfies CSSProperties,
+  }),
+  source: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
   name: {
+    fontFamily: "var(--font-mono)",
     fontSize: 14,
     fontWeight: 600,
     flex: 1,
+    minWidth: 0,
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -36,7 +40,7 @@ export const s = {
     marginTop: 8,
     lineHeight: 1.4,
     display: "-webkit-box",
-    WebkitLineClamp: 2,
+    WebkitLineClamp: 1,
     WebkitBoxOrient: "vertical",
     overflow: "hidden",
   } satisfies CSSProperties,

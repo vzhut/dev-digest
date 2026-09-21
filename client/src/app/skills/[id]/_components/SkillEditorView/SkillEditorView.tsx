@@ -4,13 +4,14 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Button, ErrorState, Skeleton, Icon, Badge } from "@devdigest/ui";
+import { useParams, useSearchParams } from "next/navigation";
+import { ErrorState, Skeleton, Icon, Badge } from "@devdigest/ui";
 import { AppShell } from "@/components/app-shell";
-import { useSkills, useSkill, useUpdateSkill } from "@/lib/hooks/skills";
+import { useSkill } from "@/lib/hooks/skills";
 import { apiErrorMessage } from "@/lib/api";
 import { useSetSearchParam } from "@/lib/search-params";
-import { SkillCard } from "../../../_components/SkillCard";
+import { typeTint } from "../../../_components/SkillCard/helpers";
+import { SkillsListView } from "../../../_components/SkillsListView";
 import { SkillEditor } from "../SkillEditor";
 import { TABS } from "../SkillEditor/constants";
 import { s } from "./styles";
@@ -19,13 +20,10 @@ export function SkillEditorView() {
   const t = useTranslations("skills");
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
-  const router = useRouter();
   const setParam = useSetSearchParam();
   const { id } = params;
 
-  const { data: skills } = useSkills();
   const { data: skill, isLoading, isError, error, refetch } = useSkill(id);
-  const update = useUpdateSkill();
 
   const requested = search.get("tab") ?? "";
   const tab = TABS.some((tb) => tb.key === requested) ? requested : "config";
@@ -50,52 +48,33 @@ export function SkillEditorView() {
     );
   }
 
-  return (
-    <AppShell crumb={crumb}>
-      <div style={s.layout}>
-        <div style={s.sidebar}>
-          <div style={s.sidebarHead}>
-            <div style={s.sidebarTitleRow}>
-              <h1 style={s.sidebarTitle}>{t("editor.listTitle")}</h1>
-              <Button kind="primary" size="sm" icon="Plus" onClick={() => router.push("/skills")}>
-                {t("editor.add")}
-              </Button>
-            </div>
-          </div>
-          <div style={s.sidebarList}>
-            {(skills ?? []).map((sk) => (
-              <SkillCard
-                key={sk.id}
-                skill={sk}
-                active={sk.id === id}
-                onClick={() => router.push(`/skills/${sk.id}?tab=${tab}`)}
-                onToggle={(enabled) => update.mutate({ id: sk.id, patch: { enabled } })}
-              />
-            ))}
-          </div>
-        </div>
-
-        {isLoading || !skill ? (
-          <div style={s.loading}>
-            <Skeleton height={24} width={240} />
-            <Skeleton height={200} />
-          </div>
-        ) : (
-          <div style={s.editor}>
-            <div style={s.editorHead}>
-              <Icon.Sparkles size={18} style={s.editorIcon} />
-              <h1 style={s.editorTitle}>{skill.name}</h1>
-              <Badge color="var(--text-secondary)" mono>
-                {t("preview.version", { version: skill.version })}
-              </Badge>
-              {!skill.enabled && <Badge color="var(--text-muted)">{t("preview.disabled")}</Badge>}
-            </div>
-            <div style={s.editorBody}>
-              <SkillEditor skill={skill} tab={tab} onTab={setTab} />
-            </div>
-          </div>
-        )}
+  const tint = skill ? typeTint(skill.type) : null;
+  const detail =
+    isLoading || !skill || !tint ? (
+      <div style={s.loading}>
+        <Skeleton height={24} width={240} />
+        <Skeleton height={200} />
       </div>
-    </AppShell>
-  );
+    ) : (
+      <div style={s.editor}>
+        <div style={s.editorHead}>
+          <div style={s.editorIcon(tint.fg, tint.bg)}>
+            <Icon.Sparkles size={17} />
+          </div>
+          <h1 style={s.editorTitle}>{skill.name}</h1>
+          <Badge color={tint.fg} bg={tint.bg}>
+            {t(`listItem.type.${skill.type}`)}
+          </Badge>
+          <Badge color="var(--text-secondary)" icon="GitCommit" mono>
+            {t("preview.version", { version: skill.version })}
+          </Badge>
+          {!skill.enabled && <Badge color="var(--text-muted)">{t("preview.disabled")}</Badge>}
+        </div>
+        <div style={s.editorBody}>
+          <SkillEditor skill={skill} tab={tab} onTab={setTab} />
+        </div>
+      </div>
+    );
+
+  return <SkillsListView activeId={id} tab={tab} crumbTail={skill?.name ?? t("editor.skillFallback")} detail={detail} />;
 }

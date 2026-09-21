@@ -5,7 +5,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Icon, Badge, Toggle } from "@devdigest/ui";
 import type { Skill } from "@devdigest/shared";
-import { isUntrusted } from "./helpers";
+import { isUntrusted, sourceIcon, typeTint } from "./helpers";
 import { s } from "./styles";
 
 export function SkillCard({
@@ -20,10 +20,12 @@ export function SkillCard({
   onToggle?: (enabled: boolean) => void;
 }) {
   const t = useTranslations("skills");
+  const tint = typeTint(skill.type);
+  const SrcIcon = Icon[sourceIcon(skill.source)];
   return (
     <div onClick={onClick} style={s.card(!!active, skill.enabled)}>
       <div style={s.headerRow}>
-        <div style={s.iconBox}>
+        <div style={s.iconBox(tint)}>
           <Icon.Sparkles size={15} />
         </div>
         <span style={s.name}>{skill.name}</span>
@@ -35,11 +37,16 @@ export function SkillCard({
       </div>
       <div style={s.description}>{skill.description || t("card.noDescription")}</div>
       <div style={s.metaRow}>
-        <Badge color="var(--text-secondary)">{t(`listItem.type.${skill.type}`)}</Badge>
-        <Badge color="var(--text-muted)">{t(`listItem.source.${skill.source}`)}</Badge>
+        <Badge color={tint.fg} bg={tint.bg}>
+          {t(`listItem.type.${skill.type}`)}
+        </Badge>
+        <span style={s.source}>
+          <SrcIcon size={12} />
+          {t(`listItem.source.${skill.source}`)}
+        </span>
         {isUntrusted(skill) && (
           <span title={t("listItem.vettingTitle")}>
-            <Badge color="var(--warn, var(--text-secondary))" icon="AlertTriangle">
+            <Badge color="var(--warn, var(--text-secondary))" bg="var(--warn-bg)" icon="AlertTriangle">
               {t("listItem.needsVetting")}
             </Badge>
           </span>

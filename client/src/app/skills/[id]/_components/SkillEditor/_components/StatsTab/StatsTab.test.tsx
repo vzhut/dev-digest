@@ -38,8 +38,8 @@ describe("StatsTab", () => {
   it("renders tiles, agents with enabled state, caveat and categories", () => {
     renderTab(BASE);
     expect(screen.getByText("2 agents")).toBeInTheDocument();
-    expect(screen.getByText("enabled")).toBeInTheDocument();
-    expect(screen.getByText("disabled")).toBeInTheDocument();
+    expect(screen.getByText("Enabled")).toBeInTheDocument();
+    expect(screen.getByText("Disabled")).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
     expect(screen.getByText(/not a per-skill attribution/)).toBeInTheDocument();
     expect(screen.getByText("security")).toBeInTheDocument();

@@ -10,13 +10,14 @@
     { "cmd": ["find", "text", "test-coverage-nudge", "click"], "label": "open the skill" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "editor loads" },
     { "cmd": ["wait", "--text", "Apply when"], "label": "directive description is shown" },
-    { "cmd": ["find", "role", "button", "click", "--name", "Stats"], "label": "open the Stats tab" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "editor settles before switching tabs" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Stats", "--exact"], "label": "open the Stats tab" },
     { "cmd": ["wait", "--text", "No runs with this skill yet"], "label": "empty state, not zeros" },
     { "cmd": ["open", "{BASE}/agents"], "label": "go to the agents page" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
     { "cmd": ["find", "text", "Test Quality Reviewer", "click"], "label": "open the Test Quality Reviewer" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "agent editor loads" },
-    { "cmd": ["find", "role", "button", "click", "--name", "Skills"], "label": "open the Skills tab" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Skills", "--exact"], "label": "open the Skills tab" },
     { "cmd": ["wait", "--text", "mocking-discipline"], "label": "linked skill is listed" },
     { "cmd": ["wait", "--text", "2 of"], "label": "enabled counter reflects the two linked skills" }
   ]
