@@ -1,4 +1,4 @@
-/* SkillEditor — Config | Preview | Stats | Versions. Tab state lives in ?tab=. */
+/* SkillEditor — Config | Preview | Stats | Versioning. Tab state lives in ?tab=. */
 "use client";
 
 import React from "react";
