@@ -50,6 +50,8 @@
       "specs": "Project context (dynamic)",
       "callers": "Callers of changed symbols — repo-intel (dynamic)",
       "user": "User / diff (dynamic)",
+      "tokens": "≈ {count, number} tok",
+      "tokensTitle": "Estimated tokens in this block only (characters ÷ 4)",
       "copy": "Copy",
       "fullscreen": "Open fullscreen",
       "search": "Search in this block…",

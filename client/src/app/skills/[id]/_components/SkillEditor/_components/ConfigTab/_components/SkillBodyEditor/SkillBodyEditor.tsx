@@ -3,10 +3,8 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Badge, Icon } from "@devdigest/ui";
+import { estimateTokens } from "@/lib/tokens";
 import { s } from "./styles";
-
-/** Approximate token count (chars / 4). */
-const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
 /** Code-editor style card: file bar, line-number gutter, monospace textarea. */
 export function SkillBodyEditor({
