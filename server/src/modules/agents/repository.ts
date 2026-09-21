@@ -46,6 +46,7 @@ export interface UpdateAgent {
 export interface LinkedSkillRow {
   skill: typeof t.skills.$inferSelect;
   order: number;
+  enabled: boolean;
 }
 
 export class AgentsRepository {
