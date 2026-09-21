@@ -188,6 +188,22 @@ d('skills module', () => {
     await app.close();
   });
 
+  it('the API and Postgres agree: a POST is a real row, and a row deleted in the DB is gone from GET /skills', async () => {
+    const app = await makeApp();
+    const name = `db-truth-${Date.now()}`;
+    const created = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ name }) })).json();
+
+    const rows = await pg.handle.db.select().from(t.skills).where(eq(t.skills.id, created.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ name, source: 'manual', version: 1 });
+
+    await pg.handle.db.delete(t.skills).where(eq(t.skills.id, created.id));
+    const list = (await app.inject({ method: 'GET', url: '/skills' })).json() as { id: string }[];
+    expect(list.some((x) => x.id === created.id)).toBe(false);
+    expect((await app.inject({ method: 'GET', url: `/skills/${created.id}` })).statusCode).toBe(404);
+    await app.close();
+  });
+
   it('workspace isolation: another workspace cannot see, edit, or collide with a skill', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ name: 'iso-1' }) })).json();
