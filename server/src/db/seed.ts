@@ -7,6 +7,8 @@ import {
   GENERAL_REVIEWER_PROMPT,
   SECURITY_REVIEWER_PROMPT,
   PERFORMANCE_REVIEWER_PROMPT,
+  TEST_QUALITY_REVIEWER_PROMPT,
+  API_CONTRACT_REVIEWER_PROMPT,
 } from './seed-prompts.js';
 
 /** Default provider/model for the built-in reviewer agents. */
@@ -19,12 +21,123 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
  *
  * Seeds: default workspace + system user + membership, default settings,
  * demo repo (acme/payments-api), PR #482 with files/commits, a sample review
- * with a few findings, and the three built-in agents (General + Security +
- * Performance), all on the default openrouter/deepseek-v4-flash provider+model.
+ * with a few findings, and the five built-in agents (General + Security +
+ * Performance + Test Quality + API Contract), their manual skills, all on the default openrouter/deepseek-v4-flash provider+model.
  *
  * Course lessons populate the other tables (skills, conventions, memory, eval,
  * …) once their features are built — they start empty here.
  */
+
+const SEED_SKILLS: Array<{
+  name: string;
+  description: string;
+  type: 'custom' | 'convention';
+  agent: string;
+  order: number;
+  body: string;
+}> = [
+  {
+    name: 'test-coverage-nudge',
+    description:
+      'Apply when the diff changes production logic: check that every new branch, error path and boundary has a test that would fail if it were wrong.',
+    type: 'custom',
+    agent: 'Test Quality Reviewer',
+    order: 0,
+    body: `# Test coverage nudge
+
+For every production file changed in this diff, list its new or modified branches
+(if/else, switch cases, early returns, catch blocks, \`??\` / \`?.\` fallbacks,
+ternaries) and check each one against the tests in the diff.
+
+1. **Name the branch.** For each branch with no test that reaches it, report it
+   with the exact production line and the input that would trigger it.
+2. **Always check these boundaries** when the changed code handles a collection,
+   number, string or date: empty, single element, exactly-at-the-limit,
+   one-past-the-limit, zero/negative, null/undefined. Report the first missing
+   boundary, not all of them.
+3. **Error paths count.** A new throw, 4xx/5xx response or rejected promise needs a
+   test that triggers it AND asserts the resulting status, message or state.
+4. **Happy-path-only tests are the finding.** If the only new test exercises the
+   success case of a function that has a failure mode, report the uncovered
+   failure branch and one boundary case.
+5. **Changed logic with unchanged tests** is a finding: name the changed line and
+   say which existing test would still pass if that line were reverted.
+
+Do not ask for tests of code the diff does not touch, and do not quote coverage
+percentages. If every changed branch is exercised, say so and report nothing.`,
+  },
+  {
+    name: 'mocking-discipline',
+    description:
+      'Apply when the diff adds or changes tests that use mocks, stubs, spies, fake timers or shared fixtures.',
+    type: 'convention',
+    agent: 'Test Quality Reviewer',
+    order: 1,
+    body: `# Mocking discipline
+
+Mocks belong at the system boundary (network, DB, clock, LLM, filesystem), not
+inside the logic under test.
+
+- **Never mock the unit under test**, and never mock a pure function it calls; use
+  the real one. A mock that returns exactly what the assertion expects proves
+  nothing.
+- **Mock only at the seams.** In the server, inject fakes through the DI container
+  (\`ContainerOverrides\` + \`src/adapters/mocks.ts\`); do not \`vi.mock\` internal
+  modules to steer control flow.
+- **Do not mock the database when the query is the behaviour.** Such tests belong in
+  a \`*.it.test.ts\` file against real Postgres.
+- **Assert outcomes, not wiring.** \`toHaveBeenCalled()\` alone is weak: check the
+  arguments and the observable result. Flag assertions like \`toBeDefined()\`,
+  \`not.toThrow()\` or large snapshots that cannot fail meaningfully.
+- **Time and randomness are injected or faked.** Real \`setTimeout\` sleeps,
+  \`Date.now()\` and \`Math.random()\` in a test are flakiness findings; expect
+  \`vi.useFakeTimers()\` or an injected clock.
+- **Isolation.** Flag tests that share mutable state, module singletons or DB rows
+  without reset, or that depend on execution order; each test must set up and
+  clean up its own state.
+- **Naming.** A test that touches Postgres must be named \`*.it.test.ts\`; a
+  \`*.test.ts\` file must be hermetic.
+
+Report the strongest violation per test file rather than every instance.`,
+  },
+  {
+    name: 'api-contract-gate',
+    description:
+      'Apply when the diff touches a route, a Zod request/response schema, a status code or a shared contract.',
+    type: 'custom',
+    agent: 'API Contract Reviewer',
+    order: 0,
+    body: `# API contract gate
+
+Treat every touched route and every \`@devdigest/shared\` schema as a public
+contract. For each one, write down before and after, then decide who breaks.
+
+**Breaking (report as CRITICAL unless a version bump or compatibility shim is in
+the diff):**
+- a route removed, renamed, moved, or its HTTP method changed;
+- a path or query parameter renamed, retyped, or made required;
+- a request-body field made required, removed, renamed or retyped;
+- a response field removed, renamed, retyped, or its casing changed (wire fields
+  are \`snake_case\`);
+- a success status code changed (for example 200 to 201 or 204).
+
+**Risky (report as WARNING):**
+- validation tightened so previously valid input is rejected;
+- a default changed for an omitted field;
+- an error status or error-body shape changed, or a 4xx turned into a 5xx;
+- a field became nullable/optional, or an enum gained or lost a value clients
+  switch over;
+- the server contract changed but the client copy in
+  \`client/src/vendor/shared/\` did not, or the reverse.
+
+**Safe (do not report):** a new endpoint, a new OPTIONAL request field, a new
+response field.
+
+Cite the exact line of the changed route or schema and state the before/after in
+the rationale. Suggest the smallest fix: restore the old shape, add an alias for
+the old name, or version the route.`,
+  },
+];
 
 export const DEFAULT_WORKSPACE_NAME = 'default';
 export const SYSTEM_USER_EMAIL = 'you@local';
@@ -212,6 +325,28 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       version: 1,
       createdBy: userId,
     },
+    {
+      workspaceId,
+      name: 'Test Quality Reviewer',
+      description: 'Finds uncovered branches, missing corner cases, over-mocking and flaky tests.',
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+      systemPrompt: TEST_QUALITY_REVIEWER_PROMPT,
+      enabled: true,
+      version: 1,
+      createdBy: userId,
+    },
+    {
+      workspaceId,
+      name: 'API Contract Reviewer',
+      description: 'Flags breaking changes to route signatures, request/response shapes and status codes.',
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+      systemPrompt: API_CONTRACT_REVIEWER_PROMPT,
+      enabled: true,
+      version: 1,
+      createdBy: userId,
+    },
   ];
   for (const a of seedAgents) {
     const [existing] = await db
@@ -219,6 +354,45 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       .from(t.agents)
       .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, a.name)));
     if (!existing) await db.insert(t.agents).values(a);
+  }
+
+  // ---- manual skills + agent links (agents exist by now) ----
+  // `breaking-change-checklist` is deliberately NOT seeded: it is the import
+  // fixture (docs/skill-fixtures/) imported through the UI during the demo.
+  for (const sk of SEED_SKILLS) {
+    let [skill] = await db
+      .select()
+      .from(t.skills)
+      .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.name, sk.name)));
+    if (!skill) {
+      [skill] = await db
+        .insert(t.skills)
+        .values({
+          workspaceId,
+          name: sk.name,
+          description: sk.description,
+          type: sk.type,
+          source: 'manual',
+          body: sk.body,
+          enabled: true,
+          version: 1,
+        })
+        .returning();
+      await db
+        .insert(t.skillVersions)
+        .values({ skillId: skill!.id, version: 1, body: sk.body })
+        .onConflictDoNothing();
+    }
+    const [agent] = await db
+      .select()
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, sk.agent)));
+    if (agent) {
+      await db
+        .insert(t.agentSkills)
+        .values({ agentId: agent.id, skillId: skill!.id, order: sk.order, enabled: true })
+        .onConflictDoNothing();
+    }
   }
 
   return { workspaceId, userId };
