@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ConventionCategory } from '@devdigest/shared';
+import type { ConventionCandidate, ConventionCategory, ConventionScan, ConventionStatus } from '@devdigest/shared';
 import {
   CONFIG_FILE_PATTERNS,
   MAX_CONFIG_BYTES,
@@ -286,5 +286,66 @@ export function composeSkillBody(repoName: string, accepted: AcceptedConvention[
     body,
     description: `${accepted.length} house conventions extracted from ${repoName}`,
     evidenceFiles: [...new Set(accepted.map((r) => r.evidencePath))],
+  };
+}
+
+// ============================================================ DTO mapping
+
+export interface ScanRowLike {
+  id: string;
+  sha: string;
+  sampleFiles: number;
+  rawCount: number;
+  keptCount: number;
+  dropped: Record<string, number>;
+  model: string;
+  costUsd: number | null;
+  createdAt: Date;
+}
+
+export function toConventionScanDto(row: ScanRowLike): ConventionScan {
+  return {
+    id: row.id,
+    sha: row.sha,
+    sample_files: row.sampleFiles,
+    raw_count: row.rawCount,
+    kept_count: row.keptCount,
+    dropped: row.dropped,
+    model: row.model,
+    cost_usd: row.costUsd ?? null,
+    created_at: row.createdAt.toISOString(),
+  };
+}
+
+export interface ConventionRowLike {
+  id: string;
+  category: ConventionCategory;
+  rule: string;
+  ruleOriginal: string;
+  evidencePath: string;
+  evidenceLineStart: number;
+  evidenceLineEnd: number;
+  evidenceSnippet: string;
+  confidence: number;
+  status: ConventionStatus;
+  /** The sha of the scan that PRODUCED this row — not necessarily the repo's
+   * latest scan (a decided row can outlive several re-scans), so evidence
+   * URLs stay pinned to the commit that was actually read (C3). */
+  scanSha: string;
+}
+
+export function toConventionCandidateDto(row: ConventionRowLike, owner: string, repoName: string): ConventionCandidate {
+  return {
+    id: row.id,
+    category: row.category,
+    rule: row.rule,
+    edited: row.rule !== row.ruleOriginal,
+    evidence_path: row.evidencePath,
+    evidence_line_start: row.evidenceLineStart,
+    evidence_line_end: row.evidenceLineEnd,
+    evidence_snippet: row.evidenceSnippet,
+    evidence_url: buildEvidenceUrl(owner, repoName, row.scanSha, row.evidencePath, row.evidenceLineStart, row.evidenceLineEnd),
+    confidence: row.confidence,
+    status: row.status,
   };
 }
