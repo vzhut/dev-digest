@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import type { ConventionCandidate, ConventionsResponse, ConventionStatus } from "@devdigest/shared";
+import type { ConventionCandidate, ConventionsResponse, ConventionStatus, Skill } from "@devdigest/shared";
 
 export function useConventions(repoId: string | null | undefined) {
   return useQuery({
@@ -60,5 +60,45 @@ export function useUpdateConvention(repoId: string | null | undefined) {
         });
       }
     },
+  });
+}
+
+/** `POST .../skill-draft` — composes from the current accepted rows, persists
+ * nothing (§4.1). Modeled as a mutation, not a query: it's a POST with no
+ * cache key of its own, fetched once when the modal opens. */
+export interface SkillDraft {
+  name: string;
+  description: string;
+  type: "convention";
+  body: string;
+  evidence_files: string[];
+  count: number;
+}
+
+export function useSkillDraft(repoId: string | null | undefined) {
+  return useMutation({
+    mutationFn: () => api.post<SkillDraft>(`/repos/${repoId}/conventions/skill-draft`),
+  });
+}
+
+export interface CreateConventionSkillInput {
+  name?: string;
+  description?: string;
+  body?: string;
+  enabled?: boolean;
+  agent_ids?: string[];
+}
+
+export interface CreateConventionSkillResult {
+  skill: Skill;
+  agent_ids_linked: string[];
+}
+
+export function useCreateConventionSkill(repoId: string | null | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateConventionSkillInput) =>
+      api.post<CreateConventionSkillResult>(`/repos/${repoId}/conventions/skill`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["skills"] }),
   });
 }

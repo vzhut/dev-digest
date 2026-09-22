@@ -35,7 +35,8 @@
   "toolbar": {
     "acceptedOf": "{accepted} of {total} accepted",
     "selectAll": "Select all",
-    "deselectAll": "Deselect all"
+    "deselectAll": "Deselect all",
+    "createSkill": "Create skill"
   },
   "card": {
     "confidence": "Confidence",
@@ -48,5 +49,26 @@
     "undo": "Undo",
     "edited": "edited",
     "copyPath": "Copy file path"
+  },
+  "createSkillModal": {
+    "title": "Create skill from conventions",
+    "subtitle": "Made from the accepted candidates below. Review and edit before saving — this lands as v1 in Skills Lab.",
+    "name": "Name",
+    "description": "Description",
+    "body": "Skill body",
+    "tokens": "≈ {count} tok",
+    "attachToAgents": "Attach to agents",
+    "attachHint": "Linked last, enabled. You can also link it later from the Skills tab.",
+    "noAgents": "No agents yet.",
+    "versionNote": "Saves as v1 in Skills Lab.",
+    "cancel": "Cancel",
+    "create": "Create skill",
+    "creating": "Creating…",
+    "created": "Skill \"{name}\" created",
+    "updated": "Skill updated",
+    "updateExisting": "Update existing skill",
+    "updateVersionMessage": "Updated from the Conventions Extractor",
+    "orRenameHint": "or change the name above and try again",
+    "failed": "Could not save the skill."
   }
 }

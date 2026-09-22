@@ -1,6 +1,6 @@
 /* Conventions Extractor view — /repos/:repoId/conventions. Run Scan / ReScan,
-   the scan's quality line, the accept/reject/edit toolbar, and the candidate
-   list. Create-skill (the modal + nav entry) lands in a later slice. */
+   the scan's quality line, the accept/reject/edit toolbar, the candidate
+   list, and Create skill (C16: hidden, not disabled, until ≥1 accepted). */
 "use client";
 
 import React from "react";
@@ -17,6 +17,7 @@ import { SKELETON_CARDS } from "./constants";
 import { acceptedSummary, dropReasonEntries, totalDropped } from "./helpers";
 import { s } from "./styles";
 import { ConventionCard } from "./_components/ConventionCard";
+import { CreateSkillModal } from "./_components/CreateSkillModal";
 
 export function ConventionsView() {
   const t = useTranslations("conventions");
@@ -29,6 +30,7 @@ export function ConventionsView() {
   const extract = useExtractConventions(repoId);
   const update = useUpdateConvention(repoId);
   const [busyId, setBusyId] = React.useState<string | null>(null);
+  const [showCreateSkill, setShowCreateSkill] = React.useState(false);
 
   const repoName = activeRepo?.full_name ?? repoId;
 
@@ -143,6 +145,11 @@ export function ConventionsView() {
               {t("toolbar.deselectAll")}
             </Button>
             <div style={s.toolbarSpacer} />
+            {summary.accepted > 0 && (
+              <Button kind="primary" icon="Sparkles" onClick={() => setShowCreateSkill(true)}>
+                {t("toolbar.createSkill")}
+              </Button>
+            )}
           </div>
           <div style={s.list}>
             {candidates.map((c) => (
@@ -159,6 +166,8 @@ export function ConventionsView() {
           </div>
         </>
       )}
+
+      {showCreateSkill && repoId && <CreateSkillModal repoId={repoId} onClose={() => setShowCreateSkill(false)} />}
     </AppShell>
   );
 }

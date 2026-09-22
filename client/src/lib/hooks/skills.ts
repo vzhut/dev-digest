@@ -158,3 +158,19 @@ export function useSetAgentSkills() {
     },
   });
 }
+
+/** Link ONE skill onto an agent — additive, appended last (server default
+ * order). Unlike `useSetAgentSkills`, this never touches the agent's other
+ * links, so it's safe to call from a flow (e.g. the Conventions Extractor's
+ * "update existing skill" path) that doesn't have the agent's full list. */
+export function useLinkSkillToAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, skillId }: { agentId: string; skillId: string }) =>
+      api.post<AgentSkillLink[]>(`/agents/${agentId}/skills`, { skill_id: skillId }),
+    onSuccess: (_d, { agentId }) => {
+      qc.invalidateQueries({ queryKey: ["agent-skills", agentId] });
+      qc.invalidateQueries({ queryKey: ["skill-stats"] });
+    },
+  });
+}
