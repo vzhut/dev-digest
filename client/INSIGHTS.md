@@ -119,6 +119,20 @@ RunHistory split into `helpers.ts` + `_components/RunRow`/`CommitRow`, `useRunEv
 `src/vendor/ui`. Validation: `pnpm typecheck`, `pnpm test` (23 files / 108 tests), `pnpm build`,
 `./scripts/e2e.sh` 7/7.
 
+### 2026-09-22 — L02 homework: Conventions Extractor page + Create-skill modal
+
+`src/app/repos/[repoId]/conventions/` · `src/lib/hooks/conventions.ts` · 2026-09-22
+
+New route (page + `ConventionsView` + `ConventionCard` + `CreateSkillModal`), following
+`frontend-architecture` throughout — no new debt. Promoted `relativeTime` out of
+`pulls/helpers.ts` into `lib/relative-time.ts` on its second consumer (§7's promotion ladder),
+test moved with it. `pr-self-review`'s routed UI review (slice 10) caught one real finding —
+five repeated inline `margin` values in `ConventionsView.tsx` that duplicated what belonged in
+`styles.ts` — fixed. `messages/en/conventions.json` already existed as a mockup-era stub with no
+consumers and a different button layout than what the actual C12 design needed; rewritten rather
+than extended. Validation: `pnpm typecheck`, `pnpm test` (44 files / 196 tests),
+`./scripts/e2e.sh` 9/9 (new flow `09-conventions.flow.json`).
+
 ## Open Questions
 
 _No entries yet._

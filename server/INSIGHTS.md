@@ -154,6 +154,20 @@ constraint and use `.nullable()`.
 Guarded by the `RunTrace (data2.jsx TRACE single-document)` case in `server/test/contracts.test.ts`,
 which parses a trace with no `cost_usd` key and asserts it still succeeds.
 
+### A feature module resolves its model through `container.resolveFeatureModel`, never `modules/settings/*` directly
+
+`server/src/platform/container.ts` · `server/src/modules/conventions/service.ts` · 2026-09-22
+
+`modules/settings/feature-models.ts`'s exported `resolveFeatureModel(container, workspaceId, id)`
+takes a `Container` as its first argument, which makes it easy to import directly into another
+feature module (conventions did, until `pr-self-review`'s onion-architecture gate caught it as a
+cross-module import). The fix mirrors `skillsRepo`/`agentsRepo`: `container.resolveFeatureModel
+(workspaceId, id)` wraps the settings function so the container stays the one place that reaches
+into another module's folder. The next feature module to read its own model choice (onboarding,
+review_intent, risk_brief, conformance are all registered in `FEATURE_MODELS` but have no real
+consumer yet) should call the container method, not the settings module's export — importing it
+directly compiles and works, but re-opens the same finding.
+
 ### Failed `agent_runs` store tokens `0`, not `NULL` — aggregate over `status = 'done'` only
 
 `server/src/modules/reviews/run-executor.ts:303` · `server/src/modules/pulls/routes.ts:142-158` · 2026-09-17
@@ -239,6 +253,22 @@ same pnpm major that created `node_modules` before any dependency change.
 Skills reached no prompt before L02 because two call sites hardcoded `skills: null`; wiring only the
 prompt would have left the trace claiming no skill was used. `run_skills` is written before the run's
 `try`, so failed runs are attributed too.
+
+### 2026-09-22 — L02 homework: Conventions Extractor, end to end
+
+`server/src/modules/conventions/` · `client/src/app/repos/[repoId]/conventions/` · 2026-09-22
+
+Full feature across 10 slices on `lesson-02-homework`: schema/contracts → pure core
+(sampler/verifier/fingerprint/composer) → repository/service/routes → PATCH/skill-draft/skill →
+client hooks+cards → create-skill modal+nav → seed/e2e/live quality run → API-contract 4-skill
+experiment → measured support (§10 #1) → `pr-self-review`. Two live runs (real deepseek-v4-flash,
+real GitHub clones) produced the session's two real findings, both recorded above: the model's
+confidence never discriminated useful from trivial candidates, and every "trivial" verdict traced
+to a config-file citation the prompt already told it to ignore — together they picked §10 #1
+(measure support in the clone, replace confidence with the ratio) as the one improvement to build.
+`pr-self-review`, run for the first time on a homework-sized branch, caught one real
+onion-architecture violation (a cross-module import that compiled fine) and one real bounds gap
+(a PATCH field uncapped where every other path enforces a limit) — both fixed, not just noted.
 
 ## Open Questions
 
