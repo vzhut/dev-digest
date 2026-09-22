@@ -88,6 +88,23 @@ enum. Lesson: when a "clean" experiment PR keeps failing, read what the CRITICAL
 non-determinism — a fixture with its own latent bug will never have a silent baseline, no matter how many times
 you rerun it.
 
+### A skill that files an item under "Risky/WARNING" gets read as "Safe" by a cheap model
+
+`server/src/db/seed.ts` (`api-contract-gate`, now v3 in the DB) · 2026-09-22
+
+With `api-contract-gate` linked, 3 of 3 runs on PR #4 (adds `'cancelled'` to `RunStatus`) returned ZERO findings,
+verdict `comment`, summary: "a new enum value, both safe per the API contract gate". The skill did list "an enum
+gained or lost a value clients switch over" — but under **Risky (WARNING)**, two paragraphs above a **Safe (do not
+report): … a new response field** bullet. `deepseek-v4-flash` conflated the two: a new enum *value* on an existing
+field read to it as the same class as a new *field*, and it never even reported the WARNING the skill asked for.
+
+Fixed by moving enum growth into its own **Breaking (CRITICAL)** paragraph, with a worked bad/good example (a
+`switch` with no `default` that silently mishandles the new value) and an explicit "do not be talked out of this by
+the Safe list below" line. Re-verified 4/4 CRITICAL after the edit (`PUT /skills/:id`, version 3). Lesson for writing
+any skill for a cheap model: a severity bucket a model can read as adjacent to a lower one will get pulled down to
+it; an ambiguous classification needs a concrete example, not a longer bullet list, to survive scanning by a
+model that is optimizing for brevity over rule-following.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`

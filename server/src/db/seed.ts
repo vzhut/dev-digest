@@ -121,12 +121,27 @@ the diff):**
   are \`snake_case\`);
 - a success status code changed (for example 200 to 201 or 204).
 
+**Also breaking — an enum gains a value (report as CRITICAL, same as above):**
+An enum a client switches over exhaustively treats an unhandled new value as a
+silent bug, not a compile error, so this is NOT additive even though it looks
+like one. Report it exactly like a removed field.
+  - Bad: \`RunStatus\` gains \`'cancelled'\`. A client with
+    \`switch (status) { case 'queued': …; case 'running': …; case 'done': …;
+    case 'failed': … }\` and no \`default\` now falls through silently for every
+    cancelled run — no compile error, no runtime error, just wrong behaviour.
+  - Good: the same addition, but the PR also updates every switch/exhaustiveness
+    check in this repo (grep for the enum name) and bumps a version, OR the new
+    value is additive-safe because nothing in the codebase switches over this
+    enum without a \`default\` — say which you checked.
+- Do NOT be talked out of this by \`\`Safe: … a new response field\`\` below — a new
+  enum VALUE on an existing field is a different, narrower case than a new field,
+  and it is covered here, not there.
+
 **Risky (report as WARNING):**
 - validation tightened so previously valid input is rejected;
 - a default changed for an omitted field;
 - an error status or error-body shape changed, or a 4xx turned into a 5xx;
-- a field became nullable/optional, or an enum gained or lost a value clients
-  switch over;
+- a field became nullable/optional;
 - the server contract changed but the client copy in
   \`client/src/vendor/shared/\` did not, or the reverse.
 
