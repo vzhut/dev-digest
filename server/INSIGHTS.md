@@ -105,6 +105,35 @@ any skill for a cheap model: a severity bucket a model can read as adjacent to a
 it; an ambiguous classification needs a concrete example, not a longer bullet list, to survive scanning by a
 model that is optimizing for brevity over rule-following.
 
+### `deepseek/deepseek-v4-flash`'s self-reported confidence never discriminates quality
+
+`specs/conventions-extractor-quality-report.md` · 2026-09-22
+
+Live extractor runs on 3 real repos (28 sampled files, 14 kept candidates) all scored
+0.90–1.00, with zero spread between the human-verdict "useful" ones (e.g. a real repeated
+`satisfies CSSProperties` pattern) and the "true but trivial" ones (e.g. restating
+`tsconfig.json`'s `"strict": true`). `MIN_CONFIDENCE` (`modules/conventions/constants.ts`)
+therefore filters nothing on this model — every candidate clears 0.5 by a wide margin
+regardless of actual usefulness. Don't trust a cheap model's confidence field as a quality
+proxy for this kind of extraction task; if quality gating is needed, measure something
+external (occurrence count in the clone, human accept-rate) instead of thresholding the
+model's own number. This is exactly why §10 improvement #1 (measured support) was picked
+over tuning `MIN_CONFIDENCE`.
+
+### The model cites config settings as "evidence" for rules the compiler already enforces
+
+`specs/conventions-extractor-quality-report.md` · 2026-09-22
+
+Despite the system prompt explicitly saying "ignore what the language or framework already
+enforces" (`modules/conventions/prompt.ts`), the model still proposed rules like "Set
+`strict` to `true`" or "Enable `noUncheckedIndexedAccess`", citing the `tsconfig.json` line
+that sets it. The citation passes verification (the quote genuinely exists at that line),
+so `verifyCandidate` correctly keeps it — the problem is upstream, in what counts as a
+checkable convention, not in the verifier. Every "true but trivial" verdict in the quality
+report traced back to a `tsconfig.json`/`.eslintrc.json` citation; every genuinely useful
+one cited a real `.ts` source line showing a *repeated pattern*. A future improvement could
+weight or filter candidates whose only evidence is a config file rather than actual source.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`

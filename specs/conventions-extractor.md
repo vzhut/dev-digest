@@ -317,6 +317,14 @@ verdict on every kept candidate: **useful** (would make it a skill rule) / **tru
 **wrong**. Report precision = useful ÷ kept, and the drop-reason histogram. That table is the
 evidence for which §10 improvement to build next.
 
+Done — [`conventions-extractor-quality-report.md`](./conventions-extractor-quality-report.md):
+live run on `conventions-demo` (purpose-built), `api-contract-demo` (a genuine zero-result),
+and `dev-digest` itself (work repo, C11). Aggregate precision 0.50 (7/14 useful); every drop
+reason was 0 this round (already covered directly by the unit tests). The report picks §10
+improvement #1 for slice 9, backed by two live findings: confidence never discriminated
+useful from trivial (0.90–1.00 across the board), and every "trivial" verdict traced back to
+a config-file citation the prompt already tells the model to skip.
+
 ## 10. Product improvements (extra task) — ranked by value ÷ effort
 
 1. **Measure support in code, not by model guess.** For each kept rule the model also proposes a
