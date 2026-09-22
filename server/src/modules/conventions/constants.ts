@@ -53,7 +53,22 @@ export const MAX_KEPT_CANDIDATES = 20;
  * suggestion. */
 export const DEFAULT_SKILL_NAME = 'repo-conventions';
 
-/** Drop reasons, in the order §4.4 applies them — first failure wins. */
+// ---- Measured support (§10 improvement #1) ----
+
+/** Below this many COMBINED occurrences (support + violation) across the
+ * whole clone, the measurement is too thin to trust — the candidate keeps
+ * the model's own confidence instead of being scored or dropped on it. */
+export const MIN_MEASURED_TOTAL = 2;
+
+/** A candidate that clears MIN_MEASURED_TOTAL but whose measured ratio
+ * (support / (support + violation)) falls below this is dropped as
+ * `weak_support` — the model's claimed convention isn't actually followed
+ * consistently in this repo. */
+export const MIN_MEASURED_SUPPORT = 0.7;
+
+/** Drop reasons, in the order §4.4 applies them — first failure wins.
+ * `weak_support` is a separate, later pass (§10 #1) — it only ever applies
+ * to a candidate that already passed all six of the above. */
 export const DROP_REASONS = [
   'no_file',
   'bad_range',
@@ -61,4 +76,5 @@ export const DROP_REASONS = [
   'bad_rule',
   'low_confidence',
   'duplicate',
+  'weak_support',
 ] as const;

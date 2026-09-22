@@ -332,6 +332,14 @@ a config-file citation the prompt already tells the model to skip.
    both across the clone (`ripgrep` / `@ast-grep/napi` adapters already exist). Show
    "followed in 41 of 44 places" and replace the model's self-reported confidence with the measured
    ratio. Rules with weak support drop out; this is the single biggest quality lever. Effort: M.
+   **Done (slice 9):** the model now proposes `support_pattern`/`violation_pattern` per candidate
+   (`prompt.ts`); `ConventionsService.measureSupport` greps the WHOLE clone (`container.codeIndex`,
+   not just the sample) for both, `computeMeasuredSupport`/`applyMeasuredSupport` (`helpers.ts`)
+   replace confidence with the measured ratio once there are ≥`MIN_MEASURED_TOTAL` combined
+   matches, and drop the candidate as a new `weak_support` reason below `MIN_MEASURED_SUPPORT`
+   (0.7). A rule with no natural anti-pattern (either pattern `null`) passes through unmeasured —
+   this pass never invents a number. 7 new unit tests; the "followed 41 of 44" UI text itself
+   (a display-only stretch, no new persistence) is left for a future increment.
 2. **Mine the review history we already store.** Recurring reviewer comments and findings the user
    *accepted* are real conventions by construction; dismissed ones are anti-conventions. Feed the
    top recurring ones into the prompt as seeds. New input, no new indexing. Effort: M.

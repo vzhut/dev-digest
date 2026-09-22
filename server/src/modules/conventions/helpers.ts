@@ -20,6 +20,8 @@ import {
   MAX_SOURCE_BYTES,
   MAX_SOURCE_LINES,
   MIN_CONFIDENCE,
+  MIN_MEASURED_SUPPORT,
+  MIN_MEASURED_TOTAL,
   QUOTE_SEARCH_MARGIN_LINES,
 } from './constants.js';
 
@@ -77,7 +79,18 @@ export function numberAndCapLines(
 export interface ModelCandidate {
   category: ConventionCategory;
   rule: string;
-  evidence: { path: string; line_start: number; line_end: number; quote: string };
+  evidence: {
+    path: string;
+    line_start: number;
+    line_end: number;
+    quote: string;
+    /** §10 improvement #1: a regex/literal that matches code FOLLOWING the
+     * rule, and one that matches code VIOLATING it. Either may be null when
+     * the rule has no natural anti-pattern (e.g. a naming rule) — the
+     * measurement pass then leaves confidence alone instead of guessing. */
+    support_pattern: string | null;
+    violation_pattern: string | null;
+  };
   confidence: number;
 }
 
@@ -93,7 +106,8 @@ export type DropReason =
   | 'quote_mismatch'
   | 'bad_rule'
   | 'low_confidence'
-  | 'duplicate';
+  | 'duplicate'
+  | 'weak_support';
 
 export interface VerifiedCandidate {
   category: ConventionCategory;
@@ -106,6 +120,10 @@ export interface VerifiedCandidate {
   evidenceSnippet: string;
   confidence: number;
   fingerprint: string;
+  /** Carried through for the measured-support pass (§10 #1); null when the
+   * model didn't propose one. */
+  supportPattern: string | null;
+  violationPattern: string | null;
 }
 
 export type VerifyResult = { ok: true; candidate: VerifiedCandidate } | { ok: false; reason: DropReason };
@@ -189,6 +207,8 @@ export function verifyCandidate(
       evidenceSnippet: snippetLines.join('\n'),
       confidence: candidate.confidence,
       fingerprint,
+      supportPattern: candidate.evidence.support_pattern,
+      violationPattern: candidate.evidence.violation_pattern,
     },
   };
 }
@@ -215,6 +235,46 @@ export function filterAlreadyDecided(
   decidedFingerprints: ReadonlySet<string>,
 ): VerifiedCandidate[] {
   return candidates.filter((c) => !decidedFingerprints.has(c.fingerprint));
+}
+
+// ============================================== Measured support (§10 #1)
+
+export interface MeasuredSupport {
+  ratio: number;
+  followed: number;
+  violated: number;
+}
+
+/**
+ * `followed`/`violated` are occurrence counts across the WHOLE clone (not
+ * just the sampled files) for the candidate's `support_pattern` /
+ * `violation_pattern`. Returns `null` when there isn't enough combined
+ * signal to trust a ratio (`MIN_MEASURED_TOTAL`) — the caller then leaves
+ * the model's own confidence alone rather than reporting a ratio computed
+ * from one or two matches.
+ */
+export function computeMeasuredSupport(followed: number, violated: number): MeasuredSupport | null {
+  const total = followed + violated;
+  if (total < MIN_MEASURED_TOTAL) return null;
+  return { ratio: followed / total, followed, violated };
+}
+
+export type MeasuredSupportResult =
+  | { ok: true; candidate: VerifiedCandidate }
+  | { ok: false; reason: 'weak_support' };
+
+/**
+ * Replaces the model's self-reported confidence with the measured ratio
+ * when one is trustworthy, and drops the candidate as `weak_support` when
+ * that ratio says the "convention" isn't actually followed consistently.
+ * `measured: null` (unmeasurable, or the model gave no patterns) is a no-op
+ * — the candidate keeps its model confidence and is never dropped by this
+ * check alone.
+ */
+export function applyMeasuredSupport(candidate: VerifiedCandidate, measured: MeasuredSupport | null): MeasuredSupportResult {
+  if (!measured) return { ok: true, candidate };
+  if (measured.ratio < MIN_MEASURED_SUPPORT) return { ok: false, reason: 'weak_support' };
+  return { ok: true, candidate: { ...candidate, confidence: measured.ratio } };
 }
 
 // ============================================================ Evidence URL (C3)

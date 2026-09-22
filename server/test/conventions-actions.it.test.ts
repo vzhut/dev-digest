@@ -25,13 +25,13 @@ const TWO_CANDIDATE_FIXTURE = {
     {
       category: 'style',
       rule: 'Use async/await, not .then()',
-      evidence: { path: SOURCE_PATH, line_start: 1, line_end: 1, quote: 'await foo()' },
+      evidence: { path: SOURCE_PATH, line_start: 1, line_end: 1, quote: 'await foo()', support_pattern: null, violation_pattern: null },
       confidence: 0.9,
     },
     {
       category: 'other',
       rule: 'Call bar after foo',
-      evidence: { path: SOURCE_PATH, line_start: 2, line_end: 2, quote: 'await bar()' },
+      evidence: { path: SOURCE_PATH, line_start: 2, line_end: 2, quote: 'await bar()', support_pattern: null, violation_pattern: null },
       confidence: 0.8,
     },
   ],

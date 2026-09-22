@@ -18,6 +18,9 @@ export const ConventionExtractionOutput = z.object({
           line_start: z.number().int(),
           line_end: z.number().int(),
           quote: z.string(),
+          // §10 improvement #1 — measured support, not model guesswork.
+          support_pattern: z.string().nullable(),
+          violation_pattern: z.string().nullable(),
         }),
         confidence: z.number().min(0).max(1),
       }),
@@ -36,6 +39,11 @@ A convention qualifies only when it is:
 - NOT something the language or framework already enforces on its own.
 
 For every candidate, cite exactly one real, verbatim line as evidence: the file path, a line_start/line_end (the same line, or a tiny span), and a quote that is a literal substring of that line — you will be re-checked against the actual file, so do not paraphrase the quote. Source files are shown with a "N: " line-number prefix so you can reference line_start/line_end correctly; that prefix is not part of the code — never include it, or the colon after it, in your quote.
+
+Also propose two ripgrep patterns (plain regex, no flags) so your claim can be MEASURED across the whole repo instead of trusted on your say-so:
+- support_pattern: matches lines that FOLLOW the rule (e.g. for "use async/await, not .then()", something like "await ");
+- violation_pattern: matches lines that VIOLATE it (e.g. "\\.then\\(");
+Prefer simple, literal substrings; escape regex metacharacters you don't intend (. ( ) [ ] + * ?). Set either to null when the rule has no natural, greppable anti-pattern (e.g. a naming convention with no fixed counter-example) — null is a normal, expected answer, not a failure.
 
 If nothing in the sample qualifies, return an empty candidates array. That is a valid, expected answer — most repos yield few or zero real conventions from a single sample.
 

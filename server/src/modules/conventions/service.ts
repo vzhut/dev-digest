@@ -5,7 +5,9 @@ import { resolveFeatureModel } from '../settings/feature-models.js';
 import { ConventionsRepository, type ConventionRow, type InsertConvention } from './repository.js';
 import {
   type AcceptedConvention,
+  applyMeasuredSupport,
   composeSkillBody,
+  computeMeasuredSupport,
   filterAlreadyDecided,
   numberAndCapLines,
   rankAndCapCandidates,
@@ -135,6 +137,7 @@ export class ConventionsService {
       bad_rule: 0,
       low_confidence: 0,
       duplicate: 0,
+      weak_support: 0,
     };
     const seenFingerprints = new Set<string>();
     const verified: VerifiedCandidate[] = [];
@@ -154,7 +157,13 @@ export class ConventionsService {
     // quality problem — count it in the same bucket as an in-scan duplicate.
     dropped.duplicate += verified.length - notAlreadyDecided.length;
 
-    const rankedKept = rankAndCapCandidates(notAlreadyDecided);
+    // §10 improvement #1 — measure real support in the clone instead of
+    // trusting the model's confidence number (quality-report finding,
+    // 2026-09-22: it never discriminated useful from trivial candidates).
+    const { kept: measuredCandidates, weakSupportCount } = await this.measureSupport(ref, notAlreadyDecided);
+    dropped.weak_support += weakSupportCount;
+
+    const rankedKept = rankAndCapCandidates(measuredCandidates);
 
     const scan = await this.repo.insertScan({
       workspaceId,
@@ -265,6 +274,50 @@ export class ConventionsService {
     }
 
     return { skill: toSkillDtoFromRow(row), agentIdsLinked };
+  }
+
+  /**
+   * §10 improvement #1. For each candidate that proposed BOTH a support and
+   * a violation pattern, greps the whole clone (not just the sample) for
+   * both and replaces the model's confidence with the measured ratio, or
+   * drops the candidate as `weak_support` when the ratio is too low. A
+   * candidate with no patterns, or too few combined matches to trust,
+   * passes through unchanged — this pass never invents a number.
+   */
+  private async measureSupport(
+    ref: RepoRef,
+    candidates: VerifiedCandidate[],
+  ): Promise<{ kept: VerifiedCandidate[]; weakSupportCount: number }> {
+    let weakSupportCount = 0;
+    const kept: VerifiedCandidate[] = [];
+    for (const candidate of candidates) {
+      if (!candidate.supportPattern || !candidate.violationPattern) {
+        kept.push(candidate);
+        continue;
+      }
+      const [followed, violated] = await Promise.all([
+        this.safeGrepCount(ref, candidate.supportPattern),
+        this.safeGrepCount(ref, candidate.violationPattern),
+      ]);
+      const measured = computeMeasuredSupport(followed, violated);
+      const verdict = applyMeasuredSupport(candidate, measured);
+      if (verdict.ok) kept.push(verdict.candidate);
+      else weakSupportCount++;
+    }
+    return { kept, weakSupportCount };
+  }
+
+  /** A model-proposed pattern can be an invalid regex — that's a bad
+   * measurement, not a crashed scan, so it degrades to "no matches" (which
+   * `computeMeasuredSupport` then treats as unmeasurable alongside the
+   * other pattern's count, not as proof of zero support). */
+  private async safeGrepCount(ref: RepoRef, pattern: string): Promise<number> {
+    try {
+      const matches = await this.container.codeIndex.grep(ref, pattern);
+      return matches.length;
+    } catch {
+      return 0;
+    }
   }
 
   private async readFiles(ref: RepoRef, paths: string[]): Promise<{ path: string; content: string }[]> {

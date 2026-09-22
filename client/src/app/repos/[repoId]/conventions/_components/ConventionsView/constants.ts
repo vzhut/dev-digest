@@ -10,4 +10,7 @@ export const DROP_REASON_KEYS = [
   "bad_rule",
   "low_confidence",
   "duplicate",
+  // §10 improvement #1 — a candidate whose measured support-in-code ratio
+  // came back too low, checked after (and separate from) the six above.
+  "weak_support",
 ] as const;

@@ -29,7 +29,8 @@
       "quote_mismatch": "quote mismatch",
       "bad_rule": "bad rule",
       "low_confidence": "low confidence",
-      "duplicate": "duplicate"
+      "duplicate": "duplicate",
+      "weak_support": "weak support"
     }
   },
   "toolbar": {

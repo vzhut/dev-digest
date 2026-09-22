@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+  applyMeasuredSupport,
   buildEvidenceUrl,
   composeSkillBody,
   computeFingerprint,
+  computeMeasuredSupport,
   filterAlreadyDecided,
   numberAndCapLines,
   rankAndCapCandidates,
@@ -22,9 +24,17 @@ function candidate(overrides: Partial<ModelCandidate> = {}): ModelCandidate {
   return {
     category: 'style',
     rule: 'Use async/await, not .then()',
-    evidence: { path: 'src/a.ts', line_start: 2, line_end: 2, quote: 'await thing()' },
     confidence: 0.9,
     ...overrides,
+    evidence: {
+      path: 'src/a.ts',
+      line_start: 2,
+      line_end: 2,
+      quote: 'await thing()',
+      support_pattern: null,
+      violation_pattern: null,
+      ...overrides.evidence,
+    },
   };
 }
 
@@ -124,6 +134,68 @@ describe('computeFingerprint', () => {
   });
 });
 
+describe('verifyCandidate carries the support/violation patterns through', () => {
+  it('passes both patterns onto the verified candidate unchanged', () => {
+    const files = new Map([file('src/a.ts', ['import x', 'await thing()', 'export {}'])]);
+    const result = verifyCandidate(
+      candidate({ evidence: { path: 'src/a.ts', line_start: 2, line_end: 2, quote: 'await thing()', support_pattern: 'await ', violation_pattern: '\\.then\\(' } }),
+      files,
+      new Set(),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.candidate.supportPattern).toBe('await ');
+      expect(result.candidate.violationPattern).toBe('\\.then\\(');
+    }
+  });
+
+  it('is null/null when the model gave no patterns', () => {
+    const files = new Map([file('src/a.ts', ['import x', 'await thing()', 'export {}'])]);
+    const result = verifyCandidate(candidate(), files, new Set());
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.candidate.supportPattern).toBeNull();
+      expect(result.candidate.violationPattern).toBeNull();
+    }
+  });
+});
+
+describe('computeMeasuredSupport (§10 improvement #1)', () => {
+  it('is null (unmeasurable) below MIN_MEASURED_TOTAL combined matches', () => {
+    expect(computeMeasuredSupport(1, 0)).toBeNull();
+    expect(computeMeasuredSupport(0, 0)).toBeNull();
+  });
+
+  it('computes followed / (followed + violated) once there is enough signal', () => {
+    expect(computeMeasuredSupport(8, 2)).toEqual({ ratio: 0.8, followed: 8, violated: 2 });
+    expect(computeMeasuredSupport(1, 1)).toEqual({ ratio: 0.5, followed: 1, violated: 1 });
+  });
+});
+
+describe('applyMeasuredSupport (§10 improvement #1)', () => {
+  const base: VerifiedCandidate = {
+    category: 'style', rule: 'r', ruleOriginal: 'r', evidencePath: 'a.ts',
+    evidenceLineStart: 1, evidenceLineEnd: 1, evidenceSnippet: 'x', confidence: 0.9, fingerprint: 'fp',
+    supportPattern: 'await ', violationPattern: '\\.then\\(',
+  };
+
+  it('leaves the model confidence alone when unmeasurable (no patterns / too few matches)', () => {
+    const result = applyMeasuredSupport(base, null);
+    expect(result).toEqual({ ok: true, candidate: base });
+  });
+
+  it('replaces confidence with the measured ratio once there is enough signal', () => {
+    const result = applyMeasuredSupport(base, { ratio: 0.9, followed: 9, violated: 1 });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.candidate.confidence).toBe(0.9);
+  });
+
+  it('drops as weak_support when the measured ratio is below the threshold', () => {
+    const result = applyMeasuredSupport(base, { ratio: 0.4, followed: 2, violated: 3 });
+    expect(result).toEqual({ ok: false, reason: 'weak_support' });
+  });
+});
+
 describe('rankAndCapCandidates', () => {
   const make = (confidence: number): VerifiedCandidate => ({
     category: 'style',
@@ -135,6 +207,8 @@ describe('rankAndCapCandidates', () => {
     evidenceSnippet: 'x',
     confidence,
     fingerprint: `f-${confidence}`,
+    supportPattern: null,
+    violationPattern: null,
   });
 
   it('sorts by confidence descending and caps at 20', () => {
@@ -151,6 +225,7 @@ describe('filterAlreadyDecided (§4.5 re-scan)', () => {
     const kept: VerifiedCandidate = {
       category: 'style', rule: 'kept', ruleOriginal: 'kept', evidencePath: 'a.ts',
       evidenceLineStart: 1, evidenceLineEnd: 1, evidenceSnippet: 'x', confidence: 0.9, fingerprint: 'fp-kept',
+      supportPattern: null, violationPattern: null,
     };
     const rejected: VerifiedCandidate = { ...kept, rule: 'rejected', fingerprint: 'fp-rejected' };
     const result = filterAlreadyDecided([kept, rejected], new Set(['fp-rejected']));
