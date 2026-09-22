@@ -223,6 +223,14 @@
     },
     {
       "cmd": [
+        "wait",
+        "--text",
+        "Config"
+      ],
+      "label": "agent tab bar is rendered before switching tabs"
+    },
+    {
+      "cmd": [
         "find",
         "role",
         "button",
