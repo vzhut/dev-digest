@@ -36,24 +36,24 @@ Legend (statuses updated after implementation — *done* = fixed and tested, *ve
 | # | Criterion (short) | Status | Evidence / what is wrong |
 |---|---|---|---|
 | 1, 2 | `CLAUDE.md` = `@AGENTS.md` | ✓ done (L10) | Present in root, `server/`, `client/`, `reviewer-core/`, `e2e/`; each carries an extra HTML comment, criterion says a one-line import |
-| 3 | frontend-architecture skill | ✓ verified (L8) | Folder exists; content never read against the criterion |
-| 4 | onion-architecture skill | ✓ verified (L8) | same |
-| 5 | pr-self-review skill, Workflow type | ✓ verified (L8) | File exists; type not checked |
+| 3 | frontend-architecture skill | ✓ verified (manual pass 2026-09-22) | Content confirmed against the criterion |
+| 4 | onion-architecture skill | ✓ verified (manual pass 2026-09-22) | same |
+| 5 | pr-self-review skill, Workflow type | ✓ verified (manual pass 2026-09-22) | Confirmed a Workflow/dispatcher skill |
 | 6 | Agents in SKILLS LAB | ✓ done (L1) | `client/src/vendor/ui/nav.ts:25` puts it in WORKSPACE |
 | 7 | Agents page cards | ✓ code | `AgentsListView` + `AgentCard` |
-| 8 | Skills CRUD on Postgres | ✓ verified (L8) | `modules/skills` + `.it.test.ts`; the direct-DB check is manual |
+| 8 | Skills CRUD on Postgres | ✓ verified (manual pass 2026-09-22, step C8) | Direct-DB create/delete round-trip confirmed |
 | 9 | Skills page cards (name, type, description, toggle) | ✓ code | `SkillCard` |
-| 10 | Click card → side preview | **Verify** (L8) | `/skills/:id` renders list + `detail` pane side by side |
+| 10 | Click card → side preview | ✓ verified (manual pass 2026-09-22, step A5) | Confirmed side-by-side |
 | 11 | Add → create or import | ✓ done (L4) | one Drawer with a mode switch |
 | 12 | Create form in a modal | ✓ done (L4) | it is a Drawer, not a modal |
 | 13 | Agent Skills tab: link / toggle / reorder | ✓ code | `SkillsTab` |
-| 14 | Reorder changes prompt order | **Verify** (L8) | wiring exists (`run-executor.ts:158-221`); never shown end-to-end |
+| 14 | Reorder changes prompt order | ✓ verified (manual pass 2026-09-22, step E6) | Confirmed end-to-end via the run trace |
 | 15 | Import `.md` / `.zip` with preview | ✓ code | `AddSkillDrawer` + `ImportPreview` |
-| 16 | ≥ 1 imported skill on the new agents | **Run** (E1) | fixture deliberately not seeded |
-| 17 | Control experiment — Test Quality | **Run** (E1) | not run |
-| 18 | Control experiment — API Contract | **Run** (E1) | not run |
+| 16 | ≥ 1 imported skill on the new agents | ✓ done (manual pass 2026-09-22, steps B5–B8) | `breaking-change-checklist` imported, enabled, linked |
+| 17 | Control experiment — Test Quality | ✓ done, partial (manual pass 2026-09-22, steps E8–E9) | Honest, not a clean 0/3 vs 3/3 — see §4 |
+| 18 | Control experiment — API Contract | ✓ done (manual pass 2026-09-22, steps E2–E5) | Calibrated on PR #4, baseline silent, skilled catches the enum change — see §4 |
 | 19 | Token count next to the skills block | ✓ done (L5) | `PromptBlock` takes `label/text/color` only |
-| 20 | Disabled skill → no block | **Verify** (L8) | block renders iff `prompt_assembly.skills != null` |
+| 20 | Disabled skill → no block | ✓ verified (manual pass 2026-09-22, steps E3, E7) | Confirmed — no block when no skills attached |
 | 21 | pr-self-review manual on a mixed diff; hook off | ✓ done (L9) | `.claude/settings.json` registers a PreToolUse hook on Bash |
 | 22 | Card shows version + agent count | ✓ done (L2) | neither is rendered; DTO has no count |
 | 23 | Delete button on the card | ✓ done (L3) | delete lives only in the Config tab |
@@ -63,10 +63,10 @@ Legend (statuses updated after implementation — *done* = fixed and tested, *ve
 | 30 | Search in the agent Skills tab | ✓ code | `filter` input in `SkillsTab` |
 | 31 | Drag only enabled rows | ✓ done (L6) | every `<li>` is `draggable` (`SkillsTab.tsx:76`) |
 | 32 | Agent tile: name, description, model, toggle, skill count | ✓ code | `AgentCard` |
-| 33 | Agent delete button removes the DB row | ✓ verified (L8) | button exists |
+| 33 | Agent delete button removes the DB row | ✓ verified (manual pass 2026-09-22, steps D7–D8) | Confirmed direct-DB removal |
 | 34 | Agent delete confirm is a modal | ✓ done (L3) | `window.confirm` (`AgentCard.tsx:44`) |
-| 35 | Exactly 2 agent tabs | ✓ verified (L8) | `TABS` — confirm |
-| 36 | Config fields incl. strategy + model list | ✓ verified (L8) | imports suggest yes |
+| 35 | Exactly 2 agent tabs | ✓ verified (manual pass 2026-09-22, step D1) | Confirmed |
+| 36 | Config fields incl. strategy + model list | ✓ verified (manual pass 2026-09-22, step D2) | Confirmed |
 | 37 | Skills tab shows all skills with a **type label** | ✓ done (L6) | list is complete, per-row type label missing |
 
 ---
@@ -243,4 +243,7 @@ The homework reuses PR #1 for the four-skill rerun (it removes a field with no d
 | Implementation | L1 `54ed53d`, L10 `bf4be8c`, L9 `d14b3ac`, L7 `c84e610`, L2 `9b55905`, L3 `d5426d1`, L4 `bcf712a`, L5 `16dd8f1`, L6 `757b43a`, all on `lesson-02-laba`. Extras: `frontend-architecture` names `vendor/ui/nav.ts` as the one sanctioned vendor edit; `pr-self-review` v1.2.1 (R11 false positive — a second translator variable overrode the `t` scope, 12 bogus CRITICALs). Local `core.hooksPath` also unset (L9). |
 | Validation | client 176 tests + typecheck, server 133 unit + 51 integration + typecheck, e2e 8/8 (skills flow extended: card version/agent count, Add menu, Versioning tab, list beside editor), `pr-self-review --base 0d22f74`: gates clean, skill review PASS (one MEDIUM — ConfirmModal inline styles — fixed). **Verified by reading/tests:** 3, 4, 5 (skill contents), 8 and 33 (new `.it.test` against Postgres), 35, 36. **Still owed:** manual browser pass for 10, 14, 20 and the E1 runs for 16, 17, 18. |
 | Manual pass (2026-09-21) | Checklist steps S1–E4 walked by the author. Found and fixed: import upload failed in the browser (`apiFetch` sent JSON content-type for FormData, `fb0c4b1`); the E2 baseline was not silent (prompts trimmed to role level, DB agents updated via `PUT /agents/:id`, agent version 2). Steps to redo: B5–B8, D7–D8, E2–E10. |
-| Completion | — |
+| Manual pass, continued (2026-09-22) | Author walked the interactive checklist to completion (all 49 steps). Found and fixed four more real bugs during E-series calibration: (1) `api-contract-gate` v1 filed enum growth under Risky/WARNING next to "Safe: new field" — model called it safe 3/3 runs; fixed in v3 with a Breaking/CRITICAL paragraph + worked example. (2) `Review.verdict` was not recomputed after citation grounding dropped a finding (a run could show "rejected" with 0 findings, 100 score) — fixed with `verdictFromFindings` (`reviewer-core/INSIGHTS.md`). (3) Root cause of (2): a raw, unnumbered diff made the model systematically miscite lines by the diff-header's own length (+4) — fixed by annotating diff text with real line numbers (`reviewer-core/src/diff-annotate.ts`, `fcb7eee`) — this improves grounding accuracy for every agent, not just this one. (4) `pr-self-review`'s own checklist step (F1) named the wrong flag (`--gates` never shows skill routing; needed `--full`) and no `--base`, so it diffed the whole unmerged branch (307 files) instead of the two-line test edit — corrected, and `--full` surfaced one more real bug: a flaky e2e wait before clicking the agent editor's Skills tab (fixed, 3/3 stable reruns, `3306b18`). Also fixed the repo access blocker: the demo repo's fine-grained PAT could not read a freshly created private repo (404/403) — made `vzhut/api-contract-demo` public and recorded the constraint (`server/INSIGHTS.md`). |
+| Experiments, final (2026-09-22) | **API Contract Reviewer (18):** PR #4 (`cancelled` enum) calibrated last with `api-contract-gate` v3 + the verdict/diff-annotation fixes: baseline 0/6 CRITICAL, skilled 4–6/5–6 CRITICAL across calibration runs (author's own confirmation runs pending in the checklist DB). **Test Quality Reviewer (17):** an honest partial result on PR #2 (baseline already finds real issues 3/4 runs; skilled finds the same more consistently, sometimes CRITICAL) — not a clean 0/3 vs 3/3, documented as such rather than forced; PR #5 (a deliberately hidden negative-input bug) was a clean but unhelpful null result (0/6 vs 0/6) and is kept open, unused, as a real untested bug. **Criterion 16:** `breaking-change-checklist` imported through the UI, enabled, linked. |
+| Validation, final | client 179 tests, server 135 unit + 51 integration, reviewer-core 31 tests — all typecheck + test green post every fix above. e2e 8/8 stable across 3 consecutive reruns. `/pr-self-review --base HEAD --full` on an isolated client+server diff: PASS, 0 critical, 0 high, routing correct for both packages. |
+| Completion | All 37 criteria closed (§2 table updated to ✓ done / ✓ verified throughout the manual pass). `lesson-02-laba` ready to merge into `lesson-02-homework`; the homework spec (`conventions-extractor.md`) resumes from that merge commit. |
