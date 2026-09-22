@@ -9,6 +9,7 @@ import type {
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt, type PromptSkill } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
+import { annotateDiff } from '../diff-annotate.js';
 import { reduceReviews, scoreFromFindings, sliceDiff, verdictFromFindings } from './reduce.js';
 
 /**
@@ -139,7 +140,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   };
 
   // Whole-diff assembly is the trace default; overwritten below for single-pass.
-  let assembly: PromptAssembly = assemblePrompt({ ...promptParts, diff: input.diff.raw }).assembly;
+  let assembly: PromptAssembly = assemblePrompt({ ...promptParts, diff: annotateDiff(input.diff.raw) }).assembly;
 
   const chunks =
     mode === 'map-reduce'
@@ -169,7 +170,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
       mode === 'map-reduce' ? `map: reviewing ${chunk.label}` : `Reviewing ${chunk.label} in one pass`,
       { file: chunk.label },
     );
-    const a = assemblePrompt({ ...promptParts, diff: chunk.diffText });
+    const a = assemblePrompt({ ...promptParts, diff: annotateDiff(chunk.diffText) });
     if (mode === 'single-pass') assembly = a.assembly;
     const res = await input.llm.completeStructured<Review>({
       model: input.model,

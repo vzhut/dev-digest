@@ -126,7 +126,14 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
       `## Callers of changed symbols\n${wrapUntrusted('callers', parts.callers)}`,
     );
   }
-  userSections.push(`## Diff to review\n${wrapUntrusted('diff', parts.diff)}`);
+  userSections.push(
+    "## Diff to review\n" +
+      "The left gutter on each line is that line's real number in the file AFTER this " +
+      "change. Cite start_line/end_line exactly as printed there — do not count lines of " +
+      "this diff text yourself; a removed line (blank gutter) does not exist in the new " +
+      "file and is never a valid citation.\n" +
+      wrapUntrusted('diff', parts.diff),
+  );
 
   const user = userSections.join('\n\n');
 
