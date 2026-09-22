@@ -92,7 +92,7 @@ d('conventions module — extract/get', () => {
     });
     const [repoRow] = await pg.handle.db.select().from(t.repos).where(eq(t.repos.id, repoId));
     expect(body.candidates[0].evidence_url).toBe(
-      `https://github.com/acme/${repoRow!.name}/blob/sha-abc123/${SOURCE_PATH}#L1-L1`,
+      `https://github.com/acme/${repoRow!.name}/blob/sha-abc123/${SOURCE_PATH}#L1`,
     );
 
     const [scanRow] = await pg.handle.db.select().from(t.conventionScans).where(eq(t.conventionScans.repoId, repoId));

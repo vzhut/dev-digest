@@ -279,6 +279,12 @@ describe('buildEvidenceUrl', () => {
       'https://github.com/acme/payments-api/blob/abc123/src/api/users.ts#L23-L31',
     );
   });
+
+  it('a single-line span anchors as #L12, not #L12-L12 — GitHub\'s own convention', () => {
+    expect(buildEvidenceUrl('acme', 'payments-api', 'abc123', 'src/api/users.ts', 12, 12)).toBe(
+      'https://github.com/acme/payments-api/blob/abc123/src/api/users.ts#L12',
+    );
+  });
 });
 
 describe('slugify', () => {

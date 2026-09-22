@@ -289,7 +289,10 @@ export function buildEvidenceUrl(
   lineStart: number,
   lineEnd: number,
 ): string {
-  return `https://github.com/${owner}/${repo}/blob/${sha}/${path}#L${lineStart}-L${lineEnd}`;
+  // GitHub's own convention: a single-line anchor is `#L12`, never `#L12-L12` —
+  // the range form is reserved for an actual multi-line span.
+  const anchor = lineStart === lineEnd ? `L${lineStart}` : `L${lineStart}-L${lineEnd}`;
+  return `https://github.com/${owner}/${repo}/blob/${sha}/${path}#${anchor}`;
 }
 
 // ============================================================ Composer (§4.6)
