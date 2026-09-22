@@ -105,26 +105,6 @@ any skill for a cheap model: a severity bucket a model can read as adjacent to a
 it; an ambiguous classification needs a concrete example, not a longer bullet list, to survive scanning by a
 model that is optimizing for brevity over rule-following.
 
-### A grounding-dropped finding left a stale `request_changes` verdict behind it
-
-`reviewer-core/src/review/run.ts:208` (fix) · `reviewer-core/src/review/reduce.ts` (`verdictFromFindings`) · 2026-09-22
-
-Two runs on PR #4, `api-contract-gate` linked, showed a red "rejected" badge with **zero findings** and a 100 score —
-looking exactly like a broken skill, but the skill worked: the model found the enum-growth CRITICAL, then cited
-`src/schemas.ts:8` while the actual changed line is 4 (a plausible off-by-N miscount by a cheap model, not a wrong
-file). `groundFindings` correctly dropped the ungrounded finding — that gate is working as designed
-(`grounding.ts:4`, "citation grounding is the mandatory mechanical gate"). The bug was downstream: `run.ts` already
-recomputed `score` from the *grounded* findings (`scoreFromFindings(ground.kept)`, so the number never lies) but kept
-`merged.verdict` — the model's PRE-grounding self-report — untouched. So a run with the CRITICAL grounded away still
-persisted `verdict: 'request_changes'`, and the UI badge (`ReviewRunAccordion.tsx:60`, `VERDICT_COLOR[review.verdict]`)
-read straight off that field.
-
-Fixed with `verdictFromFindings` (same shape as `scoreFromFindings`): request_changes iff a CRITICAL survived
-grounding, comment for any lesser finding, approve for empty — applied in the same line that already fixes the
-score. Covered by `reviewer-core/test/run.test.ts` ("verdict is recomputed after grounding"). Lesson: when a
-pipeline step is known to change what findings survive, every downstream field derived from findings needs the
-SAME post-grounding recompute — fixing score alone leaves other fields inconsistent with it.
-
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
