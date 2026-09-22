@@ -9,7 +9,7 @@ import type {
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt, type PromptSkill } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
-import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
+import { reduceReviews, scoreFromFindings, sliceDiff, verdictFromFindings } from './reduce.js';
 
 /**
  * reviewPullRequest — the review engine entry point.
@@ -205,7 +205,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   // self-reported number, and not the pre-grounding set) so the score, the
   // findings list, and the deterministic event always agree.
   return {
-    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept) },
+    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept), verdict: verdictFromFindings(ground.kept) },
     grounding,
     dropped: ground.dropped,
     mode,

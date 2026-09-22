@@ -88,6 +88,46 @@ describe('reviewPullRequest (engine)', () => {
     expect(outcome.review.score).toBe(100);
   });
 
+  it('verdict is recomputed after grounding: an all-hallucinated request_changes becomes approve', async () => {
+    // The model says request_changes with one CRITICAL, but that finding cites a
+    // line outside the diff, so grounding drops it. The persisted verdict must
+    // follow the SURVIVING (empty) findings, not the model's stale verdict —
+    // otherwise the UI shows a "rejected" badge next to zero findings and a 100 score.
+    const hallucinatedOnly = {
+      verdict: 'request_changes',
+      summary: 'breaking change',
+      score: 0,
+      findings: [
+        {
+          id: 'f1',
+          severity: 'CRITICAL',
+          category: 'bug',
+          title: 'cites a line not in the diff',
+          file: 'src/config.ts',
+          start_line: 999,
+          end_line: 999,
+          rationale: 'not real',
+          confidence: 0.9,
+          kind: 'finding',
+        },
+      ],
+    };
+    const llm = new MockLLMProvider('openai', { structured: hallucinatedOnly });
+    const diff = await new MockGitClient().diff();
+
+    const outcome = await reviewPullRequest({
+      systemPrompt: 'api contract reviewer',
+      model: 'deepseek/deepseek-v4-flash',
+      diff,
+      llm,
+      task: 'Review PR #4',
+    });
+
+    expect(outcome.review.findings).toHaveLength(0);
+    expect(outcome.review.verdict).toBe('approve');
+    expect(outcome.review.score).toBe(100);
+  });
+
   it('checkCancelled throwing aborts before the LLM call', async () => {
     const llm = new MockLLMProvider('openai', { structured: fixture });
     const diff = await new MockGitClient().diff();
