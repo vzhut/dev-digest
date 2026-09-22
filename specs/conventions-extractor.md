@@ -361,6 +361,15 @@ what came out wrong decides the order.
 
 Reuses `skills.md` §7 (agent, seed) and §8 (control design). The **PR source, the clean-baseline procedure and the 3-run protocol** are defined once in [`skills-lab-completion.md`](./skills-lab-completion.md) §3 and reused here — the same real repo and PR. Only what is **new** is below: the four-skill set.
 
+Done — [`conventions-extractor-experiment-report.md`](./conventions-extractor-experiment-report.md):
+`response-schema` + `deprecation-policy` created, `breaking-change-checklist` (already
+imported from the lab) + `api-contract-gate` linked alongside them, all 4 on API Contract
+Reviewer. Live on PR #1, 3× each side: baseline is inconsistent (full/bundled/missed across
+the 3 runs), all 4 skills are 3/3 consistent — every run cites all three breaking changes
+distinctly with old→new in the title and scores 0. §11.4 (closing the loop with
+`repo-conventions`, extracted live from `conventions-demo`) is a genuine, verified-in-trace
+"no change" — expected, since that skill's rules are unrelated to this PR's changes.
+
 ### 11.1 What exists vs what is missing
 
 | Wanted skill | State |
