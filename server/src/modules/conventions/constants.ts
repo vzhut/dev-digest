@@ -46,6 +46,13 @@ export const MIN_CONFIDENCE = 0.5;
 export const MAX_SNIPPET_LINES = 12;
 export const MAX_KEPT_CANDIDATES = 20;
 
+// ---- Create-skill (§4.6, C14) ----
+
+/** The default name every first extracted skill in a fresh DB gets (C14). A
+ * clash offers rename/update in the client; this constant is only the
+ * suggestion. */
+export const DEFAULT_SKILL_NAME = 'repo-conventions';
+
 /** Drop reasons, in the order §4.4 applies them — first failure wins. */
 export const DROP_REASONS = [
   'no_file',

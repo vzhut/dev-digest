@@ -1,5 +1,13 @@
 import { createHash } from 'node:crypto';
-import type { ConventionCandidate, ConventionCategory, ConventionScan, ConventionStatus } from '@devdigest/shared';
+import type {
+  ConventionCandidate,
+  ConventionCategory,
+  ConventionScan,
+  ConventionStatus,
+  Skill,
+  SkillSource,
+  SkillType,
+} from '@devdigest/shared';
 import {
   CONFIG_FILE_PATTERNS,
   MAX_CONFIG_BYTES,
@@ -332,6 +340,39 @@ export interface ConventionRowLike {
    * latest scan (a decided row can outlive several re-scans), so evidence
    * URLs stay pinned to the commit that was actually read (C3). */
   scanSha: string;
+}
+
+/**
+ * Row → wire DTO for the skill this module creates via `container.skillsRepo`
+ * (§4.1 `POST .../skill`). Deliberately NOT `../skills/helpers.js`'s
+ * `toSkillDto` — modules never import another module's folder
+ * (onion-architecture); this is the same trivial mapping, kept local.
+ */
+export interface CreatedSkillRowLike {
+  id: string;
+  name: string;
+  description: string;
+  type: SkillType;
+  source: SkillSource;
+  body: string;
+  enabled: boolean;
+  version: number;
+  evidenceFiles: string[] | null | undefined;
+}
+
+export function toSkillDtoFromRow(row: CreatedSkillRowLike): Skill {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    type: row.type,
+    source: row.source,
+    body: row.body,
+    enabled: row.enabled,
+    version: row.version,
+    evidence_files: row.evidenceFiles ?? null,
+    message: null,
+  };
 }
 
 export function toConventionCandidateDto(row: ConventionRowLike, owner: string, repoName: string): ConventionCandidate {

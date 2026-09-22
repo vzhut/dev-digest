@@ -128,4 +128,48 @@ export class ConventionsRepository {
     if (rows.length === 0) return [];
     return this.db.insert(t.conventions).values(rows).returning();
   }
+
+  /** Accepted rows for the repo — the composer's input (§4.6). */
+  async getAcceptedByRepo(workspaceId: string, repoId: string): Promise<ConventionRow[]> {
+    return this.db
+      .select()
+      .from(t.conventions)
+      .where(
+        and(
+          eq(t.conventions.workspaceId, workspaceId),
+          eq(t.conventions.repoId, repoId),
+          eq(t.conventions.status, 'accepted'),
+        ),
+      );
+  }
+
+  /** Accept / reject / edit (§4.1 PATCH). `undefined` when the row isn't in
+   * this repo/workspace — the caller turns that into a 404. */
+  async updateCandidate(
+    workspaceId: string,
+    repoId: string,
+    id: string,
+    patch: { status?: ConventionRow['status']; rule?: string },
+  ): Promise<ConventionRow | undefined> {
+    const setValues: Partial<ConventionRow> & { updatedAt: Date } = { updatedAt: new Date() };
+    if (patch.status !== undefined) setValues.status = patch.status;
+    if (patch.rule !== undefined) setValues.rule = patch.rule;
+    const [row] = await this.db
+      .update(t.conventions)
+      .set(setValues)
+      .where(
+        and(
+          eq(t.conventions.workspaceId, workspaceId),
+          eq(t.conventions.repoId, repoId),
+          eq(t.conventions.id, id),
+        ),
+      )
+      .returning();
+    return row;
+  }
+
+  async getScanSha(scanId: string): Promise<string | undefined> {
+    const [row] = await this.db.select({ sha: t.conventionScans.sha }).from(t.conventionScans).where(eq(t.conventionScans.id, scanId));
+    return row?.sha;
+  }
 }
