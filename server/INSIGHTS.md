@@ -71,6 +71,23 @@ empty findings list, which the UI shows as a clean approval. Prime it first (ope
 sanity-check a run: `tokens_in` and the `prompt_assembly.user` length must reflect the diff. A run with 0 findings and
 `0/0 passed` grounding is not evidence of a clean PR.
 
+### A CRITICAL from the "no skills" baseline can be a real bug in the demo PR, not model noise
+
+`server/INSIGHTS.md` (previous entry) · 2026-09-22
+
+After fixing the empty-diff trap, the calibrated PR #4 baseline still returned CRITICAL twice: `cancelRun` mutated
+the stored run object in place, so cancelling changed what `GET /runs/:id` returned to every other caller of that
+existing endpoint — a real, independent contract problem the reviewer (rightly) catches with no skill at all. It
+looked like the same "baseline is not silent" failure as the earlier `cost_usd`/route-move PRs, but the cause was
+different: not an easy-to-spot rename, but an actual defect introduced while writing the fixture PR.
+
+Fixed by making `cancelRun` return a new object (`{ ...run, status: 'cancelled' }`) and short-circuit on a
+terminal run, instead of `run.status = 'cancelled'` on the shared reference. Re-calibrated over 6 runs: baseline
+0/6 CRITICAL (only WARNINGs about missing idempotence, unrelated to the tested enum), skilled 3/4 CRITICAL for the
+enum. Lesson: when a "clean" experiment PR keeps failing, read what the CRITICAL actually says before blaming
+non-determinism — a fixture with its own latent bug will never have a silent baseline, no matter how many times
+you rerun it.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
