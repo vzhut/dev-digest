@@ -154,6 +154,20 @@ token, which is why the same repo worked from the CLI. Fix: add the repo under t
 (needs Contents: read, Pull requests: read), or make the repo public. Also note the clone URL embeds the token
 (`https://x-access-token:<token>@github.com/…`), so a git error printed to the log contains it in clear text.
 
+### `pnpm db:generate`'s rename-ambiguity prompt needs a real TTY — `yes ""` and `printf '\n' | …` hang it
+
+`server/src/db/schema/knowledge.ts` (conventions reshape) · 2026-09-22
+
+Adding several new NOT NULL columns to an existing table while also dropping one (`accepted` → `scan_id`,
+`category`, …) makes drizzle-kit ask, once per new column, "Is `X` column … created or renamed from another
+column?" with an arrow-key list. Piping `yes ""` or `printf '\n\n\n' | pnpm db:generate` does not answer it —
+the process just sits at 100% CPU forever, because the prompt library reads raw keypresses off a real TTY, not
+buffered stdin lines. `kill -9` was needed; the run showed `[exited with code 0]` in the captured output but
+the migration was never written. Fix: give it a real pty with `expect` (`spawn pnpm db:generate` +
+`expect -re "create column" { send "\r"; exp_continue }`) — each prompt's first option is already the
+"+ create column" answer we want, so a bare Enter per prompt is correct here. Don't reach for `answer as rename`
+answers this way without checking each prompt's default first — they differ per column.
+
 ## Recurring Errors & Fixes
 
 
