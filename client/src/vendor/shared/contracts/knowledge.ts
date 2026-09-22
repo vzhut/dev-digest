@@ -182,15 +182,59 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+export const ConventionCategory = z.enum([
+  'naming',
+  'structure',
+  'error-handling',
+  'typing',
+  'testing',
+  'imports',
+  'api',
+  'style',
+  'other',
+]);
+export type ConventionCategory = z.infer<typeof ConventionCategory>;
+
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: ConventionCategory,
   rule: z.string(),
+  /** `rule !== ruleOriginal` — the UI shows an "edited" chip. */
+  edited: z.boolean(),
   evidence_path: z.string(),
+  evidence_line_start: z.number().int(),
+  evidence_line_end: z.number().int(),
+  /** Read from the file by code, never the model's text. */
   evidence_snippet: z.string(),
+  /** Built server-side from the repo + the scan's `sha` (C3) — a GitHub blob URL. */
+  evidence_url: z.string().url(),
   confidence: z.number().min(0).max(1),
-  accepted: z.boolean(),
+  status: ConventionStatus,
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+export const ConventionScan = z.object({
+  id: z.string(),
+  sha: z.string(),
+  sample_files: z.number().int(),
+  raw_count: z.number().int(),
+  kept_count: z.number().int(),
+  /** Counts per drop reason, e.g. `{ quote_mismatch: 3 }` (§4.4). */
+  dropped: z.record(z.number()),
+  model: z.string(),
+  cost_usd: z.number().nullable(),
+  created_at: z.string(),
+});
+export type ConventionScan = z.infer<typeof ConventionScan>;
+
+export const ConventionsResponse = z.object({
+  scan: ConventionScan.nullable(),
+  candidates: z.array(ConventionCandidate),
+});
+export type ConventionsResponse = z.infer<typeof ConventionsResponse>;
 
 // ---- Agents ----
 export const Provider = z.enum(['openai', 'anthropic', 'openrouter']);
