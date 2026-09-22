@@ -168,9 +168,30 @@ Same agent, model and diff on both sides; **all skills disabled on the agent** v
 and `mocking-discipline`. For the "without skills" run disable **every** skill on the agent (per-agent `enabled`) and
 confirm in the trace that no skills block exists (that is also criterion 20).
 
+**Test Quality calibration, in detail — an honest partial result, not a clean split.** Two custom PRs were
+tried before settling on PR #2. **[#5 Add a retry helper with backoff](https://github.com/vzhut/api-contract-demo/pull/5)**
+was built to hide one subtle bug behind otherwise-thorough tests: a negative `retries` makes the retry loop
+never execute, so the function `throw`s `undefined` instead of a real error. Calibrated 6 runs per side:
+baseline **0/6 blockers** (clean), skilled (`test-coverage-nudge` + `mocking-discipline`) **0/6 blockers** too
+— neither ever mentioned the negative-input case in 12 runs total. `deepseek-v4-flash` does not connect "check
+zero/negative for a numeric parameter" (the skill's own wording) with a config field like `retries`; the skill
+added no value here. **PR #5 stays open in the demo repo as a genuine untested bug, but is not used for this
+criterion** — a documented null result, not a "the skill failed" claim.
+
+The PR actually used, **#2 Add a budget guard for runs** (`checkBudget`: a `RangeError` on a negative limit, a
+clamped over-budget branch, a boundary at `cost === limit`; the shipped test covers only the happy path),
+calibrated 4 baseline / 3 skilled runs: the baseline already reports real findings (WARNING/SUGGESTION for the
+untested branches, one run also CRITICAL for an unrelated real issue — `checkBudget` has no production call
+site) in 3 of 4 runs, because a role-level Test Quality prompt is already decent at "does this test cover this
+branch" for an isolated ~10-line diff. The skilled runs find the same branches more consistently and sometimes
+at CRITICAL. The skill's contribution here is **consistency and severity, not turning a miss into a catch**.
+Record this plainly in the demo and the quality report — name the specific branch/boundary each run found,
+don't claim 0/3 vs 3/3. (A cleaner split would need a larger, noisier diff where the gap gets lost among other
+changes, not an isolated pure function — out of scope for this pass.)
+
 | Agent | PR | Baseline (skills off) | With skills |
 |---|---|---|---|
-| Test Quality Reviewer (17) | adds a function with a failure branch and a **happy-path-only** test | expected 0/3 flag the uncovered branch | 3/3 flag the branch **and** a boundary case |
+| Test Quality Reviewer (17) | **PR #2** — see the honest partial result below (not a clean split) | 3/4 runs already flag WARNING/SUGGESTION for the untested branches | 3/3 flag them too, more consistently, sometimes CRITICAL |
 | API Contract Reviewer (18) | **PR #4** (current head, 2 commits) — adds `POST /runs/:id/cancel` and the value `cancelled` to the `RunStatus` enum that clients switch over. PRs #1 and #3 were tried first: the baseline flagged obvious changes there; PR #4's first commit had a mutation bug the baseline correctly caught (fixed) | **0/6 CRITICAL, calibrated** | **4/5 CRITICAL** for the enum, correctly grounded (calibrated 2026-09-22, post skill v3 + verdict fix `c20a3e3` + diff-annotation fix `fcb7eee`). One genuine model miss is expected variance; run 3 and take the majority. Do not reproduce the three fixed failure modes above |
 
 - **Criterion 16:** `breaking-change-checklist` (`docs/skill-fixtures/`) is **imported through the UI** — preview → confirm, `install.sh` listed as ignored — then **enabled** (imported skills land disabled) and **linked** to the API Contract Reviewer.
@@ -187,6 +208,7 @@ confirm in the trace that no skills block exists (that is also criterion 20).
 | [#4 Allow cancelling a run](https://github.com/vzhut/api-contract-demo/pull/4) | `feat/cancel-runs` | **18, API Contract (the experiment PR)** | adds `POST /runs/:id/cancel` and the value `cancelled` to `RunStatus`. The only contract change is the enum value, which the baseline never flagged |
 | [#3 Polish run responses](https://github.com/vzhut/api-contract-demo/pull/3) | `feat/polish-run-responses` | tried for 18, **not used** — the baseline flagged 6 of 6 | adds enum value `cancelled`, makes `findings_count` nullable, tightens `pr_number` to `.max(9999)`, renames the 404 body `error` → `message`. Subtle contract changes the checklist names; a generic model does not flag them |
 | [#2 Add a budget guard for runs](https://github.com/vzhut/api-contract-demo/pull/2) | `feat/budget-guard` | 17, Test Quality | adds `checkBudget` with a throw branch, an over-budget branch and boundaries; its test covers **only** the happy path |
+| [#5 Add a retry helper with backoff](https://github.com/vzhut/api-contract-demo/pull/5) | `feat/retry-helper` | tried for 17, **not used** — 0/6 blockers on both sides (§4 above) | a negative `retries` makes the loop never run, throwing `undefined` — a real, still-untested bug neither the baseline nor the skill ever found |
 
 The homework reuses PR #1 for the four-skill rerun (it removes a field with no deprecation, so `deprecation-policy` and `semver-discipline` have something to catch).
 
