@@ -5,6 +5,8 @@ import type {
   GitClient,
   CodeIndex,
   Embedder,
+  FeatureModelChoice,
+  FeatureModelId,
   LLMProvider,
 } from '@devdigest/shared';
 import type { AppConfig } from './config.js';
@@ -26,6 +28,7 @@ import { ConfigError } from './errors.js';
 import { AgentsRepository } from '../modules/agents/repository.js';
 import { ReviewRepository } from '../modules/reviews/repository.js';
 import { SkillsRepository } from '../modules/skills/repository.js';
+import { resolveFeatureModel } from '../modules/settings/feature-models.js';
 import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
@@ -104,6 +107,13 @@ export class Container {
 
   get skillsRepo(): SkillsRepository {
     return (this._skillsRepo ??= new SkillsRepository(this.db));
+  }
+
+  /** Workspace override, else the registry default (settings/feature-models.js)
+   * — the one way a feature module resolves its own provider+model, so no
+   * module reaches into `modules/settings/*` directly. */
+  async resolveFeatureModel(workspaceId: string, id: FeatureModelId): Promise<FeatureModelChoice> {
+    return resolveFeatureModel(this, workspaceId, id);
   }
 
   get codeIndex(): CodeIndex {

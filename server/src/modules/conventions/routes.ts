@@ -14,14 +14,17 @@ import { ConventionStatus, type ConventionsResponse } from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { ConventionsService } from './service.js';
+import { MAX_RULE_LENGTH } from './constants.js';
 
 const CandidateParams = z.object({ id: z.string().uuid(), cid: z.string().uuid() });
 
 const PatchCandidateBody = z
   .object({
     status: ConventionStatus.optional(),
-    // Empty/whitespace-only → 422 at the schema layer (spec §4.1: "Empty rule → 422").
-    rule: z.string().trim().min(1).optional(),
+    // Empty/whitespace-only → 422 (spec §4.1: "Empty rule → 422"); capped at the same
+    // MAX_RULE_LENGTH the extractor itself enforces (helpers.ts verifyCandidate), so a
+    // hand-edit can't write past the bound every other path respects.
+    rule: z.string().trim().min(1).max(MAX_RULE_LENGTH).optional(),
   })
   .strict();
 

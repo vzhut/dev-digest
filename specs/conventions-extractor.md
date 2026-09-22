@@ -443,7 +443,10 @@ Straight from the brief — each must be demonstrable on camera:
 ## 13. Grading criteria 38–53 — traceability
 
 Criteria **1–37 (the lab)** are tracked in [`skills-lab-completion.md`](./skills-lab-completion.md) and must be finished and committed on `lesson-02-laba` first.
-Status here: **Spec ✓** = covered by this document.
+Status here: **Spec ✓** = covered by this document. All 16 are now implemented (slices 1–9,
+`lesson-02-homework`); the manual click-through pass against
+[`conventions-extractor-verification.md`](./conventions-extractor-verification.md) is the
+remaining step before checking each row off as demonstrated.
 
 | # | Status | Where |
 |---|---|---|
@@ -484,6 +487,6 @@ Resolved: hook on `git push` is off (lab slice L9, criterion 21).
 |---|---|
 | Initiation | This document. Key findings: table, contract, feature-model key, sampler and `extracted` skill source all exist from Part-0/L02 (§1); API Contract Reviewer and its first skills are already seeded (§11.1). |
 | Planning | C1–C16 agreed with the user; grading criteria audited against the code (§13); lab gaps moved to `skills-lab-completion.md`. No open questions. |
-| Implementation | — |
-| Validation | — |
-| Completion | — |
+| Implementation | 10 slices, `lesson-02-homework` (`6e4f4b9`..`27824a7`): 1 schema+contracts, 2 pure core, 3 repository/service/routes, 4 PATCH+skill-draft+skill, 5 client hooks+cards, 6 create-skill modal+nav, 7 seed+e2e+live 3-repo quality run, 8 API-contract 4-skill experiment, 9 measured-support (§10 #1). |
+| Validation | Server 227/227, client 196/196, both typecheck clean (checked after every slice). e2e: 9/9 flows incl. `09-conventions.flow.json`, hermetic stack. Live: 3-repo quality run ([`conventions-extractor-quality-report.md`](./conventions-extractor-quality-report.md), precision 0.50) and the API Contract Reviewer experiment ([`conventions-extractor-experiment-report.md`](./conventions-extractor-experiment-report.md), 3/3 skilled vs inconsistent baseline). Manual click-through checklist: [`conventions-extractor-verification.md`](./conventions-extractor-verification.md). |
+| Completion | `pr-self-review` run by hand (hook off, lab slice L9) — see report below. INSIGHTS: 3 entries in `server/INSIGHTS.md` (drizzle-kit's rename prompt, uncalibrated confidence, config-file-as-evidence). §10 #1 implemented (slice 9); #2–#9 remain future work. |

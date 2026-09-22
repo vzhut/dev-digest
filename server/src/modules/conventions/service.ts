@@ -1,7 +1,6 @@
 import type { ConventionCandidate, ConventionStatus, ConventionsResponse, RepoRef, Skill } from '@devdigest/shared';
 import type { Container } from '../../platform/container.js';
 import { AppError, NotFoundError, ValidationError } from '../../platform/errors.js';
-import { resolveFeatureModel } from '../settings/feature-models.js';
 import { ConventionsRepository, type ConventionRow, type InsertConvention } from './repository.js';
 import {
   type AcceptedConvention,
@@ -117,7 +116,7 @@ export class ConventionsService {
     const promptConfigFiles: SampledFile[] = configFiles.map((f) => ({ path: f.path, content: f.content }));
     const promptSourceFiles: SampledFile[] = sourceFiles.map((f) => ({ path: f.path, content: numberAndCapLines(f.content) }));
 
-    const modelChoice = await resolveFeatureModel(this.container, workspaceId, 'conventions');
+    const modelChoice = await this.container.resolveFeatureModel(workspaceId, 'conventions');
     const llm = await this.container.llm(modelChoice.provider);
     const result = await llm.completeStructured({
       model: modelChoice.model,

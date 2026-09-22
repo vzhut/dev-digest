@@ -99,12 +99,12 @@ export function ConventionsView() {
       </div>
 
       {extractGuidance && (
-        <div style={{ margin: "0 32px 14px" }}>
+        <div style={s.errorBand}>
           <ErrorState title={t("page.extractionFailed")} body={extractGuidance} onRetry={runScan} />
         </div>
       )}
       {!extractGuidance && extract.isError && (
-        <div style={{ margin: "0 32px 14px" }}>
+        <div style={s.errorBand}>
           <ErrorState title={t("page.extractionFailed")} body={apiErrorMessage(extract.error, t("page.extractionFailed"))} onRetry={runScan} />
         </div>
       )}
@@ -116,11 +116,11 @@ export function ConventionsView() {
           ))}
         </div>
       ) : isError ? (
-        <div style={{ margin: "0 32px" }}>
+        <div style={s.contentBand}>
           <ErrorState title={t("page.loadError")} body={apiErrorMessage(error, t("page.loadError"))} onRetry={() => refetch()} />
         </div>
       ) : !scan ? (
-        <div style={{ margin: "0 32px" }}>
+        <div style={s.contentBand}>
           <EmptyState
             icon="Sparkles"
             title={t("page.empty.title")}
@@ -131,7 +131,7 @@ export function ConventionsView() {
           />
         </div>
       ) : candidates.length === 0 ? (
-        <div style={{ margin: "0 32px" }}>
+        <div style={s.contentBand}>
           <EmptyState icon="Sparkles" title={t("page.zeroResult.title")} body={t("page.zeroResult.body")} />
         </div>
       ) : (

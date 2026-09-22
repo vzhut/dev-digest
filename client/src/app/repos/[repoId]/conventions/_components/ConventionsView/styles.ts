@@ -52,4 +52,12 @@ export const s = {
     flexDirection: "column",
     gap: 14,
   } satisfies CSSProperties,
+  /** The page's single side-gutter width, reused by every full-bleed band
+   * below the header (error banners, empty/error states, the loading stack). */
+  errorBand: {
+    margin: "0 32px 14px",
+  } satisfies CSSProperties,
+  contentBand: {
+    margin: "0 32px",
+  } satisfies CSSProperties,
 } as const;
