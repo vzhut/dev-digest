@@ -3,6 +3,7 @@
     "noDescription": "No description",
     "skillCount": "{count} skills",
     "delete": "Delete agent",
+    "deleteConfirm": "Delete",
     "confirmDelete": "Delete agent \"{name}\"? This cannot be undone."
   },
   "list": {
@@ -101,6 +102,13 @@
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
     "dragHandle": "Drag to reorder {name}",
+    "dragDisabled": "Only enabled skills can be reordered — enable it first.",
+    "type": {
+      "rubric": "rubric",
+      "convention": "convention",
+      "security": "security",
+      "custom": "custom"
+    },
     "save": "Save skills",
     "saving": "Saving…",
     "savedToast": "Agent skills saved"

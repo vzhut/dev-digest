@@ -20,6 +20,7 @@ export const s = {
     background: "var(--bg-elevated)",
   } satisfies CSSProperties,
   rowDragOver: { borderColor: "var(--accent)" } satisfies CSSProperties,
+  handleOff: { cursor: "not-allowed", color: "var(--text-muted)", opacity: 0.35, userSelect: "none" } satisfies CSSProperties,
   handle: { cursor: "grab", color: "var(--text-tertiary)", userSelect: "none" } satisfies CSSProperties,
   label: { display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0, cursor: "pointer" } satisfies CSSProperties,
   labelOff: { opacity: 0.6, cursor: "not-allowed" } satisfies CSSProperties,

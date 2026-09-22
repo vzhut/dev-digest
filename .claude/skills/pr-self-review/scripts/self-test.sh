@@ -105,6 +105,7 @@ fires  "R11 with arguments"   "$P_I18N_CALL" 'return <b>{t("runCost.label", { co
 silent "R11 not a t() call"   "$P_I18N_CALL" 'const formatted = format("finding.accept");'
 fires  "R11 scope useTranslations" "$P_I18N_SCOPE" 'const t = useTranslations("prReview");'
 fires  "R11 scope getTranslations" "$P_I18N_SCOPE" 'const t = await getTranslations("prReview");'
+silent "R11 second translator (tType) is not the t scope" "$P_I18N_SCOPE" 'const tType = useTranslations("skills.listItem.type");'
 
 echo
 printf '%s passed, %s failed\n' "$PASS" "$FAIL"

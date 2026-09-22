@@ -3,6 +3,16 @@
 All notable changes to this skill. Versioning per `SKILL.md` → *Versioning*:
 MAJOR — a change that flips a verdict · MINOR — a new rule or routing row · PATCH — wording.
 
+## 1.2.1 — 2026-09-21
+
+### R11 gave the wrong namespace to files with two translators
+
+The scope regex matched any `useTranslations(...)` regardless of the variable it was assigned to, while
+the call regex only matches `t(...)`. A component with `const t = useTranslations("skills.add")` and
+`const tType = useTranslations("skills.listItem.type")` had every `t(...)` resolved against the *second*
+namespace, so 12 correct keys were reported as missing CRITICALs (`CreateSkillModal.tsx`). The scope now has
+to be assigned to `t`; `self-test.sh` has a silent case for `tType`.
+
 ## 1.2.0 — 2026-09-21
 
 Follow-up to the 1.1.0 bug fixes: the two dead gates were symptoms, so this release goes after

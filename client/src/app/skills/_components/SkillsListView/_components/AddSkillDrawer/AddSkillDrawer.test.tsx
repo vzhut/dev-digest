@@ -7,10 +7,8 @@ import { AddSkillDrawer } from "./AddSkillDrawer";
 
 const previewMutate = vi.fn();
 const confirmMutate = vi.fn();
-const createMutate = vi.fn();
 const firstCall = () => confirmMutate.mock.calls[0]?.[0] ?? {};
 vi.mock("@/lib/hooks/skills", () => ({
-  useCreateSkill: () => ({ mutateAsync: createMutate, isPending: false }),
   useImportPreview: () => ({ mutateAsync: previewMutate, isPending: false }),
   useConfirmImport: () => ({ mutateAsync: confirmMutate, isPending: false }),
 }));
@@ -41,13 +39,18 @@ function setup(onClose = vi.fn()) {
 
 async function uploadFile(preview: SkillImportPreview) {
   previewMutate.mockResolvedValue(preview);
-  fireEvent.click(screen.getByText("Import from file"));
   const input = screen.getByLabelText("Choose a .md or .zip file") as HTMLInputElement;
   fireEvent.change(input, { target: { files: [new File(["x"], "s.zip")] } });
   await screen.findByText("run.sh");
 }
 
 describe("AddSkillDrawer", () => {
+  it("is import-only: a file picker, no manual form", () => {
+    setup();
+    expect(screen.getByLabelText("Choose a .md or .zip file")).toBeInTheDocument();
+    expect(screen.queryByText("Skill body (Markdown)")).toBeNull();
+  });
+
   it("renders nothing when closed", () => {
     const { container } = render(
       <NextIntlClientProvider locale="en" messages={{ skills: messages }}>

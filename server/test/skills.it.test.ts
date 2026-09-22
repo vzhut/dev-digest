@@ -166,6 +166,44 @@ d('skills module', () => {
     await app.close();
   });
 
+  it('list/get carry agent_count: 0 unlinked, counts every link (enabled or not)', async () => {
+    const app = await makeApp();
+    const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload() })).json();
+    const count = async () => {
+      const list = (await app.inject({ method: 'GET', url: '/skills' })).json() as { id: string; agent_count: number }[];
+      const one = (await app.inject({ method: 'GET', url: `/skills/${s.id}` })).json();
+      expect(one.agent_count).toBe(list.find((x) => x.id === s.id)!.agent_count);
+      return one.agent_count as number;
+    };
+    expect(await count()).toBe(0);
+
+    const agents = await pg.handle.db.select().from(t.agents).limit(2);
+    expect(agents.length).toBe(2);
+    await pg.handle.db.insert(t.agentSkills).values({ agentId: agents[0]!.id, skillId: s.id, order: 0 });
+    await pg.handle.db.insert(t.agentSkills).values({ agentId: agents[1]!.id, skillId: s.id, order: 0, enabled: false });
+    expect(await count()).toBe(2);
+
+    await pg.handle.db.delete(t.agentSkills).where(eq(t.agentSkills.skillId, s.id));
+    expect(await count()).toBe(0);
+    await app.close();
+  });
+
+  it('the API and Postgres agree: a POST is a real row, and a row deleted in the DB is gone from GET /skills', async () => {
+    const app = await makeApp();
+    const name = `db-truth-${Date.now()}`;
+    const created = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ name }) })).json();
+
+    const rows = await pg.handle.db.select().from(t.skills).where(eq(t.skills.id, created.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ name, source: 'manual', version: 1 });
+
+    await pg.handle.db.delete(t.skills).where(eq(t.skills.id, created.id));
+    const list = (await app.inject({ method: 'GET', url: '/skills' })).json() as { id: string }[];
+    expect(list.some((x) => x.id === created.id)).toBe(false);
+    expect((await app.inject({ method: 'GET', url: `/skills/${created.id}` })).statusCode).toBe(404);
+    await app.close();
+  });
+
   it('workspace isolation: another workspace cannot see, edit, or collide with a skill', async () => {
     const app = await makeApp();
     const s = (await app.inject({ method: 'POST', url: '/skills', payload: payload({ name: 'iso-1' }) })).json();

@@ -38,6 +38,73 @@ actually landed rather than trusting a clean `pnpm db:migrate`.
 
 **Update 2026-09-17:** `seed.ts` now uses the same `pathToFileURL` guard. It showed up as a real failure: `./scripts/e2e.sh` ran `pnpm db:seed` against the isolated Postgres. That step printed only the pnpm banner, with no "✓ seeded", and exited 0. The API then answered every request with `No system user found — run \`pnpm db:seed\`.`, and all 7 e2e flows failed. The tell is a missing "✓ seeded" line. After the fix, 7/7 flows pass.
 
+### A detailed reviewer prompt makes the with/without-skills experiment vacuous
+
+`server/src/db/seed-prompts.ts` (`API_CONTRACT_REVIEWER_PROMPT`) · `docs/agent-prompts/api-contract-reviewer.md` · 2026-09-21
+
+With every skill unticked, API Contract Reviewer still flagged the `cost_usd → costUsd` rename, the removed
+`tokens_out` and the moved route on PR #1 in 3 of 4 runs (2, 0, 4 and 4 blockers), so the baseline was not silent and
+the control experiment (criteria 17/18) could show no difference. The cause was the prompt itself: its "What to look
+for" list was the breaking-change checklist, with `cost_usd` → `costUsd` as a literal example, and the severity levels
+defined CRITICAL as exactly those changes. Test Quality Reviewer had the same shape (uncovered branches, boundaries).
+
+Skills only add signal when the prompt leaves room for them. Both prompts are now role-level: who you are, scope,
+severity and verdict conventions, and "apply the rules in Skills / rules". The DB row is what runs, and the seed only
+inserts missing agents, so an existing workspace needs `PUT /agents/:id` (or the Config tab) to pick the change up.
+Do not judge a skill by a run on an agent whose prompt already contains the same checklist. Also expect run-to-run
+variance: the same diff gave 0 findings once and 4 blockers three times, so a single baseline run proves nothing.
+
+### Reviewing a freshly synced PR before opening it runs on an EMPTY diff and approves it
+
+`server/src/modules/reviews/diff-loader.ts:9` · `server/src/modules/pulls/routes.ts:27` · 2026-09-21
+
+Three runs started through `POST /pulls/:id/review` right after the PR list synced came back `approved`, 0 findings,
+`grounding 0/0 passed` — on a PR whose other runs found 3 issues. The tell was in the run row: `tokens_in` 994 against
+2118 for the same agent on the same PR, and `run_traces.trace->'prompt_assembly'->>'user'` was 560 characters instead of
+5751, i.e. the prompt held no diff. A calibration built on those runs ("baseline finds nothing") was wrong and was reported
+as valid before the token counts were checked.
+
+`loadDiff` tries a local `git diff base...head` and, when that throws (the shallow clone does not have the PR head yet),
+falls back to the `pr_files` patches. `GET /repos/:id/pulls` stores PR metadata only; `pr_files` is filled when the PR
+detail is opened (`GET /pulls/:id`). With neither source there is nothing to review and the model dutifully returns an
+empty findings list, which the UI shows as a clean approval. Prime it first (open the PR page, or `GET /pulls/:id`), and
+sanity-check a run: `tokens_in` and the `prompt_assembly.user` length must reflect the diff. A run with 0 findings and
+`0/0 passed` grounding is not evidence of a clean PR.
+
+### A CRITICAL from the "no skills" baseline can be a real bug in the demo PR, not model noise
+
+`server/INSIGHTS.md` (previous entry) · 2026-09-22
+
+After fixing the empty-diff trap, the calibrated PR #4 baseline still returned CRITICAL twice: `cancelRun` mutated
+the stored run object in place, so cancelling changed what `GET /runs/:id` returned to every other caller of that
+existing endpoint — a real, independent contract problem the reviewer (rightly) catches with no skill at all. It
+looked like the same "baseline is not silent" failure as the earlier `cost_usd`/route-move PRs, but the cause was
+different: not an easy-to-spot rename, but an actual defect introduced while writing the fixture PR.
+
+Fixed by making `cancelRun` return a new object (`{ ...run, status: 'cancelled' }`) and short-circuit on a
+terminal run, instead of `run.status = 'cancelled'` on the shared reference. Re-calibrated over 6 runs: baseline
+0/6 CRITICAL (only WARNINGs about missing idempotence, unrelated to the tested enum), skilled 3/4 CRITICAL for the
+enum. Lesson: when a "clean" experiment PR keeps failing, read what the CRITICAL actually says before blaming
+non-determinism — a fixture with its own latent bug will never have a silent baseline, no matter how many times
+you rerun it.
+
+### A skill that files an item under "Risky/WARNING" gets read as "Safe" by a cheap model
+
+`server/src/db/seed.ts` (`api-contract-gate`, now v3 in the DB) · 2026-09-22
+
+With `api-contract-gate` linked, 3 of 3 runs on PR #4 (adds `'cancelled'` to `RunStatus`) returned ZERO findings,
+verdict `comment`, summary: "a new enum value, both safe per the API contract gate". The skill did list "an enum
+gained or lost a value clients switch over" — but under **Risky (WARNING)**, two paragraphs above a **Safe (do not
+report): … a new response field** bullet. `deepseek-v4-flash` conflated the two: a new enum *value* on an existing
+field read to it as the same class as a new *field*, and it never even reported the WARNING the skill asked for.
+
+Fixed by moving enum growth into its own **Breaking (CRITICAL)** paragraph, with a worked bad/good example (a
+`switch` with no `default` that silently mishandles the new value) and an explicit "do not be talked out of this by
+the Safe list below" line. Re-verified 4/4 CRITICAL after the edit (`PUT /skills/:id`, version 3). Lesson for writing
+any skill for a cheap model: a severity bucket a model can read as adjacent to a lower one will get pulled down to
+it; an ambiguous classification needs a concrete example, not a longer bullet list, to survive scanning by a
+model that is optimizing for brevity over rule-following.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
@@ -75,11 +142,35 @@ case in `test/reviews.it.test.ts` and the failed-run assertion in `test/backfill
 
 ## Tool & Library Notes
 
-_No entries yet._
+
+### A fine-grained GitHub PAT only sees the repositories chosen when it was created
+
+`server/.env` (`GITHUB_TOKEN`) · `server/src/modules/repos/service.ts:55` · 2026-09-21
+
+A token starting `github_pat_` is fine-grained. A repository created after the token was issued is invisible to it,
+even the owner's own: `GET /repos/<owner>/<repo>/pulls` returns **404** (not 403) and `git clone` returns
+`403 Write access to repository not granted`. Neither message says "token scope". `gh` used a different OAuth
+token, which is why the same repo worked from the CLI. Fix: add the repo under the token's *Repository access*
+(needs Contents: read, Pull requests: read), or make the repo public. Also note the clone URL embeds the token
+(`https://x-access-token:<token>@github.com/…`), so a git error printed to the log contains it in clear text.
 
 ## Recurring Errors & Fixes
 
-_No entries yet._
+
+### A failed clone job crashes the whole API process
+
+`server/src/platform/jobs.ts:85` · `server/src/modules/repos/service.ts:98` · 2026-09-21
+
+Adding a repo the GitHub token cannot read (`POST /repos` for a private repo outside a fine-grained PAT's
+list) killed the API: the log ends with `GitError: … Write access to repository not granted … 403` and
+`Node.js v24.11.0`, after which the web app shows "network error" until `./scripts/dev.sh` is restarted.
+
+`JobRunner.enqueue` marks the row `failed`, then re-throws (`throw err`) inside the queued task, and returns that
+task as `done`. `RepoService.add` and `refresh` `await enqueue(...)` for the *insert* but discard `done`, so the
+rejection has no handler. Node 15+ turns an unhandled rejection into a process exit. The same pattern applies to
+every other caller of `enqueue`. Until callers attach a handler (or the runner swallows after recording the
+failure), a bad token, a deleted repo or a network blip on any job kind takes the server down. Repro:
+`POST /repos {url: "https://github.com/<owner>/<private-repo-outside-the-token>"}`.
 
 ## Session Notes
 

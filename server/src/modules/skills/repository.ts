@@ -51,6 +51,21 @@ export class SkillsRepository {
       .orderBy(asc(t.skills.name));
   }
 
+  /** skill id → number of agents it is linked to (enabled or not). Skills with no link are absent. */
+  async agentCounts(workspaceId: string, skillId?: string): Promise<Map<string, number>> {
+    const rows = await this.db
+      .select({ skillId: t.agentSkills.skillId, n: sql<number>`count(*)::int` })
+      .from(t.agentSkills)
+      .innerJoin(t.skills, eq(t.skills.id, t.agentSkills.skillId))
+      .where(
+        skillId
+          ? and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.id, skillId))
+          : eq(t.skills.workspaceId, workspaceId),
+      )
+      .groupBy(t.agentSkills.skillId);
+    return new Map(rows.map((r) => [r.skillId, r.n]));
+  }
+
   async getById(workspaceId: string, id: string): Promise<SkillRow | undefined> {
     const [row] = await this.db
       .select()

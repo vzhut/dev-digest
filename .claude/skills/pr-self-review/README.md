@@ -13,22 +13,19 @@ else does.
 /pr-self-review --accept c1a4 "the PR body is sanitised upstream"
 ```
 
-You mostly won't type it. The `PreToolUse` hook in `.claude/settings.json` blocks
-`git push`, `gh pr create`, `gh pr merge` and `gh pr ready` until a PASS exists for the exact
-current diff, and the agent then runs the review by itself.
+It is **manual-only**: run it yourself before you push or open a PR. Nothing triggers it automatically —
+the `PreToolUse` hook registration was removed from `.claude/settings.json` and `core.hooksPath` is unset.
 
-Two tiers, because one verdict for everything was too slow to survive. `git push` needs only
-the deterministic gates (~12s) — a branch push is cheap and reversible. `gh pr create`,
-`gh pr merge` and `gh pr ready` need the full review, because that is where the work stops
-being yours alone.
+Two tiers, because one verdict for everything was too slow to survive. `--gates` (~12s) is the check to run
+before a push; the full review is what to run before `gh pr create` / `gh pr merge`, because that is where the
+work stops being yours alone.
 
-To gate pushes from your own terminal too, once per clone:
+To bring the automatic gate back (both are opt-in now): restore the `PreToolUse` entry that runs
+`scripts/check-marker.sh --hook` for the `Bash` tool in `.claude/settings.json`, and for your own terminal run once per clone:
 
 ```sh
 git config core.hooksPath .claude/skills/pr-self-review/scripts
 ```
-
-`git push --no-verify` skips that one. Deliberately: an unskippable local hook gets uninstalled.
 
 ## How it works
 

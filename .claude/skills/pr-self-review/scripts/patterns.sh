@@ -46,5 +46,7 @@ P_TOOLING='(eslint|prettier|biome|\.editorconfig)'
 
 # ---- R11 i18n -----------------------------------------------------------------------------
 # Used by the Python block in gates.sh; kept here so self-test.sh can measure reach.
+# The scope must be assigned to a variable named `t`: CALL only matches `t(...)`, so a second
+# translator (`const tType = useTranslations("other")`) must not change what `t` resolves to.
 P_I18N_CALL="\\bt\\(\\s*[\"'][A-Za-z0-9_][A-Za-z0-9_.]*[\"']\\s*[,)]"
-P_I18N_SCOPE="\\b(useTranslations|getTranslations)\\(\\s*[\"'][A-Za-z0-9_.]+[\"']"
+P_I18N_SCOPE="\\bt\\s*=\\s*(await\\s+)?(useTranslations|getTranslations)\\(\\s*[\"'][A-Za-z0-9_.]+[\"']"
