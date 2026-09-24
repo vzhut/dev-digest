@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -44,6 +45,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   const db = opts.db ?? handle!.db;
 
   const app = Fastify({
+    // A unique id per request (default is a per-process counter that repeats after
+    // every restart). It is the correlation id echoed by the review/intent logs.
+    genReqId: () => randomUUID(),
     // Explicit 1MB cap on request bodies (PR comments, settings payloads are
     // small). Protects against oversized/abusive payloads.
     bodyLimit: 1_048_576,
@@ -66,6 +70,11 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
   const container = new Container(config, db, opts.overrides);
   app.decorate('container', container);
+  if (config.promptLogVerboseIgnored) {
+    app.log.warn('PROMPT_LOG_VERBOSE is ignored: detailed prompt logging is local-development only (NODE_ENV=development)');
+  } else if (config.promptLogVerbose) {
+    app.log.info('PROMPT_LOG_VERBOSE on: per-section token counts and cap details in the prompt log (metadata only)');
+  }
 
   // Reap runs left 'running' by a previous (now-dead) process — otherwise they
   // show as perpetually "running" in the UI and can't be cancelled (no runner).

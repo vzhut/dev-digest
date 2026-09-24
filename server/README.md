@@ -70,6 +70,7 @@ flowchart TB
   end
   subgraph Review["Review & runs"]
     reviews["reviews<br/>/pulls/:id/review · /reviews · /findings/:id/(accept|dismiss)<br/>/runs/:id/(events|trace)"]
+    intent["intent<br/>GET/POST /pulls/:id/intent"]
   end
   subgraph Agents["Agents"]
     agents["agents<br/>/agents · /agents/:id"]
@@ -94,10 +95,13 @@ flowchart TB
 | `API_PORT` / `WEB_PORT` | `3001` / `3000` | API port; `WEB_PORT` also sets the allowed CORS origin |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENROUTER_API_KEY` | — | optional, per-provider; also settable via Settings UI |
 | `GITHUB_TOKEN` | — | optional; PAT with repo scope (`GITHUB_PAT` accepted as a fallback) |
+| `INTENT_TICKET_HOSTS` | *(empty)* | comma-separated hostnames Jira/Linear ticket links may be fetched from; empty → nothing external is fetched, links are recorded as blocked |
+| `JIRA_EMAIL` / `JIRA_API_TOKEN` / `LINEAR_API_KEY` | — | optional credentials for those hosts (via `SecretsProvider`, so also settable in the UI); missing → that link is `blocked` and no request is made |
 | `EMBEDDINGS_ENABLED` | `false` | memory/RAG embeddings (OpenAI); off → **zero** OpenAI calls |
 | `REPO_INTEL_ENABLED` | `true` | repo skeleton + callers in the prompt; `false` → ripgrep-only |
 | `DEVDIGEST_CLONE_DIR` | `./clones` | imported-repo checkouts (git-ignored) |
 | `LOG_LEVEL` | `info` (`silent` in test) | pino level |
+| `PROMPT_LOG_VERBOSE` | `false` | `true` adds per-section tokens/cap details to the prompt log; honoured only when `NODE_ENV=development`, ignored with a startup warning otherwise. Metadata only, never prompt text |
 | `NODE_ENV` | `development` | `test` → silent logs + global rate-limit disabled |
 
 Secrets (API keys, `GITHUB_TOKEN`) are **not** part of `AppConfig` — they go

@@ -32,6 +32,8 @@ import type {
   SecretsProvider,
   SecretKey,
 } from '@devdigest/shared';
+import type { TicketFetcher, TicketResult } from './tickets/index.js';
+import type { RepoFileReader, RepoFileResult } from './git/repo-file-reader.js';
 import { parseUnifiedDiff } from './git/diff-parser.js';
 
 /**
@@ -326,5 +328,33 @@ export class MockSecretsProvider implements SecretsProvider {
   constructor(private secrets: Partial<Record<string, string>> = {}) {}
   async get(key: SecretKey): Promise<string | undefined> {
     return this.secrets[key as string];
+  }
+}
+
+/** Ticket fetcher double: canned results keyed `host/KEY`; unknown refs are `missing`. Records calls. */
+export class MockTicketFetcher implements TicketFetcher {
+  readonly calls: Array<{ host: string; key: string }> = [];
+  constructor(private tickets: Record<string, TicketResult> = {}) {}
+  async fetch(ref: { host: string; key: string }): Promise<TicketResult> {
+    this.calls.push(ref);
+    return this.tickets[`${ref.host}/${ref.key}`] ?? { error: 'missing', reason: 'ticket not found' };
+  }
+}
+
+/**
+ * Repo file reader double: canned `path -> text` map. A path in `blocked` is
+ * reported `blocked`; any other unknown path is `missing`. Records the paths read.
+ */
+export class MockRepoFileReader implements RepoFileReader {
+  readonly reads: string[] = [];
+  constructor(
+    private files: Record<string, string> = {},
+    private blocked: string[] = [],
+  ) {}
+  async read(_repo: RepoRef, path: string, _refs: string[]): Promise<RepoFileResult> {
+    this.reads.push(path);
+    if (this.blocked.includes(path)) return { status: 'blocked', reason: 'symlink not followed' };
+    const text = this.files[path];
+    return text === undefined ? { status: 'missing', reason: 'not found' } : { status: 'ok', text };
   }
 }

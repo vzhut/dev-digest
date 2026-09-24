@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { createDb, type Db } from './client.js';
 import * as t from './schema.js';
 import { eq, and } from 'drizzle-orm';
+import { inputHash } from '../modules/intent/helpers.js';
 import {
   GENERAL_REVIEWER_PROMPT,
   SECURITY_REVIEWER_PROMPT,
@@ -246,12 +247,35 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       .returning();
 
     // pr_files (subset)
-    await db.insert(t.prFiles).values([
+    const seedFiles = [
       { prId: pr!.id, path: 'src/middleware/ratelimit.ts', additions: 84, deletions: 0 },
       { prId: pr!.id, path: 'src/api/public/webhooks.ts', additions: 31, deletions: 6 },
       { prId: pr!.id, path: 'src/config.ts', additions: 4, deletions: 0 },
       { prId: pr!.id, path: 'src/api/users.ts', additions: 7, deletions: 2 },
-    ]);
+    ];
+    await db.insert(t.prFiles).values(seedFiles);
+
+    // PR intent (L03): input_hash is computed with the server's own inputHash() so the
+    // seeded row reads as fresh (stale:false) until the PR head/title/body/files change.
+    await db.insert(t.prIntent).values({
+      prId: pr!.id,
+      intent: 'Add token-bucket rate limiting to the public API endpoints to stop abuse from unauthenticated clients.',
+      inScope: ['Rate-limit middleware for public routes', 'Rate-limit configuration'],
+      outOfScope: ['Refactoring the user list endpoint'],
+      riskAreas: ['Public webhook endpoints', 'Hardcoded configuration values'],
+      confidence: 'medium',
+      sources: [
+        { kind: 'pr_title', ref: 'PR title', status: 'used', chars: 43 },
+        { kind: 'pr_description', ref: 'PR description', status: 'used', chars: 87 },
+        { kind: 'file_list', ref: 'changed files', status: 'used', chars: 0 },
+        { kind: 'repo_file', ref: 'specs/ratelimit.md', status: 'missing', reason: 'not found', chars: 0 },
+      ],
+      missingContext: ['specs/ratelimit.md (not found)'],
+      headSha: pr!.headSha,
+      inputHash: inputHash({ title: pr!.title, body: pr!.body, files: seedFiles, headSha: pr!.headSha }),
+      provider: 'openrouter',
+      model: 'seed',
+    });
 
     // pr_commits
     await db.insert(t.prCommits).values({
@@ -294,7 +318,9 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         file: 'src/api/users.ts',
         startLine: 45,
         endLine: 52,
-        severity: 'WARNING',
+        severity: 'SUGGESTION',
+        originalSeverity: 'WARNING',
+        scope: 'out_of_scope',
         category: 'perf',
         title: 'N+1 query in user list endpoint',
         rationale: 'Loop issues one query per user → N+1.',

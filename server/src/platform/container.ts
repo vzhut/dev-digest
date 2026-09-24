@@ -33,6 +33,11 @@ import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
 import { type Tokenizer, TiktokenTokenizer } from '../adapters/tokenizer/index.js';
+import { type RepoFileReader, GitRepoFileReader } from '../adapters/git/repo-file-reader.js';
+import type { TicketFetcher } from '../adapters/tickets/index.js';
+import { HttpTicketFetcher } from '../adapters/tickets/http.js';
+import { IntentRepository } from '../modules/intent/repository.js';
+import { IntentService } from '../modules/intent/service.js';
 
 /**
  * DI container. One per app instance. Holds config, db, the JobRunner,
@@ -55,6 +60,10 @@ export interface ContainerOverrides {
   /** repo-intel T3 adapters — only the indexer pipeline reads these. */
   depgraph?: DepGraph;
   tokenizer?: Tokenizer;
+  /** Safe git-blob reader for linked spec/plan files (intent layer). */
+  repoFiles?: RepoFileReader;
+  /** Jira/Linear reader for ticket links (intent layer). */
+  tickets?: TicketFetcher;
 }
 
 export class Container {
@@ -81,6 +90,9 @@ export class Container {
   private _depgraph?: DepGraph;
   private _tokenizer?: Tokenizer;
   private _priceBook?: PriceBook;
+  private _repoFiles?: RepoFileReader;
+  private _tickets?: TicketFetcher;
+  private _prIntent?: IntentService;
 
   constructor(config: AppConfig, db: Db, private overrides: ContainerOverrides = {}) {
     this.config = config;
@@ -145,6 +157,36 @@ export class Container {
     if (this.overrides.tokenizer) return this.overrides.tokenizer;
     this._tokenizer ??= new TiktokenTokenizer();
     return this._tokenizer;
+  }
+
+  /** Reads git blobs (never the working tree) — symlinks in the clone are not followed. */
+  get repoFiles(): RepoFileReader {
+    if (this.overrides.repoFiles) return this.overrides.repoFiles;
+    this._repoFiles ??= new GitRepoFileReader((repo) => this.git.clonePathFor(repo));
+    return this._repoFiles;
+  }
+
+  /** Allowlisted Jira/Linear reader; the allowlist is empty unless INTENT_TICKET_HOSTS is set. */
+  get tickets(): TicketFetcher {
+    if (this.overrides.tickets) return this.overrides.tickets;
+    this._tickets ??= new HttpTicketFetcher({ allowedHosts: this.config.intentTicketHosts, secrets: this.secrets });
+    return this._tickets;
+  }
+
+  /**
+   * Intent layer service. Exposed here so `reviews/run-executor.ts` derives the
+   * PR intent without importing `modules/intent/*` (no cross-module import).
+   */
+  get prIntent(): IntentService {
+    return (this._prIntent ??= new IntentService({
+      repo: new IntentRepository(this.db),
+      github: () => this.github(),
+      repoFiles: this.repoFiles,
+      tickets: this.tickets,
+      llm: (id) => this.llm(id),
+      resolveModel: (workspaceId, id) => this.resolveFeatureModel(workspaceId, id),
+      tokenizer: this.tokenizer,
+    }));
   }
 
   /**
