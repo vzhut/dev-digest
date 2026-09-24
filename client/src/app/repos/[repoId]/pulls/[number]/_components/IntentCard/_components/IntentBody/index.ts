@@ -1,0 +1,1 @@
+export { IntentBody } from "./IntentBody";

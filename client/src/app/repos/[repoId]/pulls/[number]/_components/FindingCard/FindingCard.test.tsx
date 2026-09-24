@@ -58,3 +58,30 @@ describe("FindingCard (smoke, both themes)", () => {
     expect(onAction).toHaveBeenCalledWith("dismiss");
   });
 });
+
+describe("FindingCard scope tag", () => {
+  it("shows Out of scope and the original severity only when the intent policy applied", () => {
+    const { rerender } = renderWithIntl(<FindingCard f={FINDING} />);
+    expect(screen.queryByText("Out of scope")).not.toBeInTheDocument();
+    expect(screen.queryByText(/downgraded from/)).not.toBeInTheDocument();
+
+    rerender(
+      <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
+        <FindingCard
+          f={{ ...FINDING, severity: "SUGGESTION", scope: "out_of_scope", original_severity: "WARNING" }}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("Out of scope")).toBeInTheDocument();
+    expect(screen.getByText("downgraded from WARNING")).toBeInTheDocument();
+
+    // tag-only case: out of scope, never downgraded (e.g. a SUGGESTION or a security finding)
+    rerender(
+      <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
+        <FindingCard f={{ ...FINDING, scope: "out_of_scope", original_severity: null }} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("Out of scope")).toBeInTheDocument();
+    expect(screen.queryByText(/downgraded from/)).not.toBeInTheDocument();
+  });
+});
