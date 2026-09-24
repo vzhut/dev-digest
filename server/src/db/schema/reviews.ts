@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, uuid, text, integer, jsonb, timestamp, doublePrecision } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, jsonb, timestamp, doublePrecision, check } from 'drizzle-orm/pg-core';
+import type { IntentSource } from '@devdigest/shared';
 import { now } from './_shared';
 import { workspaces } from './core';
 import { pullRequests } from './pulls';
@@ -41,18 +42,43 @@ export const findings = pgTable('findings', {
   confidence: doublePrecision('confidence').notNull(),
   kind: text('kind').notNull().default('finding'),
   trifectaComponents: jsonb('trifecta_components').$type<string[]>(),
+  /** 'in_scope' | 'out_of_scope' relative to the PR intent; null when no intent was injected. */
+  scope: text('scope'),
+  /** Severity the reviewer gave before the intent scope policy downgraded it. */
+  originalSeverity: text('original_severity'),
   acceptedAt: timestamp('accepted_at', { withTimezone: true }),
   dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
 });
 
-export const prIntent = pgTable('pr_intent', {
-  prId: uuid('pr_id')
-    .primaryKey()
-    .references(() => pullRequests.id, { onDelete: 'cascade' }),
-  intent: text('intent').notNull(),
-  inScope: jsonb('in_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-  outOfScope: jsonb('out_of_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-});
+export const prIntent = pgTable(
+  'pr_intent',
+  {
+    prId: uuid('pr_id')
+      .primaryKey()
+      .references(() => pullRequests.id, { onDelete: 'cascade' }),
+    intent: text('intent').notNull(),
+    inScope: jsonb('in_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    outOfScope: jsonb('out_of_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    riskAreas: jsonb('risk_areas').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Computed by our code from the sources, never reported by the model. */
+    confidence: text('confidence').notNull().default('low'),
+    sources: jsonb('sources').$type<IntentSource[]>().notNull().default(sql`'[]'::jsonb`),
+    missingContext: jsonb('missing_context').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Staleness key: PR head sha + hash of the derivation inputs. */
+    headSha: text('head_sha'),
+    inputHash: text('input_hash'),
+    provider: text('provider'),
+    model: text('model'),
+    tokensIn: integer('tokens_in'),
+    tokensOut: integer('tokens_out'),
+    /** null = unknown (provider reported no cost), not free. */
+    costUsd: doublePrecision('cost_usd'),
+    durationMs: integer('duration_ms'),
+    createdAt: now(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [check('pr_intent_confidence_check', sql`${t.confidence} in ('high', 'medium', 'low')`)],
+);
 
 export const prBrief = pgTable('pr_brief', {
   prId: uuid('pr_id')

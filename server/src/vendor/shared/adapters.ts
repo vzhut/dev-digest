@@ -67,6 +67,12 @@ export interface StructuredRequest<T> {
    * the `session_id` body field; ignored by providers that don't support it.
    */
   sessionId?: string;
+  /**
+   * Ask OpenRouter to route only to endpoints that support every request
+   * parameter (json_schema strict). Sent as `provider.require_parameters`;
+   * ignored by other providers. Server copy only, like `sessionId`.
+   */
+  requireParameters?: boolean;
 }
 
 export interface StructuredResult<T> {
@@ -276,6 +282,9 @@ export type SecretKey =
   | 'ANTHROPIC_API_KEY'
   | 'GITHUB_TOKEN'
   | 'DATABASE_URL'
+  | 'JIRA_API_TOKEN'
+  | 'JIRA_EMAIL'
+  | 'LINEAR_API_KEY'
   | (string & {});
 
 export interface SecretsProvider {

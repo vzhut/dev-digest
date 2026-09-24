@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Finding, Verdict } from './findings.js';
-import { Intent, SmartDiff } from './brief.js';
+import { Finding, Severity, Verdict } from './findings.js';
+import { Intent, IntentConfidence, IntentSource, SmartDiff } from './brief.js';
 
 /**
  * A2 — Review-Core API surface contracts. These extend the core
@@ -16,6 +16,8 @@ export const FindingRecord = Finding.extend({
   review_id: z.string(),
   accepted_at: z.string().nullable(),
   dismissed_at: z.string().nullable(),
+  /** Severity the reviewer gave before the intent scope policy downgraded it. */
+  original_severity: Severity.nullish(),
 });
 export type FindingRecord = z.infer<typeof FindingRecord>;
 
@@ -61,9 +63,28 @@ export const ReviewRunResponse = z.object({
 });
 export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
 
-/** Intent persisted for a PR (the Intent plus the pr_id it scopes). */
-export const PrIntentRecord = Intent.extend({ pr_id: z.string() });
+/** Intent persisted for a PR (the Intent plus the pr_id it scopes and derivation metadata). */
+export const PrIntentRecord = Intent.extend({
+  pr_id: z.string(),
+  head_sha: z.string().nullable(),
+  stale: z.boolean(),
+  confidence: IntentConfidence,
+  sources: z.array(IntentSource),
+  missing_context: z.array(z.string()),
+  provider: z.string().nullable(),
+  model: z.string().nullable(),
+  tokens_in: z.number().int().nullable(),
+  tokens_out: z.number().int().nullable(),
+  cost_usd: z.number().nullable(),
+  duration_ms: z.number().int().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
 export type PrIntentRecord = z.infer<typeof PrIntentRecord>;
+
+/** GET /pulls/:id/intent — `intent` is null when never derived. */
+export const PrIntentResponse = z.object({ intent: PrIntentRecord.nullable() });
+export type PrIntentResponse = z.infer<typeof PrIntentResponse>;
 
 /** Smart-diff response for a PR (the SmartDiff). */
 export const SmartDiffResponse = SmartDiff;

@@ -3,6 +3,9 @@ import {
   Review,
   Finding,
   Intent,
+  PrIntentRecord,
+  PrIntentResponse,
+  FindingRecord,
   BlastRadius,
   Risks,
   PrHistory,
@@ -193,6 +196,89 @@ describe('AI contracts parse fixtures', () => {
       log: [],
     });
     expect(trace.stats.cost_usd).toBe(0.06);
+  });
+});
+
+describe('intent layer contracts', () => {
+  const baseFinding = {
+    id: 'f1',
+    severity: 'WARNING',
+    category: 'style',
+    title: 't',
+    file: 'a.ts',
+    start_line: 1,
+    end_line: 1,
+    rationale: 'r',
+    confidence: 0.5,
+  };
+  const record = {
+    pr_id: 'p1',
+    intent: 'Add rate limiting',
+    in_scope: ['limiter'],
+    out_of_scope: ['refactor'],
+    risk_areas: ['webhooks'],
+    head_sha: 'abc123',
+    stale: false,
+    confidence: 'medium',
+    sources: [
+      { kind: 'pr_title', ref: 'title', status: 'used', chars: 20 },
+      { kind: 'repo_file', ref: 'specs/x.md', status: 'missing', reason: 'not found', chars: 0 },
+    ],
+    missing_context: ['specs/x.md'],
+    provider: 'openrouter',
+    model: 'deepseek/deepseek-v4-flash',
+    tokens_in: 1400,
+    tokens_out: 180,
+    cost_usd: 0.0003,
+    duration_ms: 900,
+    created_at: '2026-09-24T00:00:00.000Z',
+    updated_at: '2026-09-24T00:00:00.000Z',
+  };
+
+  it('PrIntentRecord round-trips and PrIntentResponse allows null', () => {
+    expect(PrIntentRecord.parse(record)).toEqual(record);
+    expect(PrIntentResponse.parse({ intent: record }).intent?.pr_id).toBe('p1');
+    expect(PrIntentResponse.parse({ intent: null }).intent).toBeNull();
+    expect(() => PrIntentRecord.parse({ ...record, confidence: 'certain' })).toThrow();
+  });
+
+  it('Intent parses without risk_areas (pre-existing PrBrief rows)', () => {
+    const i = Intent.parse({ intent: 'x', in_scope: [], out_of_scope: [] });
+    expect(i.risk_areas ?? null).toBeNull();
+  });
+
+  it('Finding parses without scope; FindingRecord carries original_severity', () => {
+    expect(Finding.parse(baseFinding).scope ?? null).toBeNull();
+    expect(Finding.parse({ ...baseFinding, scope: 'out_of_scope' }).scope).toBe('out_of_scope');
+    expect(() => Finding.parse({ ...baseFinding, scope: 'elsewhere' })).toThrow();
+    const rec = FindingRecord.parse({
+      ...baseFinding,
+      severity: 'SUGGESTION',
+      original_severity: 'WARNING',
+      review_id: 'r1',
+      accepted_at: null,
+      dismissed_at: null,
+    });
+    expect(rec.original_severity).toBe('WARNING');
+  });
+
+  it('PromptAssembly parses without intent (traces written before the intent layer)', () => {
+    const base = {
+      config: { agent: 'A', model: 'm', source: 'local' },
+      stats: { duration_ms: 1, tokens_in: 1, tokens_out: 1, findings: 0, grounding: '0/0 passed' },
+      tool_calls: [],
+      raw_output: '{}',
+      memory_pulled: [],
+      specs_read: [],
+      log: [],
+    };
+    const old = RunTrace.parse({ ...base, prompt_assembly: { system: 's', user: 'u' } });
+    expect(old.prompt_assembly.intent ?? null).toBeNull();
+    const withIntent = RunTrace.parse({
+      ...base,
+      prompt_assembly: { system: 's', user: 'u', intent: '<untrusted>…</untrusted>' },
+    });
+    expect(withIntent.prompt_assembly.intent).toContain('untrusted');
   });
 });
 
