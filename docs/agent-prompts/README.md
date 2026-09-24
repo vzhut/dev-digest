@@ -29,17 +29,18 @@ receives exactly two messages:
 <INJECTION_GUARD>   // appended verbatim to EVERY agent, every run
 ```
 
-`INJECTION_GUARD` (`prompt.ts:16`) tells the model that everything inside
+`INJECTION_GUARD` (`prompt.ts:18`) tells the model that everything inside
 `<untrusted>…</untrusted>` is data, never instructions, and that claims like "test
 fixture / not for production / ignore this" never descope the review. You do not
 need to repeat any of this in your prompt — it is always there.
 
 **User message** = the task and all context, in this order, each untrusted block
-delimiter-wrapped (`prompt.ts:104-122`):
+delimiter-wrapped (`prompt.ts:146-173`):
 
 ```
 <task line, e.g. "Review PR #7 '…'">
 ## PR description        (untrusted, author-controlled, truncated to 4000 chars)
+## PR intent             (untrusted, derived; delimiter-wrapped, capped at 3000 chars; carries an instruction to tag each finding's scope)
 ## Skills / rules        (linked skill bodies)
 ## Relevant memory       (curated memory items)
 ## Repo skeleton         (untrusted, repo-derived)
@@ -47,6 +48,14 @@ delimiter-wrapped (`prompt.ts:104-122`):
 ## Callers of changed symbols  (untrusted, repo-derived)
 ## Diff to review        (untrusted)
 ```
+
+`## PR intent` is rendered by `renderIntentSection` (`reviewer-core/src/prompt.ts:58`)
+only when the server supplies a derived intent; without it the section is omitted and
+the prompt is byte-identical to before. The intent text is wrapped as
+`<untrusted source="intent">`. Agent system prompts are unchanged: the intent arrives
+only as a user-message section, so no DB/doc prompt pair needs syncing. Findings tagged
+out of scope are downgraded by the engine, never dropped (see
+`reviewer-core/docs/pipeline.md`, step 5b).
 
 Sections with no content are omitted. Everything repo- or author-derived is wrapped
 in `<untrusted source="…">…</untrusted>` so the model can tell instructions
@@ -113,9 +122,10 @@ numbers and gates from what the model returns:
 - **Findings are citation-grounded**: a finding whose line range doesn't intersect a
   real diff hunk is dropped (`grounding.ts`). Cite real `file:line` from the diff or
   the finding disappears.
-- **`verdict` is currently passed through from the model** (`run.ts:208`). That is
-  why a wrong verdict reaches the UI unchanged — and why the verdict convention
-  above is load-bearing until/unless the verdict is also derived deterministically.
+- **`verdict` is derived from the findings, not taken from the model**
+  (`verdictFromFindings`, `reviewer-core/src/review/run.ts:237`, `reduce.ts:40`), after
+  grounding and the intent scope step. The verdict convention above still matters
+  because it shapes the severities the model picks.
 
 ## Severity / verdict / gate at a glance
 
@@ -123,7 +133,7 @@ numbers and gates from what the model returns:
 |---|---|
 | `findings[].severity` | recompute `score`; count CRITICAL as blockers |
 | `score` | **ignored** — recomputed from findings |
-| `verdict` | passed through to the review record (shown in the UI) |
+| `verdict` | **ignored** — derived from the scoped findings (shown in the UI) |
 | `findings[]` | citation-grounded; ungrounded ones dropped |
 
 The per-agent merge gate (`agents.ciFailOn`, default `critical`) decides when a CI
