@@ -1,0 +1,38 @@
+{
+  "name": "Conventions Extractor — accept/reject/edit the seeded candidates, then create a skill",
+  "description": "Cannot run extract in e2e (no LLM key, no clone — specs/conventions-extractor.md §9); the seed instead adds one scan + 3 pending candidates on acme/payments-api (highest-confidence first: error-handling, imports, naming). This flow edits the first candidate then rejects it (collapses to one line with Undo), accepts the second (toolbar count updates, Create skill appears — C16), opens Create skill (prefilled from skill-draft, C14) and submits without attaching an agent, then confirms the new `repo-conventions` skill is visible on /skills. Agent attach + the deep-link to the agent's Skills tab (C13) is covered by CreateSkillModal.test.tsx and manual QA instead — a checkbox click inside the modal's scrollable agent list proved flaky under CI's headless renderer. Creates real data — run last, and only against the hermetic stack (a fresh DB per run).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "lands on the seeded repo's PR list" },
+    { "cmd": ["find", "text", "Conventions", "click"], "label": "open the Conventions nav item (SKILLS LAB)" },
+    { "cmd": ["wait", "--url", "/conventions"], "label": "conventions route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "conventions fetch settles" },
+    { "cmd": ["wait", "--text", "Wrap async route handlers in try/catch and forward errors to next()"], "label": "seeded highest-confidence candidate is visible" },
+    { "cmd": ["wait", "--text", "kept 3 of 5"], "label": "the scan's quality line renders" },
+    { "cmd": ["wait", "--text", "0 of 3 accepted"], "label": "toolbar starts at 0 accepted" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Edit", "--exact"], "label": "edit the first (highest-confidence) candidate" },
+    { "cmd": ["find", "nth", "0", "input", "fill", "Always suffix async handlers with Async"], "label": "type the edited rule" },
+    { "cmd": ["press", "Enter"], "label": "commit the edit" },
+    { "cmd": ["wait", "--text", "Always suffix async handlers with Async"], "label": "the edited rule renders" },
+    { "cmd": ["wait", "--text", "edited"], "label": "the edited chip appears" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Reject", "--exact"], "label": "reject that same (now-edited) candidate" },
+    { "cmd": ["wait", "--text", "Undo"], "label": "it collapses to one line with Undo" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Accept", "--exact"], "label": "accept the next candidate (imports)" },
+    { "cmd": ["wait", "--text", "1 of 3 accepted"], "label": "toolbar count updates" },
+    { "cmd": ["wait", "--text", "Create skill"], "label": "Create skill appears once >=1 is accepted (C16)" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Create skill", "--exact"], "label": "open the create-skill modal" },
+    { "cmd": ["wait", "--text", "Create skill from conventions"], "label": "modal opens" },
+    { "cmd": ["wait", "--text", "Attach to agents"], "label": "attach-to-agents section renders" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "the skill-draft prefill settles (Create button is disabled until it does)" },
+    { "cmd": ["find", "nth", "1", "[role=dialog] > div:last-child button", "click"], "label": "submit Create skill without attaching an agent (footer's 2nd button, after Cancel)" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "creation settles" },
+
+    { "cmd": ["open", "{BASE}/skills"], "label": "go to the Skills page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skills fetch settles" },
+    { "cmd": ["wait", "--text", "repo-conventions"], "label": "the new extracted skill is visible there" }
+  ]
+}

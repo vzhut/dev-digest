@@ -20,6 +20,10 @@ export interface InsertSkill {
   source: SkillSource;
   body: string;
   enabled: boolean;
+  /** Source file paths this skill was derived from (e.g. an extractor's
+   * evidence). Unset by manual/imported creation; the conventions extractor
+   * is the first writer of this column. */
+  evidenceFiles?: string[];
 }
 
 export interface SkillPatch {

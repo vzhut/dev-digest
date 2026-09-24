@@ -406,6 +406,81 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
     }
   }
 
+  // ---- conventions (one scan + 3 candidates on acme/payments-api) ----
+  // acme/payments-api has `clonePath: null` (§7 trap) so Run Scan can't
+  // actually extract here — e2e (no LLM key, no clone) exercises
+  // accept/reject/edit/create-skill against this fixed, pre-decided scan
+  // instead (specs/conventions-extractor.md §9's e2e note).
+  let [scan] = await db
+    .select()
+    .from(t.conventionScans)
+    .where(and(eq(t.conventionScans.workspaceId, workspaceId), eq(t.conventionScans.repoId, repoId)));
+  if (!scan) {
+    [scan] = await db
+      .insert(t.conventionScans)
+      .values({
+        workspaceId,
+        repoId,
+        sha: 'a1b2c3d4e5f6',
+        sampleFiles: 6,
+        rawCount: 5,
+        keptCount: 3,
+        dropped: { quote_mismatch: 1, low_confidence: 1 },
+        model: 'openrouter/deepseek/deepseek-v4-flash',
+        costUsd: 0.0021,
+      })
+      .returning();
+
+    await db.insert(t.conventions).values([
+      {
+        workspaceId,
+        repoId,
+        scanId: scan!.id,
+        category: 'error-handling',
+        rule: 'Wrap async route handlers in try/catch and forward errors to next()',
+        ruleOriginal: 'Wrap async route handlers in try/catch and forward errors to next()',
+        evidencePath: 'src/api/users.ts',
+        evidenceLineStart: 41,
+        evidenceLineEnd: 47,
+        evidenceSnippet:
+          'try {\n  const user = await usersRepo.findById(id);\n  res.json(user);\n} catch (err) {\n  next(err);\n}',
+        confidence: 0.91,
+        status: 'pending',
+        fingerprint: 'seed-fp-error-handling-1',
+      },
+      {
+        workspaceId,
+        repoId,
+        scanId: scan!.id,
+        category: 'imports',
+        rule: 'Import relative modules with the .js extension (ESM/NodeNext)',
+        ruleOriginal: 'Import relative modules with the .js extension (ESM/NodeNext)',
+        evidencePath: 'src/config.ts',
+        evidenceLineStart: 3,
+        evidenceLineEnd: 3,
+        evidenceSnippet: "import { loadSecrets } from './secrets.js';",
+        confidence: 0.82,
+        status: 'pending',
+        fingerprint: 'seed-fp-imports-1',
+      },
+      {
+        workspaceId,
+        repoId,
+        scanId: scan!.id,
+        category: 'naming',
+        rule: 'Name route handler functions with a Handler suffix',
+        ruleOriginal: 'Name route handler functions with a Handler suffix',
+        evidencePath: 'src/api/public/webhooks.ts',
+        evidenceLineStart: 12,
+        evidenceLineEnd: 12,
+        evidenceSnippet: 'export async function stripeWebhookHandler(req: Request, res: Response) {',
+        confidence: 0.68,
+        status: 'pending',
+        fingerprint: 'seed-fp-naming-1',
+      },
+    ]);
+  }
+
   return { workspaceId, userId };
 }
 

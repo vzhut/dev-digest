@@ -4,8 +4,8 @@ import { NAV } from "@devdigest/ui/nav";
 const keysOf = (section: string) => NAV.find((g) => g.section === section)?.items.map((i) => i.key) ?? [];
 
 describe("sidebar NAV", () => {
-  it("puts Skills and Agents in SKILLS LAB, not WORKSPACE", () => {
-    expect(keysOf("SKILLS LAB")).toEqual(["skills", "agents"]);
+  it("puts Skills, Agents and Conventions in SKILLS LAB, not WORKSPACE", () => {
+    expect(keysOf("SKILLS LAB")).toEqual(["skills", "agents", "conventions"]);
     expect(keysOf("WORKSPACE")).not.toContain("agents");
     expect(keysOf("WORKSPACE")).toContain("pulls");
   });

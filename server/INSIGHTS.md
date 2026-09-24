@@ -105,6 +105,35 @@ any skill for a cheap model: a severity bucket a model can read as adjacent to a
 it; an ambiguous classification needs a concrete example, not a longer bullet list, to survive scanning by a
 model that is optimizing for brevity over rule-following.
 
+### `deepseek/deepseek-v4-flash`'s self-reported confidence never discriminates quality
+
+`specs/conventions-extractor-quality-report.md` · 2026-09-22
+
+Live extractor runs on 3 real repos (28 sampled files, 14 kept candidates) all scored
+0.90–1.00, with zero spread between the human-verdict "useful" ones (e.g. a real repeated
+`satisfies CSSProperties` pattern) and the "true but trivial" ones (e.g. restating
+`tsconfig.json`'s `"strict": true`). `MIN_CONFIDENCE` (`modules/conventions/constants.ts`)
+therefore filters nothing on this model — every candidate clears 0.5 by a wide margin
+regardless of actual usefulness. Don't trust a cheap model's confidence field as a quality
+proxy for this kind of extraction task; if quality gating is needed, measure something
+external (occurrence count in the clone, human accept-rate) instead of thresholding the
+model's own number. This is exactly why §10 improvement #1 (measured support) was picked
+over tuning `MIN_CONFIDENCE`.
+
+### The model cites config settings as "evidence" for rules the compiler already enforces
+
+`specs/conventions-extractor-quality-report.md` · 2026-09-22
+
+Despite the system prompt explicitly saying "ignore what the language or framework already
+enforces" (`modules/conventions/prompt.ts`), the model still proposed rules like "Set
+`strict` to `true`" or "Enable `noUncheckedIndexedAccess`", citing the `tsconfig.json` line
+that sets it. The citation passes verification (the quote genuinely exists at that line),
+so `verifyCandidate` correctly keeps it — the problem is upstream, in what counts as a
+checkable convention, not in the verifier. Every "true but trivial" verdict in the quality
+report traced back to a `tsconfig.json`/`.eslintrc.json` citation; every genuinely useful
+one cited a real `.ts` source line showing a *repeated pattern*. A future improvement could
+weight or filter candidates whose only evidence is a config file rather than actual source.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
@@ -124,6 +153,20 @@ constraint and use `.nullable()`.
 
 Guarded by the `RunTrace (data2.jsx TRACE single-document)` case in `server/test/contracts.test.ts`,
 which parses a trace with no `cost_usd` key and asserts it still succeeds.
+
+### A feature module resolves its model through `container.resolveFeatureModel`, never `modules/settings/*` directly
+
+`server/src/platform/container.ts` · `server/src/modules/conventions/service.ts` · 2026-09-22
+
+`modules/settings/feature-models.ts`'s exported `resolveFeatureModel(container, workspaceId, id)`
+takes a `Container` as its first argument, which makes it easy to import directly into another
+feature module (conventions did, until `pr-self-review`'s onion-architecture gate caught it as a
+cross-module import). The fix mirrors `skillsRepo`/`agentsRepo`: `container.resolveFeatureModel
+(workspaceId, id)` wraps the settings function so the container stays the one place that reaches
+into another module's folder. The next feature module to read its own model choice (onboarding,
+review_intent, risk_brief, conformance are all registered in `FEATURE_MODELS` but have no real
+consumer yet) should call the container method, not the settings module's export — importing it
+directly compiles and works, but re-opens the same finding.
 
 ### Failed `agent_runs` store tokens `0`, not `NULL` — aggregate over `status = 'done'` only
 
@@ -153,6 +196,20 @@ even the owner's own: `GET /repos/<owner>/<repo>/pulls` returns **404** (not 403
 token, which is why the same repo worked from the CLI. Fix: add the repo under the token's *Repository access*
 (needs Contents: read, Pull requests: read), or make the repo public. Also note the clone URL embeds the token
 (`https://x-access-token:<token>@github.com/…`), so a git error printed to the log contains it in clear text.
+
+### `pnpm db:generate`'s rename-ambiguity prompt needs a real TTY — `yes ""` and `printf '\n' | …` hang it
+
+`server/src/db/schema/knowledge.ts` (conventions reshape) · 2026-09-22
+
+Adding several new NOT NULL columns to an existing table while also dropping one (`accepted` → `scan_id`,
+`category`, …) makes drizzle-kit ask, once per new column, "Is `X` column … created or renamed from another
+column?" with an arrow-key list. Piping `yes ""` or `printf '\n\n\n' | pnpm db:generate` does not answer it —
+the process just sits at 100% CPU forever, because the prompt library reads raw keypresses off a real TTY, not
+buffered stdin lines. `kill -9` was needed; the run showed `[exited with code 0]` in the captured output but
+the migration was never written. Fix: give it a real pty with `expect` (`spawn pnpm db:generate` +
+`expect -re "create column" { send "\r"; exp_continue }`) — each prompt's first option is already the
+"+ create column" answer we want, so a bare Enter per prompt is correct here. Don't reach for `answer as rename`
+answers this way without checking each prompt's default first — they differ per column.
 
 ## Recurring Errors & Fixes
 
@@ -196,6 +253,22 @@ same pnpm major that created `node_modules` before any dependency change.
 Skills reached no prompt before L02 because two call sites hardcoded `skills: null`; wiring only the
 prompt would have left the trace claiming no skill was used. `run_skills` is written before the run's
 `try`, so failed runs are attributed too.
+
+### 2026-09-22 — L02 homework: Conventions Extractor, end to end
+
+`server/src/modules/conventions/` · `client/src/app/repos/[repoId]/conventions/` · 2026-09-22
+
+Full feature across 10 slices on `lesson-02-homework`: schema/contracts → pure core
+(sampler/verifier/fingerprint/composer) → repository/service/routes → PATCH/skill-draft/skill →
+client hooks+cards → create-skill modal+nav → seed/e2e/live quality run → API-contract 4-skill
+experiment → measured support (§10 #1) → `pr-self-review`. Two live runs (real deepseek-v4-flash,
+real GitHub clones) produced the session's two real findings, both recorded above: the model's
+confidence never discriminated useful from trivial candidates, and every "trivial" verdict traced
+to a config-file citation the prompt already told it to ignore — together they picked §10 #1
+(measure support in the clone, replace confidence with the ratio) as the one improvement to build.
+`pr-self-review`, run for the first time on a homework-sized branch, caught one real
+onion-architecture violation (a cross-module import that compiled fine) and one real bounds gap
+(a PATCH field uncapped where every other path enforces a limit) — both fixed, not just noted.
 
 ## Open Questions
 
