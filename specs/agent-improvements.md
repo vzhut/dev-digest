@@ -1,6 +1,6 @@
 # Agent improvements (backlog)
 
-**Status:** backlog — nothing here is applied. Written 2026-09-24 after the Intent Layer delivery (`intent-layer.md`), from what that run actually cost and where it went wrong. Apply later, one agent file at a time; the agents live in `.claude/agents/`, their map in `.claude/agents/README.md`.
+**Status:** **"Do first" items applied 2026-09-24** (see `## Applied` at the end); every "Later" item and the open questions remain a backlog. Written 2026-09-24 after the Intent Layer delivery (`intent-layer.md`), from what that run actually cost and where it went wrong. The agents live in `.claude/agents/`, their map in `.claude/agents/README.md`.
 
 **Goal:** fewer tokens and fewer wasted rounds **without dropping any gate** (independent architecture review, plan verification, live smoke, e2e, typecheck).
 
@@ -127,3 +127,20 @@ The independent architecture review (it found the missing mock), the plan verifi
 - Whether prompt caching actually hits across sequential agent spawns.
 - Which mechanical tasks a `haiku` agent handles without missing traps; needs a trial on one low-risk task.
 - Whether `Bash(git diff:*)`-style tool restrictions are available for an agent's `tools:` list; until confirmed, the diff-file input is the safe route.
+
+## Applied
+
+2026-09-24, all **Do first** items, edited in `.claude/agents/*.md` and `.claude/agents/README.md`. Effect on token cost has **not** been measured — it needs a comparable run (same feature size) to check.
+
+| Agent | Item | Change |
+|---|---|---|
+| planner | 1, 2, 3 | second output `specs/<name>.tasks.md` (task cards; hard constraint now "two files"); `Executor` field per task and an Owned-paths-vs-executor check; trust `high` + `path:line` researcher facts |
+| implementer | 1, 2, 3, 4 | reads its card + the Design section it points to; ≤ ~15-line reply with `Status:` first and the full report in a scratchpad file; per-task checks only touched packages (full suite / `.it` / e2e = validation); README documents `SendMessage` continuation and disjoint-`Owned paths` parallelism. Also "Later" 6 (the stub-provider trap, `server/INSIGHTS.md:205-213`) and a partial "Shared" 2: dropped `mermaid-diagram` from the preload list (13 → 12) |
+| plan-verifier | 1, 2, 3 | counts come from `printf … \| sort \| uniq -c` over the table's statuses; vocabulary is `PASS \| PARTIAL \| MISSING \| UNVERIFIED`; baseline command set (typecheck, unit, `.it` when Docker is up, shared-copy `diff -r`, onion greps) |
+| architecture-reviewer | 1, 2 | diff file is required input (none → `Clarification needed`); explicit "new I/O port has adapter + mock + container override" checklist line (onion §4.4) |
+| researcher | 1, 2, 3 | ≤ ~120-line report with an exists/missing table as the main artifact; `maxTurns: 30`; confidence per finding |
+| doc-writer | 1, 2 | forbidden path in a request → line 1 `Forbidden path requested: <path>` plus ready text; rule not loosened |
+| test-writer | — | description now says it is for post-review coverage gaps |
+| shared (README) | 1, 3 | "Working rules for the parent": one author per artifact, who-reads-what table, hand-back format (read-only agents keep their table as the report — they can't write files) |
+
+Not applied: every "Later" item except the two above; "Shared" 2 beyond `mermaid-diagram` (which skills to cut is unresolved until the open question on what `skills:` injects is answered); "Shared" 3's file-report for the read-only agents (no Write tool).

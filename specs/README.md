@@ -6,6 +6,7 @@ Linked from `AGENTS.md` via *Use when*. Index each spec here.
 
 - [`frontend-architecture-skill.md`](frontend-architecture-skill.md) — the `frontend-architecture` agent skill: where client code lives, splitting, promotion, import boundaries (skills + `client/AGENTS.md`).
 - [`onion-architecture-skill.md`](onion-architecture-skill.md) — the `onion-architecture` agent skill: server rings, dependency rule, placement, review checklist (skills + `server/AGENTS.md`).
+- [`review-and-docs-subagents.md`](review-and-docs-subagents.md) — four more project subagents (`test-writer`, `architecture-reviewer`, `plan-verifier`, `doc-writer`): tools, skills, owned/forbidden paths, report formats, smoke plan (repo tooling in `.claude/agents/`).
 - [`intent-layer.md`](intent-layer.md) — L03 Intent Layer: cheap intent classifier (`review_intent` model), linked issue/spec/ticket sources with SSRF controls, `pr_intent` persistence + staleness, prompt slot, out-of-scope tag+downgrade, intent card, logging (contracts + reviewer-core + server + client + e2e).
 - [`intent-layer-verification.md`](intent-layer-verification.md) — manual verification checklist for the Intent Layer UI (card, out-of-scope badges, look and feel, settings) on seeded data; companion to `intent-layer.md`.
 - [`agent-improvements.md`](agent-improvements.md) — backlog (not applied): per-agent edits to cut tokens without dropping gates — task cards, diff input for the architecture reviewer, verifier counts from the table, capped reports, fewer preloaded skills; evidence from the Intent Layer run.
