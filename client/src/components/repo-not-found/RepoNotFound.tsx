@@ -21,5 +21,3 @@ export function RepoNotFound() {
     />
   );
 }
-
-export default RepoNotFound;

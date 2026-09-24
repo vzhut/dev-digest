@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# git pre-push hook — the same marker check, for pushes made outside Claude Code.
+#
+# Enable once per clone:
+#   git config core.hooksPath .claude/skills/pr-self-review/scripts
+# (.git/hooks isn't versioned, so the hook lives in the repo and core.hooksPath points at it.)
+#
+# Escape hatch: `git push --no-verify` skips it. That is deliberate — an unskippable local
+# hook gets uninstalled, and then nothing is gated at all.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec bash "$HERE/check-marker.sh"

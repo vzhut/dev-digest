@@ -16,11 +16,13 @@ export {
   assemblePrompt,
   wrapUntrusted,
   type PromptParts,
+  type PromptSkill,
   type AssembledPrompt,
 } from './prompt.js';
 
 // Citation grounding — the mandatory mechanical gate for diff findings.
 export { groundFindings, groundingSummary, type GroundingResult } from './grounding.js';
+export { annotateDiff } from './diff-annotate.js';
 
 // Structured-output helpers (Zod → JSON Schema + parse-with-repair).
 export {

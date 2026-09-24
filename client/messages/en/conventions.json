@@ -5,22 +5,71 @@
     "headingPrefix": "Conventions in ",
     "repoFallback": "repo",
     "subtitle": "Scan the cloned repo to surface house-rules — each backed by evidence you can turn into a Skill.",
+    "detectedFrom": "Detected from {count, plural, one {# sample file} other {# sample files}} · last scan {when}",
+    "qualityLine": "kept {kept} of {raw} · {dropped} dropped ({reasons})",
     "scanning": "Scanning…",
     "rescan": "Re-scan",
-    "runExtraction": "Run extraction",
+    "runScan": "Run Scan",
     "extractionFailed": "Extraction failed",
     "loadError": "Could not load conventions.",
+    "notIndexed": "This repo hasn't been indexed yet — index it first, then run the scan.",
+    "notCloned": "This repo hasn't been cloned yet.",
     "empty": {
       "title": "No conventions extracted yet",
       "body": "Scan the repo to surface house-rules — naming, error handling, structure — each backed by evidence you can turn into a Skill.",
-      "cta": "Run extraction"
+      "cta": "Run Scan"
     },
-    "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files"
+    "zeroResult": {
+      "title": "Nothing qualified",
+      "body": "The sample didn't contain a convention checkable by a reviewer. That's a valid result, not an error — try Re-scan after the repo has more history, or a different sample."
+    },
+    "dropReasons": {
+      "no_file": "no file",
+      "bad_range": "bad range",
+      "quote_mismatch": "quote mismatch",
+      "bad_rule": "bad rule",
+      "low_confidence": "low confidence",
+      "duplicate": "duplicate",
+      "weak_support": "weak support"
+    }
+  },
+  "toolbar": {
+    "acceptedOf": "{accepted} of {total} accepted",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "createSkill": "Create skill"
   },
   "card": {
     "confidence": "Confidence",
-    "accepted": "Accepted",
-    "accepting": "Accepting…",
-    "acceptAsSkill": "Accept as Skill"
+    "confidencePct": "{pct}% confidence",
+    "accept": "Accept",
+    "reject": "Reject",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "edited": "edited",
+    "copyPath": "Copy file path"
+  },
+  "createSkillModal": {
+    "title": "Create skill from conventions",
+    "subtitle": "Made from the accepted candidates below. Review and edit before saving — this lands as v1 in Skills Lab.",
+    "name": "Name",
+    "description": "Description",
+    "body": "Skill body",
+    "tokens": "≈ {count} tok",
+    "attachToAgents": "Attach to agents",
+    "attachHint": "Linked last, enabled. You can also link it later from the Skills tab.",
+    "noAgents": "No agents yet.",
+    "versionNote": "Saves as v1 in Skills Lab.",
+    "cancel": "Cancel",
+    "create": "Create skill",
+    "creating": "Creating…",
+    "created": "Skill \"{name}\" created",
+    "updated": "Skill updated",
+    "updateExisting": "Update existing skill",
+    "updateVersionMessage": "Updated from the Conventions Extractor",
+    "orRenameHint": "or change the name above and try again",
+    "failed": "Could not save the skill."
   }
 }

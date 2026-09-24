@@ -1,5 +1,6 @@
 /* Showcase.tsx — renders every design-system component for visual verification.
-   Used by the /showcase route (both themes) and by the smoke tests.
+   There is no /showcase route in this app: the only consumer is
+   src/test/smoke.test.tsx, which renders the gallery in both themes.
    Dev-only page: labels are intentionally not internationalized. */
 "use client";
 

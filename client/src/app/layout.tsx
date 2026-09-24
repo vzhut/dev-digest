@@ -3,11 +3,12 @@ import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
-import { Providers } from "../lib/providers";
-import { themeNoFlashScript } from "../lib/theme";
+import { Providers } from "@/lib/providers";
+import { themeNoFlashScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "DevDigest",
+  // Pages set their own title (generateMetadata); the template brands it.
+  title: { default: "DevDigest", template: "%s · DevDigest" },
   description: "Local-first AI PR review tool",
 };
 

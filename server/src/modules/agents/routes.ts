@@ -1,3 +1,4 @@
+import { normalizeSkillsBody } from './helpers.js';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
@@ -59,12 +60,13 @@ const UpdateAgentBody = z.object({
 /** Either set the whole ordered set (`skill_ids`) or link one (`skill_id`). */
 const SetSkillsBody = z
   .object({
+    skills: z.array(z.object({ skill_id: z.string().uuid(), enabled: z.boolean().default(true) })).optional(),
     skill_ids: z.array(z.string().uuid()).optional(),
     skill_id: z.string().uuid().optional(),
     order: z.number().int().optional(),
   })
-  .refine((b) => b.skill_ids !== undefined || b.skill_id !== undefined, {
-    message: 'Provide skill_ids (set/reorder) or skill_id (link one)',
+  .refine((b) => b.skills !== undefined || b.skill_ids !== undefined || b.skill_id !== undefined, {
+    message: 'Provide skills / skill_ids (set/reorder) or skill_id (link one)',
   });
 
 export default async function agentsRoutes(appBase: FastifyInstance) {
@@ -154,11 +156,11 @@ export default async function agentsRoutes(appBase: FastifyInstance) {
     { schema: { params: IdParams, body: SetSkillsBody } },
     async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      const body = req.body;
+      const body = normalizeSkillsBody(req.body);
       const links =
-        body.skill_ids !== undefined
-          ? await service.setSkills(workspaceId, req.params.id, body.skill_ids)
-          : await service.linkSkill(workspaceId, req.params.id, body.skill_id!, body.order);
+        body.kind === 'set'
+          ? await service.setSkills(workspaceId, req.params.id, body.items)
+          : await service.linkSkill(workspaceId, req.params.id, body.skillId, body.order);
       if (!links) throw new NotFoundError('Agent not found');
       return links;
     },

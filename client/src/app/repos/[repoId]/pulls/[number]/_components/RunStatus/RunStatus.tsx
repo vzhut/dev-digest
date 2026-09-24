@@ -5,7 +5,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { LiveLogStream, type LogLine } from "@devdigest/ui";
-import { useRunEvents } from "../../../../../../../lib/hooks/reviews";
+import { useRunEvents } from "@/lib/hooks/reviews";
 import { LOG_HEIGHT } from "./constants";
 import { s } from "./styles";
 
@@ -17,13 +17,7 @@ export function RunStatus({
   onDone?: () => void;
 }) {
   const t = useTranslations("prReview");
-  const { events, running } = useRunEvents(runIds);
-  const wasRunning = React.useRef(false);
-
-  React.useEffect(() => {
-    if (running) wasRunning.current = true;
-    if (!running && wasRunning.current) onDone?.();
-  }, [running, onDone]);
+  const { events, running } = useRunEvents(runIds, { onSettled: onDone });
 
   if (runIds.length === 0) return null;
 

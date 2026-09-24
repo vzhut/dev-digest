@@ -29,7 +29,7 @@ Exactly two messages:
 Everything repo- or author-derived goes through `wrapUntrusted(label, content)`
 (`prompt.ts:30`) → `<untrusted source="…">…</untrusted>`. The guard tells the
 model that fenced content is data, never instructions. **Do not** replace this
-with keyword or denylist scanning (see `../CLAUDE.md`).
+with keyword or denylist scanning (see `../AGENTS.md`).
 
 ## 3. Call the model with structured output (`src/llm/`)
 

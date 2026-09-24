@@ -26,7 +26,20 @@ Related: popover text rendered with `text-transform: uppercase` comes back **upp
 
 ## What Doesn't Work
 
-_No entries yet._
+### `find text … click` right after `wait --url /pulls` races the PR list fetch
+
+`specs/04-pr-findings.flow.json:7` · `specs/05-pr-diff.flow.json:7` · 2026-09-19
+
+Symptom: `✗ open the PR row — Command failed: agent-browser find text Add rate limiting to public API endpoints click`, and the failure screenshot shows the PR list still as skeleton rows ("Loading pull requests…"). Flow 05, which runs the same two steps, passed in the same run.
+
+`wait --url /pulls` only proves the route changed. The list is fetched client-side after hydration (and the API first tries a GitHub sync that fails offline), so the row can appear after `find` gives up. It depends on timing, e.g. a cold `next dev` compile of the route.
+
+Wait for the row's text before interacting with it, as flow 02 already did:
+
+```json
+{ "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
+{ "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" }
+```
 
 ## Codebase Patterns
 
@@ -55,6 +68,15 @@ If every flow instead fails with API 500 `No system user found — run \`pnpm db
 ## Session Notes
 
 _No entries yet._
+
+### 2026-09-21 — substring button names make flows flaky
+
+`e2e/specs/08-skills.flow.json:14` · 2026-09-21
+
+`find role button click --name Stats` matches by case-insensitive substring, so once more UI shares the page
+(the skills list, card badges) the click intermittently hit a different button and failed on a *different* step each
+run (`Stats`, then `Skills`). Adding `--exact` made 8/8 pass twice in a row; a `networkidle` wait alone did not help.
+Use `--exact` for short names like tab labels.
 
 ## Open Questions
 

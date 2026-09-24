@@ -7,14 +7,16 @@
     "searchPlaceholder": "Search skills…",
     "loadError": "Could not load skills.",
     "menu": {
+      "create": "Create skill",
+      "import": "Import from file",
       "fromFile": "Import from file",
       "fromUrl": "Import from URL",
       "community": "Search community skills…"
     },
     "empty": {
       "title": "No skills yet",
-      "body": "Import a skill from a file, a URL, or the community catalog.",
-      "cta": "Import from file"
+      "body": "Create a skill by hand, or use Add Skill → Import from file to bring one in.",
+      "cta": "Create skill"
     },
     "selectPrompt": {
       "title": "Select a skill",
@@ -28,6 +30,58 @@
     "notFound": {
       "title": "Skill not found",
       "body": "It may have been deleted."
+    }
+  },
+  "stats": {
+    "loadError": "Could not load stats.",
+    "usedBy": "USED BY",
+    "usedByValue": "{count, plural, one {# agent} other {# agents}}",
+    "agentsUsing": "AGENTS USING THIS SKILL",
+    "agentEnabled": "Enabled",
+    "agentDisabled": "Disabled",
+    "noAgents": "No agent links this skill yet.",
+    "runs": "RUNS (30d)",
+    "findings": "FINDINGS (30d)",
+    "acceptRate": "ACCEPT RATE",
+    "unknown": "—",
+    "caveat": "Findings from runs where this skill was part of the prompt. An agent's other skills shared those runs — this is not a per-skill attribution.",
+    "byCategory": "FINDINGS BY CATEGORY",
+    "empty": {
+      "title": "No runs with this skill yet",
+      "body": "Stats appear after an agent with this skill enabled completes a run."
+    }
+  },
+  "add": {
+    "title": "Import a skill",
+    "subtitle": "Upload a .md file or .zip archive",
+    "createTitle": "Create a skill",
+    "createSubtitle": "Write a skill by hand — it is added to the workspace, ready to attach to agents",
+    "name": "Name",
+    "namePlaceholder": "pr-quality-rubric",
+    "description": "Description",
+    "descriptionHint": "Write it as an instruction to the agent: when does this skill apply?",
+    "type": "Type",
+    "body": "Skill body (Markdown)",
+    "create": "Create skill",
+    "creating": "Creating…",
+    "cancel": "Cancel",
+    "pickFile": "Choose a .md or .zip file",
+    "fileHint": "Nothing is saved until you confirm the preview.",
+    "parsing": "Reading file…",
+    "failed": "Could not add the skill.",
+    "preview": {
+      "title": "Import preview",
+      "included": "Included (merged into the body)",
+      "ignored": "Ignored files",
+      "ignoredNote": "Listed only — not imported, not executed.",
+      "none": "none",
+      "nameTaken": "A skill named \"{name}\" already exists.",
+      "renameLabel": "Save under a different name",
+      "updateExisting": "Update the existing skill with a new version instead",
+      "confirm": "Confirm import",
+      "confirmUpdate": "Update existing skill",
+      "confirming": "Saving…",
+      "disabledNotice": "The imported skill is saved disabled — vet it, then enable it by hand."
     }
   },
   "drawer": {
@@ -97,5 +151,72 @@
     "bodyLabel": "Skill body (Markdown)",
     "bodyHint": "Saving a changed body creates a new immutable version.",
     "version": "v{version}"
+  },
+  "editor": {
+    "skillFallback": "Skill",
+    "listTitle": "Skills",
+    "add": "Add Skill",
+    "tabs": {
+      "config": "Config",
+      "preview": "Preview",
+      "stats": "Stats",
+      "versions": "Versioning"
+    }
+  },
+  "config": {
+    "title": "Configuration",
+    "name": "Name",
+    "description": "Description",
+    "descriptionHint": "Write it as an instruction to the agent: when does this skill apply? This is the interface other agents see.",
+    "type": "Type",
+    "body": "Skill body",
+    "bodyHint": "The only text sent to the model. Editing the body is the entire skill — everything else is metadata.",
+    "enabled": "Enabled",
+    "save": "Save skill",
+    "saving": "Saving…",
+    "saved": "Saved (v{version})",
+    "savedToast": "Skill saved (v{version})",
+    "delete": "Delete",
+    "confirmDelete": "Delete skill \"{name}\"? Agents using it will lose it.",
+    "deleted": "Skill deleted",
+    "message": "Version message (optional)",
+    "messageHint": "Shown in the version history.",
+    "messagePlaceholder": "e.g. Tighten the auth check wording",
+    "cancel": "Cancel",
+    "unsaved": "unsaved",
+    "tokens": "{count} tokens",
+    "snapshotHint": "Saving snapshots the body as <b>v{version}</b>",
+    "deleteTitle": "Delete skill",
+    "deleteHint": "Removes it from all agents. This can't be undone."
+  },
+  "previewTab": {
+    "empty": "This skill has no body yet.",
+    "title": "Preview",
+    "subtitle": "Rendered as the reviewing agent receives it."
+  },
+  "versions": {
+    "title": "Version history",
+    "empty": "No earlier versions yet. A new version is created whenever the body changes.",
+    "subtitle": "Every save that changes the body snapshots it so eval runs stay reproducible against the exact text they scored.",
+    "count": "{count, plural, one {# version} other {# versions}}",
+    "current": "Current",
+    "version": "v{version}",
+    "view": "Diff",
+    "hide": "Hide diff",
+    "restore": "Restore",
+    "restoring": "Restoring…",
+    "restored": "Restored as a new version",
+    "diffTitle": "Changes from v{version} to the current body",
+    "noChanges": "Identical to the current body.",
+    "noMessage": "(no message)"
+  },
+  "card": {
+    "noDescription": "No description",
+    "enabledToggle": "Toggle skill enabled",
+    "delete": "Delete skill {name}",
+    "deleteTitle": "Delete skill",
+    "deleteConfirm": "Delete",
+    "version": "v{version}",
+    "agents": "{count, plural, one {# agent} other {# agents}}"
   }
 }

@@ -20,7 +20,7 @@ const miniBtnStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-export function PromptBlock({ label, text, color }: { label: string; text: string; color: string }) {
+export function PromptBlock({ label, text, color, tokens }: { label: string; text: string; color: string; tokens?: number }) {
   const t = useTranslations("runs");
   const [open, setOpen] = React.useState(false);
   const [full, setFull] = React.useState(false);
@@ -35,7 +35,12 @@ export function PromptBlock({ label, text, color }: { label: string; text: strin
       <div onClick={() => setOpen((o) => !o)} style={s.promptHead}>
         <span style={s.promptDot(color)} />
         <span style={s.promptLabel}>{label}</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+        {tokens != null && (
+          <span className="mono" style={s.promptTokens} title={t("trace.prompt.tokensTitle")}>
+            {t("trace.prompt.tokens", { count: tokens })}
+          </span>
+        )}
+        <span style={s.promptActions}>
           <button
             type="button"
             title={t("trace.prompt.copy")}
@@ -60,7 +65,7 @@ export function PromptBlock({ label, text, color }: { label: string; text: strin
           >
             <Icon.ExternalLink size={12} />
           </button>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <span style={s.promptToggleLabel}>
             {open ? t("trace.collapse") : t("trace.expand")}
           </span>
         </span>

@@ -9,7 +9,8 @@ import type { PrMeta } from "@/lib/types";
 import { RunCostBadge } from "@/components/run-cost-badge";
 import { FindingsPopover } from "@/components/findings-popover";
 import { SIZE_COLOR, STATUS_META } from "../../constants";
-import { relativeTime, sizeOf } from "../../helpers";
+import { sizeOf } from "../../helpers";
+import { relativeTime } from "@/lib/relative-time";
 import { s } from "../../styles";
 
 export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {

@@ -33,7 +33,7 @@ export interface RunTraceDrawerProps {
  * over SSE (useRunEvents). The Trace tab loads the persisted single-document
  * RunTrace (useRunTrace) once the run completes (or for historical runs).
  */
-export default function RunTraceDrawer({
+export function RunTraceDrawer({
   runId,
   agentName,
   prNumber,

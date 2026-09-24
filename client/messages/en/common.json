@@ -17,5 +17,14 @@
     "title": "No repo selected",
     "body": "This repository isn't in your workspace — it may have been removed, or the link is stale. Add a repo or pick another from the switcher to get started.",
     "cta": "Add repository"
+  },
+  "routeError": {
+    "title": "This page crashed",
+    "body": "Something went wrong while rendering this page. Retry, or go back to your pull requests."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "There's nothing at this address.",
+    "home": "Go to DevDigest"
   }
 }

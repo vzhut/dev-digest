@@ -38,6 +38,102 @@ actually landed rather than trusting a clean `pnpm db:migrate`.
 
 **Update 2026-09-17:** `seed.ts` now uses the same `pathToFileURL` guard. It showed up as a real failure: `./scripts/e2e.sh` ran `pnpm db:seed` against the isolated Postgres. That step printed only the pnpm banner, with no "✓ seeded", and exited 0. The API then answered every request with `No system user found — run \`pnpm db:seed\`.`, and all 7 e2e flows failed. The tell is a missing "✓ seeded" line. After the fix, 7/7 flows pass.
 
+### A detailed reviewer prompt makes the with/without-skills experiment vacuous
+
+`server/src/db/seed-prompts.ts` (`API_CONTRACT_REVIEWER_PROMPT`) · `docs/agent-prompts/api-contract-reviewer.md` · 2026-09-21
+
+With every skill unticked, API Contract Reviewer still flagged the `cost_usd → costUsd` rename, the removed
+`tokens_out` and the moved route on PR #1 in 3 of 4 runs (2, 0, 4 and 4 blockers), so the baseline was not silent and
+the control experiment (criteria 17/18) could show no difference. The cause was the prompt itself: its "What to look
+for" list was the breaking-change checklist, with `cost_usd` → `costUsd` as a literal example, and the severity levels
+defined CRITICAL as exactly those changes. Test Quality Reviewer had the same shape (uncovered branches, boundaries).
+
+Skills only add signal when the prompt leaves room for them. Both prompts are now role-level: who you are, scope,
+severity and verdict conventions, and "apply the rules in Skills / rules". The DB row is what runs, and the seed only
+inserts missing agents, so an existing workspace needs `PUT /agents/:id` (or the Config tab) to pick the change up.
+Do not judge a skill by a run on an agent whose prompt already contains the same checklist. Also expect run-to-run
+variance: the same diff gave 0 findings once and 4 blockers three times, so a single baseline run proves nothing.
+
+### Reviewing a freshly synced PR before opening it runs on an EMPTY diff and approves it
+
+`server/src/modules/reviews/diff-loader.ts:9` · `server/src/modules/pulls/routes.ts:27` · 2026-09-21
+
+Three runs started through `POST /pulls/:id/review` right after the PR list synced came back `approved`, 0 findings,
+`grounding 0/0 passed` — on a PR whose other runs found 3 issues. The tell was in the run row: `tokens_in` 994 against
+2118 for the same agent on the same PR, and `run_traces.trace->'prompt_assembly'->>'user'` was 560 characters instead of
+5751, i.e. the prompt held no diff. A calibration built on those runs ("baseline finds nothing") was wrong and was reported
+as valid before the token counts were checked.
+
+`loadDiff` tries a local `git diff base...head` and, when that throws (the shallow clone does not have the PR head yet),
+falls back to the `pr_files` patches. `GET /repos/:id/pulls` stores PR metadata only; `pr_files` is filled when the PR
+detail is opened (`GET /pulls/:id`). With neither source there is nothing to review and the model dutifully returns an
+empty findings list, which the UI shows as a clean approval. Prime it first (open the PR page, or `GET /pulls/:id`), and
+sanity-check a run: `tokens_in` and the `prompt_assembly.user` length must reflect the diff. A run with 0 findings and
+`0/0 passed` grounding is not evidence of a clean PR.
+
+### A CRITICAL from the "no skills" baseline can be a real bug in the demo PR, not model noise
+
+`server/INSIGHTS.md` (previous entry) · 2026-09-22
+
+After fixing the empty-diff trap, the calibrated PR #4 baseline still returned CRITICAL twice: `cancelRun` mutated
+the stored run object in place, so cancelling changed what `GET /runs/:id` returned to every other caller of that
+existing endpoint — a real, independent contract problem the reviewer (rightly) catches with no skill at all. It
+looked like the same "baseline is not silent" failure as the earlier `cost_usd`/route-move PRs, but the cause was
+different: not an easy-to-spot rename, but an actual defect introduced while writing the fixture PR.
+
+Fixed by making `cancelRun` return a new object (`{ ...run, status: 'cancelled' }`) and short-circuit on a
+terminal run, instead of `run.status = 'cancelled'` on the shared reference. Re-calibrated over 6 runs: baseline
+0/6 CRITICAL (only WARNINGs about missing idempotence, unrelated to the tested enum), skilled 3/4 CRITICAL for the
+enum. Lesson: when a "clean" experiment PR keeps failing, read what the CRITICAL actually says before blaming
+non-determinism — a fixture with its own latent bug will never have a silent baseline, no matter how many times
+you rerun it.
+
+### A skill that files an item under "Risky/WARNING" gets read as "Safe" by a cheap model
+
+`server/src/db/seed.ts` (`api-contract-gate`, now v3 in the DB) · 2026-09-22
+
+With `api-contract-gate` linked, 3 of 3 runs on PR #4 (adds `'cancelled'` to `RunStatus`) returned ZERO findings,
+verdict `comment`, summary: "a new enum value, both safe per the API contract gate". The skill did list "an enum
+gained or lost a value clients switch over" — but under **Risky (WARNING)**, two paragraphs above a **Safe (do not
+report): … a new response field** bullet. `deepseek-v4-flash` conflated the two: a new enum *value* on an existing
+field read to it as the same class as a new *field*, and it never even reported the WARNING the skill asked for.
+
+Fixed by moving enum growth into its own **Breaking (CRITICAL)** paragraph, with a worked bad/good example (a
+`switch` with no `default` that silently mishandles the new value) and an explicit "do not be talked out of this by
+the Safe list below" line. Re-verified 4/4 CRITICAL after the edit (`PUT /skills/:id`, version 3). Lesson for writing
+any skill for a cheap model: a severity bucket a model can read as adjacent to a lower one will get pulled down to
+it; an ambiguous classification needs a concrete example, not a longer bullet list, to survive scanning by a
+model that is optimizing for brevity over rule-following.
+
+### `deepseek/deepseek-v4-flash`'s self-reported confidence never discriminates quality
+
+`specs/conventions-extractor-quality-report.md` · 2026-09-22
+
+Live extractor runs on 3 real repos (28 sampled files, 14 kept candidates) all scored
+0.90–1.00, with zero spread between the human-verdict "useful" ones (e.g. a real repeated
+`satisfies CSSProperties` pattern) and the "true but trivial" ones (e.g. restating
+`tsconfig.json`'s `"strict": true`). `MIN_CONFIDENCE` (`modules/conventions/constants.ts`)
+therefore filters nothing on this model — every candidate clears 0.5 by a wide margin
+regardless of actual usefulness. Don't trust a cheap model's confidence field as a quality
+proxy for this kind of extraction task; if quality gating is needed, measure something
+external (occurrence count in the clone, human accept-rate) instead of thresholding the
+model's own number. This is exactly why §10 improvement #1 (measured support) was picked
+over tuning `MIN_CONFIDENCE`.
+
+### The model cites config settings as "evidence" for rules the compiler already enforces
+
+`specs/conventions-extractor-quality-report.md` · 2026-09-22
+
+Despite the system prompt explicitly saying "ignore what the language or framework already
+enforces" (`modules/conventions/prompt.ts`), the model still proposed rules like "Set
+`strict` to `true`" or "Enable `noUncheckedIndexedAccess`", citing the `tsconfig.json` line
+that sets it. The citation passes verification (the quote genuinely exists at that line),
+so `verifyCandidate` correctly keeps it — the problem is upstream, in what counts as a
+checkable convention, not in the verifier. Every "true but trivial" verdict in the quality
+report traced back to a `tsconfig.json`/`.eslintrc.json` citation; every genuinely useful
+one cited a real `.ts` source line showing a *repeated pattern*. A future improvement could
+weight or filter candidates whose only evidence is a config file rather than actual source.
+
 ## Codebase Patterns
 
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
@@ -58,6 +154,20 @@ constraint and use `.nullable()`.
 Guarded by the `RunTrace (data2.jsx TRACE single-document)` case in `server/test/contracts.test.ts`,
 which parses a trace with no `cost_usd` key and asserts it still succeeds.
 
+### A feature module resolves its model through `container.resolveFeatureModel`, never `modules/settings/*` directly
+
+`server/src/platform/container.ts` · `server/src/modules/conventions/service.ts` · 2026-09-22
+
+`modules/settings/feature-models.ts`'s exported `resolveFeatureModel(container, workspaceId, id)`
+takes a `Container` as its first argument, which makes it easy to import directly into another
+feature module (conventions did, until `pr-self-review`'s onion-architecture gate caught it as a
+cross-module import). The fix mirrors `skillsRepo`/`agentsRepo`: `container.resolveFeatureModel
+(workspaceId, id)` wraps the settings function so the container stays the one place that reaches
+into another module's folder. The next feature module to read its own model choice (onboarding,
+review_intent, risk_brief, conformance are all registered in `FEATURE_MODELS` but have no real
+consumer yet) should call the container method, not the settings module's export — importing it
+directly compiles and works, but re-opens the same finding.
+
 ### Failed `agent_runs` store tokens `0`, not `NULL` — aggregate over `status = 'done'` only
 
 `server/src/modules/reviews/run-executor.ts:303` · `server/src/modules/pulls/routes.ts:142-158` · 2026-09-17
@@ -75,11 +185,49 @@ case in `test/reviews.it.test.ts` and the failed-run assertion in `test/backfill
 
 ## Tool & Library Notes
 
-_No entries yet._
+
+### A fine-grained GitHub PAT only sees the repositories chosen when it was created
+
+`server/.env` (`GITHUB_TOKEN`) · `server/src/modules/repos/service.ts:55` · 2026-09-21
+
+A token starting `github_pat_` is fine-grained. A repository created after the token was issued is invisible to it,
+even the owner's own: `GET /repos/<owner>/<repo>/pulls` returns **404** (not 403) and `git clone` returns
+`403 Write access to repository not granted`. Neither message says "token scope". `gh` used a different OAuth
+token, which is why the same repo worked from the CLI. Fix: add the repo under the token's *Repository access*
+(needs Contents: read, Pull requests: read), or make the repo public. Also note the clone URL embeds the token
+(`https://x-access-token:<token>@github.com/…`), so a git error printed to the log contains it in clear text.
+
+### `pnpm db:generate`'s rename-ambiguity prompt needs a real TTY — `yes ""` and `printf '\n' | …` hang it
+
+`server/src/db/schema/knowledge.ts` (conventions reshape) · 2026-09-22
+
+Adding several new NOT NULL columns to an existing table while also dropping one (`accepted` → `scan_id`,
+`category`, …) makes drizzle-kit ask, once per new column, "Is `X` column … created or renamed from another
+column?" with an arrow-key list. Piping `yes ""` or `printf '\n\n\n' | pnpm db:generate` does not answer it —
+the process just sits at 100% CPU forever, because the prompt library reads raw keypresses off a real TTY, not
+buffered stdin lines. `kill -9` was needed; the run showed `[exited with code 0]` in the captured output but
+the migration was never written. Fix: give it a real pty with `expect` (`spawn pnpm db:generate` +
+`expect -re "create column" { send "\r"; exp_continue }`) — each prompt's first option is already the
+"+ create column" answer we want, so a bare Enter per prompt is correct here. Don't reach for `answer as rename`
+answers this way without checking each prompt's default first — they differ per column.
 
 ## Recurring Errors & Fixes
 
-_No entries yet._
+
+### A failed clone job crashes the whole API process
+
+`server/src/platform/jobs.ts:85` · `server/src/modules/repos/service.ts:98` · 2026-09-21
+
+Adding a repo the GitHub token cannot read (`POST /repos` for a private repo outside a fine-grained PAT's
+list) killed the API: the log ends with `GitError: … Write access to repository not granted … 403` and
+`Node.js v24.11.0`, after which the web app shows "network error" until `./scripts/dev.sh` is restarted.
+
+`JobRunner.enqueue` marks the row `failed`, then re-throws (`throw err`) inside the queued task, and returns that
+task as `done`. `RepoService.add` and `refresh` `await enqueue(...)` for the *insert* but discard `done`, so the
+rejection has no handler. Node 15+ turns an unhandled rejection into a process exit. The same pattern applies to
+every other caller of `enqueue`. Until callers attach a handler (or the runner swallows after recording the
+failure), a bad token, a deleted repo or a network blip on any job kind takes the server down. Repro:
+`POST /repos {url: "https://github.com/<owner>/<private-repo-outside-the-token>"}`.
 
 ## Session Notes
 
@@ -91,6 +239,36 @@ Restored `agent_runs.cost_usd` (migration `0010`) and stopped `run-executor.ts` 
 `costUsd` every LLM adapter already computes; added the PR-list `SUM`, the `reviews`→`agent_runs`
 join, the `backfill-cost` script, and the four client surfaces. Two findings recorded above: the
 entrypoint-guard no-op and the jsonb `.nullish()` rule.
+
+### 2026-09-21 — L02 skills wiring
+
+`server/package.json` · `server/pnpm-lock.yaml` · 2026-09-21
+
+`pnpm add` with pnpm 10 refuses to run because `server/node_modules` was linked by a pnpm 11 store; the
+agent had to use `npx pnpm@11 add @fastify/multipart fflate`, which rewrote ~120 lockfile lines. Use the
+same pnpm major that created `node_modules` before any dependency change.
+
+`server/src/modules/reviews/run-executor.ts` · `server/src/platform/trace-builder.ts` · 2026-09-21
+
+Skills reached no prompt before L02 because two call sites hardcoded `skills: null`; wiring only the
+prompt would have left the trace claiming no skill was used. `run_skills` is written before the run's
+`try`, so failed runs are attributed too.
+
+### 2026-09-22 — L02 homework: Conventions Extractor, end to end
+
+`server/src/modules/conventions/` · `client/src/app/repos/[repoId]/conventions/` · 2026-09-22
+
+Full feature across 10 slices on `lesson-02-homework`: schema/contracts → pure core
+(sampler/verifier/fingerprint/composer) → repository/service/routes → PATCH/skill-draft/skill →
+client hooks+cards → create-skill modal+nav → seed/e2e/live quality run → API-contract 4-skill
+experiment → measured support (§10 #1) → `pr-self-review`. Two live runs (real deepseek-v4-flash,
+real GitHub clones) produced the session's two real findings, both recorded above: the model's
+confidence never discriminated useful from trivial candidates, and every "trivial" verdict traced
+to a config-file citation the prompt already told it to ignore — together they picked §10 #1
+(measure support in the clone, replace confidence with the ratio) as the one improvement to build.
+`pr-self-review`, run for the first time on a homework-sized branch, caught one real
+onion-architecture violation (a cross-module import that compiled fine) and one real bounds gap
+(a PATCH field uncapped where every other path enforces a limit) — both fixed, not just noted.
 
 ## Open Questions
 

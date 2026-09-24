@@ -128,8 +128,49 @@ export const Skill = z.object({
   enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
+  /** Message of the current version (why it was saved). */
+  message: z.string().nullish(),
+  /** Agents this skill is linked to (enabled or not). Set on list/get; absent on write responses. */
+  agent_count: z.number().int().nullish(),
 });
 export type Skill = z.infer<typeof Skill>;
+
+export const SkillVersion = z.object({
+  skill_id: z.string(),
+  version: z.number().int(),
+  body: z.string(),
+  message: z.string().nullish(),
+  created_at: z.string(),
+});
+export type SkillVersion = z.infer<typeof SkillVersion>;
+
+// Result of parsing an upload — shown in the preview BEFORE anything is saved.
+export const SkillImportPreview = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
+  body: z.string(),
+  /** Markdown files that were merged into the body. */
+  included_files: z.array(z.string()),
+  /** Everything else in the archive — listed, never read, never executed. */
+  ignored_files: z.array(z.string()),
+  /** A skill with this name already exists in the workspace (D7). Set by the server, not the parser. */
+  name_taken: z.boolean().default(false),
+});
+export type SkillImportPreview = z.infer<typeof SkillImportPreview>;
+
+// Counts are over runs that really carried this skill (run_skills), not over
+// "agents that link it today". Attribution is run-level, never finding-level.
+export const SkillStats = z.object({
+  used_by: z.number().int(),
+  agents: z.array(z.object({ id: z.string(), name: z.string(), enabled: z.boolean() })),
+  runs_30d: z.number().int(),
+  findings_30d: z.number().int(),
+  /** null when nothing was ever accepted or dismissed — never rendered as 0%. */
+  accept_rate: z.number().min(0).max(1).nullable(),
+  findings_by_category: z.array(z.object({ category: z.string(), count: z.number().int() })),
+});
+export type SkillStats = z.infer<typeof SkillStats>;
 
 export const CommunitySkill = z.object({
   name: z.string(),
@@ -141,15 +182,59 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+export const ConventionCategory = z.enum([
+  'naming',
+  'structure',
+  'error-handling',
+  'typing',
+  'testing',
+  'imports',
+  'api',
+  'style',
+  'other',
+]);
+export type ConventionCategory = z.infer<typeof ConventionCategory>;
+
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: ConventionCategory,
   rule: z.string(),
+  /** `rule !== ruleOriginal` — the UI shows an "edited" chip. */
+  edited: z.boolean(),
   evidence_path: z.string(),
+  evidence_line_start: z.number().int(),
+  evidence_line_end: z.number().int(),
+  /** Read from the file by code, never the model's text. */
   evidence_snippet: z.string(),
+  /** Built server-side from the repo + the scan's `sha` (C3) — a GitHub blob URL. */
+  evidence_url: z.string().url(),
   confidence: z.number().min(0).max(1),
-  accepted: z.boolean(),
+  status: ConventionStatus,
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+export const ConventionScan = z.object({
+  id: z.string(),
+  sha: z.string(),
+  sample_files: z.number().int(),
+  raw_count: z.number().int(),
+  kept_count: z.number().int(),
+  /** Counts per drop reason, e.g. `{ quote_mismatch: 3 }` (§4.4). */
+  dropped: z.record(z.number()),
+  model: z.string(),
+  cost_usd: z.number().nullable(),
+  created_at: z.string(),
+});
+export type ConventionScan = z.infer<typeof ConventionScan>;
+
+export const ConventionsResponse = z.object({
+  scan: ConventionScan.nullable(),
+  candidates: z.array(ConventionCandidate),
+});
+export type ConventionsResponse = z.infer<typeof ConventionsResponse>;
 
 // ---- Agents ----
 // 'openrouter' routes through the OpenAI-compatible API (OpenAIProvider with a
@@ -195,6 +280,7 @@ export const AgentSkillLink = z.object({
   agent_id: z.string(),
   skill_id: z.string(),
   order: z.number().int(),
+  enabled: z.boolean(),
 });
 export type AgentSkillLink = z.infer<typeof AgentSkillLink>;
 

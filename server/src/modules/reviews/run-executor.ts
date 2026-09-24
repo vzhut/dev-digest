@@ -6,7 +6,7 @@ import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
-import { taskLine } from './helpers.js';
+import { taskLine, resolveRunSkills, toPromptSkills, type ResolvedSkill } from './helpers.js';
 import { loadDiff } from './diff-loader.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
@@ -152,6 +152,23 @@ export class ReviewRunExecutor {
 
     runLog.info(`Starting review with agent "${agent.name}" (${agent.provider}/${agent.model})`);
 
+    // Skills that will be in the prompt (link + skill both enabled, ordered).
+    // Resolved before `try` so the failure trace can name them; attribution is
+    // written even if the run later fails — they were in the prompt.
+    let skills: ResolvedSkill[] = [];
+    try {
+      skills = resolveRunSkills(await this.repo.agentSkillLinks(agent.id));
+      await this.repo.insertRunSkills(runId, skills.map((s) => s.id));
+      if (skills.length > 0) {
+        runLog.info(
+          `skills: ${skills.length} attached — ${skills.map((s) => `${s.name}${s.trusted ? '' : ' (untrusted)'}`).join(', ')}`,
+        );
+      }
+    } catch (err) {
+      runLog.info(`skills: could not resolve — ${(err as Error).message}`);
+      skills = [];
+    }
+
     try {
       // Resolve the agent's LLM provider. (container.llm throws if the provider
       // key is missing — caught below and persisted as a failed run.)
@@ -200,6 +217,8 @@ export class ReviewRunExecutor {
         ...(callersDigest ? { callers: callersDigest } : {}),
         // T3 — repo skeleton, same omit-when-empty contract.
         ...(repoMap ? { repoMap } : {}),
+        // §5.4 — linked skills; omitted when empty so the prompt is byte-identical.
+        ...(skills.length > 0 ? { skills: toPromptSkills(skills) } : {}),
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
@@ -311,7 +330,7 @@ export class ReviewRunExecutor {
         })
         .catch(() => undefined);
       await this.repo
-        .saveRunTrace(runId, this.traceFromBuffer(runId, pull, agent, '0/0 passed', Date.now() - start))
+        .saveRunTrace(runId, this.traceFromBuffer(runId, pull, agent, '0/0 passed', Date.now() - start, skills))
         .catch(() => undefined);
       this.container.runBus.complete(runId);
       throw err;
@@ -416,6 +435,7 @@ export class ReviewRunExecutor {
     agent: AgentRow,
     grounding: string,
     durationMs = 0,
+    skills: ResolvedSkill[] = [],
   ): RunTrace {
     return {
       config: {
@@ -434,7 +454,7 @@ export class ReviewRunExecutor {
         findings: 0,
         grounding,
       },
-      prompt_assembly: { system: agent.systemPrompt, skills: null, memory: null, specs: null, user: '' },
+      prompt_assembly: { system: agent.systemPrompt, skills: skills.length > 0 ? skills.map((k) => k.name).join(', ') : null, memory: null, specs: null, user: '' },
       tool_calls: [],
       raw_output: '',
       memory_pulled: [],

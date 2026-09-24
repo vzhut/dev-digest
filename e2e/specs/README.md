@@ -14,6 +14,7 @@ How to write one: `../docs/writing-flows.md`.
 | [`05-pr-diff`](05-pr-diff.flow.json) | The Files changed tab renders the seeded diff | `tab=diff`, a seeded file in the viewer | — |
 | [`06-onboarding`](06-onboarding.flow.json) | The add-repository screen renders | heading + repository URL field | — |
 | [`07-settings`](07-settings.flow.json) | Settings shows API Keys and Feature Models | both sections render | — |
+| [`08-skills`](08-skills.flow.json) | Skills page lists seeded skills, the editor opens, Stats shows the empty state, and the agent Skills tab lists linked skills | `test-coverage-nudge`, `No runs with this skill yet`, `mocking-discipline`, `2 of` | [`../../specs/skills.md`](../../specs/skills.md) |
 
 ## Not covered by e2e (and why)
 

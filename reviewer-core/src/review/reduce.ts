@@ -29,6 +29,20 @@ export function scoreFromFindings(findings: Finding[]): number {
   return Math.max(0, Math.min(100, 100 - penalty));
 }
 
+/**
+ * Deterministic verdict from the (grounded) findings — mirrors `scoreFromFindings`:
+ * a finding that grounding drops must not leave a stale `request_changes` behind it.
+ * `request_changes` iff at least one CRITICAL survived grounding; `comment` for any
+ * lesser finding; `approve` for an empty list. This is the single source of truth for
+ * `Review.verdict` — never the model's self-reported verdict, which can name a
+ * severity the grounding gate then strips out from under it.
+ */
+export function verdictFromFindings(findings: Finding[]): Review['verdict'] {
+  if (findings.some((f) => f.severity === 'CRITICAL')) return 'request_changes';
+  if (findings.length > 0) return 'comment';
+  return 'approve';
+}
+
 /** Verdict severity order for the reduce step (worst verdict wins). */
 const VERDICT_RANK: Record<string, number> = {
   request_changes: 2,

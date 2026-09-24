@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Icon, Badge, Button, SectionLabel, EmptyState } from "@devdigest/ui";
 import { RunStatus } from "../RunStatus";
-import { RunHistory } from "../RunHistory/RunHistory";
+import { RunHistory } from "../RunHistory";
 import { ReviewRunAccordion } from "../ReviewRunAccordion";
 import { s } from "./styles";
 import type { FindingRecord, ReviewRecord, RunSummary, PrCommit } from "@devdigest/shared";
@@ -41,6 +42,7 @@ export function FindingsTab({
   onDelete,
   onRunDone,
 }: FindingsTabProps) {
+  const t = useTranslations("prReview");
   const handleCancelAll = useCallback(() => {
     liveRunIds.forEach((id) => cancelMutation.mutate(id));
   }, [liveRunIds, cancelMutation]);
@@ -86,15 +88,15 @@ export function FindingsTab({
                   loading={cancelMutation.isPending}
                   onClick={handleCancelAll}
                 >
-                  Cancel
+                  {t("findingsTab.cancel")}
                 </Button>
                 <Button kind="ghost" size="sm" icon="FileText" onClick={handleOpenFirstTrace}>
-                  Open run trace
+                  {t("findingsTab.openTrace")}
                 </Button>
               </div>
             }
           >
-            Live review
+            {t("findingsTab.liveReview")}
           </SectionLabel>
           <RunStatus runIds={liveRunIds} onDone={onRunDone} />
         </div>
@@ -102,20 +104,20 @@ export function FindingsTab({
 
       {reviewRunning && (
         <div style={s.reviewInProgress}>
-          <Icon.RefreshCw size={16} style={{ color: "var(--accent)", animation: "ddspin 1s linear infinite" }} />
-          <span style={s.reviewInProgressText}>Review in progress…</span>
+          <Icon.RefreshCw size={16} style={s.spinner} />
+          <span style={s.reviewInProgressText}>{t("findingsTab.reviewInProgress")}</span>
           <span style={s.reviewInProgressSub}>
-            the agent is analyzing the diff — this can take a while on large PRs.
+            {t("findingsTab.reviewInProgressSub")}
           </span>
         </div>
       )}
 
       {lethalTrifecta.length > 0 && (
         <div style={s.lethalTrifecta}>
-          <Icon.Shield size={16} style={{ color: "var(--crit)" }} />
-          <span style={s.lethalTrifectaTitle}>Lethal Trifecta detected</span>
+          <Icon.Shield size={16} style={s.trifectaIcon} />
+          <span style={s.lethalTrifectaTitle}>{t("findingsTab.lethalTrifecta")}</span>
           <Badge color="var(--crit)" bg="transparent">
-            {lethalTrifecta.length} finding(s)
+            {t("findingsTab.trifectaCount", { count: lethalTrifecta.length })}
           </Badge>
         </div>
       )}
@@ -124,9 +126,9 @@ export function FindingsTab({
         <div style={s.timelineSection}>
           <SectionLabel
             icon="Activity"
-            right={<span style={{ fontSize: 12, color: "var(--text-muted)" }}>runs &amp; commits · newest first</span>}
+            right={<span style={s.sectionHint}>{t("findingsTab.historyHint")}</span>}
           >
-            Timeline
+            {t("findingsTab.timeline")}
           </SectionLabel>
           <RunHistory
             runs={prRuns ?? []}
@@ -140,16 +142,16 @@ export function FindingsTab({
 
       <SectionLabel
         icon="AlertOctagon"
-        right={<span style={{ fontSize: 12, color: "var(--text-muted)" }}>grouped by run · newest first</span>}
+        right={<span style={s.sectionHint}>{t("findingsTab.runsHint")}</span>}
       >
-        Review runs
+        {t("findingsTab.reviewRuns")}
       </SectionLabel>
       {runs.length === 0 ? (
         reviewRunning || liveRunIds.length > 0 ? null : (
           <EmptyState
             icon="Sparkles"
-            title="No findings yet"
-            body="Run a review to generate findings. Use Run Review ▾ above (run all enabled agents or a specific one)."
+            title={t("findingsTab.emptyTitle")}
+            body={t("findingsTab.emptyBody")}
           />
         )
       ) : (

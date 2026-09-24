@@ -15,6 +15,15 @@ import type {
   RunSummary,
 } from "@devdigest/shared";
 
+/** Query keys for PR review data. Build keys only through these, so a query and
+    every invalidation of it can't drift apart. */
+export const reviewKeys = {
+  activeRuns: (prId: string | null | undefined) => ["pr-active-runs", prId] as const,
+  runs: (prId: string | null | undefined) => ["pr-runs", prId] as const,
+  reviews: (prId: string | null | undefined) => ["reviews", prId] as const,
+  comments: (prId: string | null | undefined) => ["pr-comments", prId] as const,
+};
+
 // ---- Active (in-flight) runs — server-side source of truth ----
 export interface ActiveRun {
   run_id: string;
@@ -27,7 +36,7 @@ export interface ActiveRun {
    Survives reloads/devices; polls while anything is running so it self-clears. */
 export function usePrActiveRuns(prId: string | null | undefined) {
   return useQuery({
-    queryKey: ["pr-active-runs", prId],
+    queryKey: reviewKeys.activeRuns(prId),
     queryFn: () => api.get<ActiveRun[]>(`/pulls/${prId}/runs/active`),
     enabled: !!prId,
     refetchInterval: (query) => ((query.state.data?.length ?? 0) > 0 ? 4000 : false),
@@ -39,7 +48,7 @@ export function usePrActiveRuns(prId: string | null | undefined) {
    reload (DB-backed). Polls while anything is running so it self-updates. */
 export function usePrRuns(prId: string | null | undefined) {
   return useQuery({
-    queryKey: ["pr-runs", prId],
+    queryKey: reviewKeys.runs(prId),
     queryFn: () => api.get<RunSummary[]>(`/pulls/${prId}/runs`),
     enabled: !!prId,
     refetchInterval: (query) =>
@@ -47,10 +56,24 @@ export function usePrRuns(prId: string | null | undefined) {
   });
 }
 
+/** Refresh the in-flight runs / the full run history of a PR — e.g. when a run
+    starts, or settles (done or failed) and should show in "Run history" without a reload. */
+export function useInvalidatePrRuns(prId: string | null | undefined) {
+  const qc = useQueryClient();
+  return {
+    activeRuns: () => {
+      if (prId) qc.invalidateQueries({ queryKey: reviewKeys.activeRuns(prId) });
+    },
+    history: () => {
+      if (prId) qc.invalidateQueries({ queryKey: reviewKeys.runs(prId) });
+    },
+  };
+}
+
 // ---- Persisted reviews + findings for a PR ----
 export function usePrReviews(prId: string | null | undefined) {
   return useQuery({
-    queryKey: ["reviews", prId],
+    queryKey: reviewKeys.reviews(prId),
     queryFn: () => api.get<ReviewRecord[]>(`/pulls/${prId}/reviews`),
     enabled: !!prId,
   });
@@ -64,8 +87,8 @@ export function useDeleteRun(prId: string | null | undefined) {
     // Deleting a run also deletes the review it produced (server-side), so drop
     // both the timeline and the Review Runs list from cache.
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
-      qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      qc.invalidateQueries({ queryKey: reviewKeys.runs(prId) });
+      qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
     },
   });
 }
@@ -82,7 +105,7 @@ export function useDeleteReview(prId: string | null | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (reviewId: string) => api.del<{ ok: boolean }>(`/reviews/${reviewId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reviews", prId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) }),
   });
 }
 
@@ -90,7 +113,7 @@ export function useDeleteReview(prId: string | null | undefined) {
 /** Existing GitHub PR review comments, fetched live. */
 export function usePrComments(prId: string | null | undefined) {
   return useQuery({
-    queryKey: ["pr-comments", prId],
+    queryKey: reviewKeys.comments(prId),
     queryFn: () => api.get<PrReviewComment[]>(`/pulls/${prId}/comments`),
     enabled: !!prId,
   });
@@ -110,7 +133,7 @@ export function useCreatePrComment(prId: string | null | undefined) {
   return useMutation({
     mutationFn: (input: CreateCommentInput) =>
       api.post<PrReviewComment>(`/pulls/${prId}/comments`, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pr-comments", prId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: reviewKeys.comments(prId) }),
   });
 }
 
@@ -130,7 +153,7 @@ export function useRunReview() {
         ...(all ? { all } : {}),
       }),
     onSuccess: (_d, { prId }) => {
-      qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
     },
   });
 }
@@ -155,7 +178,7 @@ export function useFindingAction() {
         reply ? { reply } : undefined,
       ),
     onSuccess: (_d, { prId }) => {
-      if (prId) qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      if (prId) qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
     },
   });
 }
@@ -165,19 +188,26 @@ export function useFindingAction() {
  * `running` flag (true until the stream closes). Live status for the
  * RunReviewDropdown / Live Log. Multiple runIds are subscribed in parallel.
  */
-export function useRunEvents(runIds: string[]) {
+export function useRunEvents(runIds: string[], { onSettled }: { onSettled?: () => void } = {}) {
   const [events, setEvents] = React.useState<RunEvent[]>([]);
   const [running, setRunning] = React.useState(false);
+  // Re-subscribe only when the set of runs changes, not on every new array identity.
   const key = runIds.join(",");
+  const ids = React.useMemo(() => (key ? key.split(",") : []), [key]);
+  // Latest callback without re-subscribing: parents usually pass an inline arrow.
+  const onSettledRef = React.useRef(onSettled);
+  React.useEffect(() => {
+    onSettledRef.current = onSettled;
+  });
 
   React.useEffect(() => {
-    if (runIds.length === 0) return;
+    if (ids.length === 0) return;
     setEvents([]);
     setRunning(true);
     const sources: EventSource[] = [];
-    let open = runIds.length;
+    let open = ids.length;
 
-    for (const runId of runIds) {
+    for (const runId of ids) {
       const es = new EventSource(`${API_BASE}/runs/${runId}/events`);
       const onMsg = (ev: MessageEvent) => {
         try {
@@ -200,7 +230,11 @@ export function useRunEvents(runIds: string[]) {
       es.onerror = () => {
         es.close();
         open -= 1;
-        if (open <= 0) setRunning(false);
+        if (open <= 0) {
+          setRunning(false);
+          // Every stream ended (runs done or failed): notify once, from the event itself.
+          onSettledRef.current?.();
+        }
       };
       sources.push(es);
     }
@@ -209,8 +243,7 @@ export function useRunEvents(runIds: string[]) {
       for (const es of sources) es.close();
       setRunning(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [ids]);
 
   return { events, running };
 }

@@ -18,6 +18,12 @@ export class ApiError extends Error {
   }
 }
 
+/** Message to show for a failed request: the server's own message for an
+    ApiError, otherwise the caller's localized fallback (network error, bug). */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -27,7 +33,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         // Only declare a JSON body when one is actually sent — otherwise a
         // body-less POST/PUT (e.g. tour generate, refresh, reindex) trips
         // Fastify's "Body cannot be empty when content-type is application/json".
-        ...(init?.body != null ? { "content-type": "application/json" } : {}),
+        // A FormData body (skill import upload) must NOT get a JSON content-type: the browser
+        // has to set `multipart/form-data; boundary=…` itself, otherwise the server reads
+        // binary multipart bytes as JSON ("Request body size did not match Content-Length").
+        ...(init?.body != null && !(init.body instanceof FormData) ? { "content-type": "application/json" } : {}),
         ...(init?.headers ?? {}),
       },
     });

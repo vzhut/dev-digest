@@ -1,0 +1,140 @@
+{
+  "skill_name": "pr-self-review",
+  "notes": "Each eval seeds a change in a scratch clone whose origin/main is pinned to HEAD, so the change set is exactly the seeded edit and not the branch's own history; node_modules are symlinked so the typecheck and test gates really run. What is being measured is the verdict and whether the right rule is cited with a real file:line — not the prose. Evals 2 and 7 are the over-blocking controls: a skill that blocks everything would 'pass' the others, and in the first benchmark the no-skill baseline did exactly that on five of seven cases. Assertions that the baseline also satisfies are marked non-discriminating in the delivery log; keep at least one per case that it cannot.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "clean-ui-change-passes",
+      "prompt": "Added a RunCostTotal under the PR list — sums what the PRs in view have cost, wired into PullsView, test next to it, new key in client/messages/en/prReview.json and a spec in client/specs/. Can I push this?",
+      "expected_output": "PASS. Gates run clean; at most MEDIUM/LOW notes. No CRITICAL, and the marker is written with tier full.",
+      "files": [],
+      "assertions": [
+        "Final verdict is PASS",
+        "No finding is raised at CRITICAL severity",
+        "The i18n gate (R11) resolves prReview.runCost.total and reports no missing key",
+        "A marker file is written under .git/pr-self-review/ with tier \"full\"",
+        "The new component is not reported as a duplicate of the shared client/src/components/run-cost-badge"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "new-drizzle-in-route-is-high-not-block",
+      "prompt": "Added a GET /repos/:id/stats endpoint — the query is inline in modules/repos/routes.ts for now. Ready to open the PR?",
+      "expected_output": "PASS with a HIGH finding citing onion-architecture (Drizzle in a route handler) and pointing at the added line. Must not block.",
+      "files": [],
+      "assertions": [
+        "Final verdict is PASS",
+        "A HIGH finding cites onion-architecture for a Drizzle query in a route handler",
+        "The finding points at a line that the change actually added",
+        "The fix suggests moving the query into a repository called from the service"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "xss-in-pr-body-blocks",
+      "prompt": "Rendering the PR description in PrDetailView with dangerouslySetInnerHTML so the HTML from GitHub shows properly. Push it?",
+      "expected_output": "BLOCK. CRITICAL from the security skill, naming the attack path (contributor-controlled PR body executing script) and suggesting react-markdown.",
+      "files": [],
+      "assertions": [
+        "Final verdict is BLOCK",
+        "A CRITICAL finding cites the security skill for HTML injection",
+        "The finding states the attack path, not just the rule name",
+        "The push/PR command is not run",
+        "The report separates the CRITICAL from the lesser notes on an explicit severity scale, rather than presenting several issues at one undifferentiated top severity"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "hand-edited-migration-blocks",
+      "prompt": "I fixed a typo in the column name directly in server/src/db/migrations/0009_*.sql. Can I push?",
+      "expected_output": "BLOCK on gate R3, explaining that migrations are generated and append-only, and pointing at schema + pnpm db:generate.",
+      "files": [],
+      "assertions": [
+        "Final verdict is BLOCK",
+        "Rule R3-migration is cited",
+        "The explanation points at editing server/src/db/schema/* and running pnpm db:generate"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "contract-renamed-in-one-copy-blocks",
+      "prompt": "Renamed cost_usd to total_cost_usd in server/src/vendor/shared/contracts — done, opening the PR now.",
+      "expected_output": "BLOCK on gate R5: the client copy under client/src/vendor/shared still has the old field.",
+      "files": [],
+      "assertions": [
+        "Final verdict is BLOCK",
+        "Rule R5-contract is cited",
+        "The client copy client/src/vendor/shared is named as the twin that must change"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "conditional-hook-blocks",
+      "prompt": "Small change in AgentEditorView: I only call useAgentRuns when the agent id is set, so it skips the request. Ready to push?",
+      "expected_output": "BLOCK. CRITICAL from react-best-practices — a hook inside a condition breaks the hook order.",
+      "files": [],
+      "assertions": [
+        "Final verdict is BLOCK",
+        "A CRITICAL finding cites react-best-practices for a conditionally called hook",
+        "The fix keeps the hook unconditional (e.g. an enabled option) rather than moving the condition around"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "existing-debt-is-not-flagged",
+      "prompt": "Added one small handler to modules/pulls/routes.ts — the rest of that file is the old inline-Drizzle style. Check before I push.",
+      "expected_output": "PASS. The pre-existing D1 debt in that file must not be reported as this change's problem; only the added lines are judged.",
+      "files": [],
+      "assertions": [
+        "Final verdict is PASS unless the ADDED lines themselves introduce a violation",
+        "No finding points at a line the change did not add",
+        "Existing deviations D1-D9 are not reported as new findings",
+        "Every finding's line number falls inside the added range reported by collect.sh (the baseline points at pre-existing lines here)"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "hook-blocks-then-allows-then-reblocks",
+      "prompt": "Push this branch to origin, then open the PR.",
+      "expected_output": "The PreToolUse hook blocks both commands; a gates-only PASS opens git push but still holds gh pr create; a full PASS opens both; one more edit re-blocks everything.",
+      "files": [],
+      "assertions": [
+        "With no marker, both git push and gh pr create are blocked",
+        "A PASS marker with tier \"gates\" allows git push",
+        "A PASS marker with tier \"gates\" still blocks gh pr create, with a message saying the full review is needed",
+        "A PASS marker with tier \"full\" allows both",
+        "A marker with no tier field at all is treated as full (backwards compatibility)",
+        "After any further edit, everything is blocked again (the fingerprint changed)",
+        "A non-publishing Bash command is never gated"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "accept-overrides-a-false-critical",
+      "prompt": "The XSS block on the PR body is wrong — that HTML is sanitised upstream before it ever reaches us. Record that and let me open the PR.",
+      "expected_output": "The skill records the override with --accept <id> \"reason\", re-verdicts to PASS, carries the reason into the marker and into the drafted PR description, and does not silently drop the finding.",
+      "files": [],
+      "assertions": [
+        "The finding id used with --accept is one the previous report actually printed",
+        "The verdict changes from BLOCK to PASS only after the override is recorded",
+        "The marker's accepted[] carries the id and the verbatim reason",
+        "The drafted PR description names the accepted finding and its reason",
+        "The finding is still shown in the report as accepted, not removed from it"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "gates-only-run-does-not-claim-a-full-review",
+      "prompt": "I just want to get this branch pushed, don't do the whole review.",
+      "expected_output": "A --gates run: R1-R13 only, in seconds, a marker with tier \"gates\", and a report that says plainly the skill review has not run and the PR commands are still closed.",
+      "files": [],
+      "assertions": [
+        "Only collect.sh and gates.sh are run; no routed skill review is performed",
+        "The marker is written with tier \"gates\"",
+        "The report states that the skill review has not run",
+        "The report states that gh pr create / gh pr merge are still blocked",
+        "The run completes in well under a minute"
+      ]
+    }
+  ]
+}
