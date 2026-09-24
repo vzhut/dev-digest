@@ -2,8 +2,8 @@
 name: pr-self-review
 description: "Reviews all open local changes against this repo's own skills and returns a PASS/BLOCK verdict before anything reaches GitHub. Use it whenever the user is about to push, open, update or merge a pull request, asks 'is this ready to push?', 'can I open the PR?', 'review my changes', 'check my diff', or wants a pre-PR / pre-commit / pre-merge check — and always when a `git push`, `gh pr create` or `gh pr merge` was just blocked with a 'pr-self-review' message. It routes each changed file to the matching project skills (frontend-architecture, react-best-practices, next-best-practices, react-testing-library for client files; onion-architecture, fastify-best-practices, drizzle-orm-patterns, postgresql-table-design for server files; zod, typescript-expert, security across both), runs deterministic gates (typecheck, unit tests, migrations, lockfiles, shared contracts, i18n keys, secrets), and blocks the push when anything CRITICAL is found. Not for reviewing an already-open PR on GitHub or someone else's code."
 metadata:
-  version: 1.2.1
-  updated: 2026-09-21
+  version: 1.2.2
+  updated: 2026-09-24
   stack: node@22, pnpm@10, git, bash@3.2
 ---
 
