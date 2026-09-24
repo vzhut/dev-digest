@@ -176,3 +176,81 @@ describe('reviewPullRequest (engine)', () => {
     expect(seen.every((s) => s === 'sess-abc')).toBe(true);
   });
 });
+
+describe('reviewPullRequest — intent scope policy', () => {
+  const warning = (over: Record<string, unknown> = {}) => ({
+    id: 'w1',
+    severity: 'WARNING',
+    category: 'style',
+    title: 'unrelated refactor smell',
+    file: 'src/config.ts',
+    start_line: 11,
+    end_line: 11,
+    rationale: 'r',
+    confidence: 0.8,
+    kind: 'finding',
+    scope: 'out_of_scope',
+    ...over,
+  });
+  const intent = {
+    intent: { intent: 'Add limiter', in_scope: ['limiter'], out_of_scope: ['config'], risk_areas: [] },
+    confidence: 'medium' as const,
+    missingContext: [],
+  };
+  const review = (findings: unknown[]) => ({
+    verdict: 'request_changes',
+    summary: 's',
+    score: 1,
+    findings,
+  });
+
+  it('out-of-scope WARNING-only review → comment verdict, score recomputed from SUGGESTION', async () => {
+    const llm = new MockLLMProvider('openai', { structured: review([warning()]) });
+    const diff = await new MockGitClient().diff();
+    const events: string[] = [];
+    const o = await reviewPullRequest({
+      systemPrompt: 's',
+      model: 'm',
+      diff,
+      llm,
+      intent,
+      onEvent: (e) => events.push(e.msg),
+    });
+    expect(o.review.findings).toHaveLength(1);
+    expect(o.review.findings[0]).toMatchObject({ severity: 'SUGGESTION', original_severity: 'WARNING' });
+    expect(o.review.verdict).toBe('comment');
+    expect(o.review.score).toBe(97); // one SUGGESTION, not the 88 a WARNING would give
+    expect(o.scoped).toEqual({ tagged: 1, downgraded: 1, kept: 0 });
+    expect(events.some((m) => m.startsWith('scope: 1 out-of-scope'))).toBe(true);
+    expect(o.assembly.intent).toContain('<untrusted source="intent">');
+  });
+
+  it('keeps an out-of-scope security CRITICAL (request_changes stays)', async () => {
+    const crit = warning({ id: 'c1', severity: 'CRITICAL', category: 'security' });
+    const llm = new MockLLMProvider('openai', { structured: review([crit]) });
+    const o = await reviewPullRequest({
+      systemPrompt: 's',
+      model: 'm',
+      diff: await new MockGitClient().diff(),
+      llm,
+      intent,
+    });
+    expect(o.review.findings[0]).toMatchObject({ severity: 'CRITICAL', original_severity: null });
+    expect(o.review.verdict).toBe('request_changes');
+    expect(o.review.score).toBe(65);
+    expect(o.scoped.kept).toBe(1);
+  });
+
+  it('without an intent nothing is downgraded and the prompt has no intent section', async () => {
+    const llm = new MockLLMProvider('openai', { structured: review([warning()]) });
+    const o = await reviewPullRequest({
+      systemPrompt: 's',
+      model: 'm',
+      diff: await new MockGitClient().diff(),
+      llm,
+    });
+    expect(o.review.findings[0]).toMatchObject({ severity: 'WARNING' });
+    expect(o.review.score).toBe(88);
+    expect(o.assembly.intent).toBeNull();
+  });
+});

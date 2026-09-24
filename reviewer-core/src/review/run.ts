@@ -7,9 +7,11 @@ import type {
   UnifiedDiff,
 } from '@devdigest/shared';
 import { Review as ReviewSchema } from '@devdigest/shared';
-import { assemblePrompt, type PromptSkill } from '../prompt.js';
+import { assemblePrompt, type AssembledPrompt, type PromptSkill } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
 import { annotateDiff } from '../diff-annotate.js';
+import { applyIntentScope, type ScopedFinding, type ScopeStats } from '../intent/scope.js';
+import type { ReviewIntent } from '../intent/types.js';
 import { reduceReviews, scoreFromFindings, sliceDiff, verdictFromFindings } from './reduce.js';
 
 /**
@@ -72,6 +74,12 @@ export interface ReviewInput {
   /** PR author's description/body (untrusted; truncated + delimiter-wrapped in
       the prompt). Empty/undefined → section omitted. */
   prDescription?: string;
+  /**
+   * Derived PR intent (from the intent classifier). Injected into the prompt as
+   * its own untrusted section and used by `applyIntentScope` after grounding.
+   * Undefined → prompt and findings are exactly as without the intent layer.
+   */
+  intent?: ReviewIntent;
   /** Task framing line, e.g. "Review PR #482 …". */
   task?: string;
   /** Override the structured-output retry budget. */
@@ -86,6 +94,18 @@ export interface ReviewInput {
   /** Progress sink. */
   onEvent?: (e: ReviewEvent) => void;
   /**
+   * Correlates every log line of one review request (the server's request id).
+   * Echoed in the `prompt.assembled` events; never used for anything else.
+   */
+  correlationId?: string;
+  /** Injected token estimator for the prompt log (keeps the engine free of a tokenizer). */
+  countTokens?: (text: string) => number;
+  /**
+   * Also emit a per-section `prompt.assembled.detail` event (tokens per section, cap
+   * details). Off by default; the server enables it for local development only.
+   */
+  promptLogDetail?: boolean;
+  /**
    * Cancellation checkpoint, called before each (expensive) chunk LLM call.
    * Supply a function that THROWS to abort mid-run (the caller owns the error
    * type, e.g. the server's RunCancelledError); the engine stays agnostic.
@@ -93,9 +113,14 @@ export interface ReviewInput {
   checkCancelled?: () => void;
 }
 
+/** A Review whose findings went through the intent scope policy. */
+export type ScopedReview = Omit<Review, 'findings'> & { findings: ScopedFinding[] };
+
 export interface ReviewOutcome {
-  /** The reduced, GROUNDED review (findings that survived the citation gate). */
-  review: Review;
+  /** The reduced, GROUNDED, scope-adjusted review (findings that survived the citation gate). */
+  review: ScopedReview;
+  /** Out-of-scope tag/downgrade counts (all zero without an intent). */
+  scoped: ScopeStats;
   /** Human-readable grounding summary, e.g. "3/4 passed". */
   grounding: string;
   /** Findings dropped by grounding, with reasons (for logs / "never go silent"). */
@@ -121,6 +146,57 @@ function selectMode(strategy: ReviewStrategy, diff: UnifiedDiff, threshold: numb
   return totalLines > threshold && diff.files.length > 1 ? 'map-reduce' : 'single-pass';
 }
 
+interface PromptLogContext {
+  call: 'review';
+  chunk: string;
+  model: string;
+  correlationId: string | undefined;
+  countTokens: ((text: string) => number) | undefined;
+  detail: boolean;
+}
+
+/**
+ * Describe a just-assembled prompt for the run log: which sections, where each
+ * came from, how big, and which model gets it. Metadata ONLY — section text
+ * (the diff, specs, PR body, skills) never reaches an event. The optional
+ * `.detail` event adds per-section tokens and cap details for local debugging.
+ */
+function emitPromptAssembled(
+  emit: (kind: RunEventKind, msg: string, data?: unknown) => void,
+  a: AssembledPrompt,
+  ctx: PromptLogContext,
+): void {
+  const totalChars = a.messages.reduce((n, m) => n + m.content.length, 0);
+  const estTokens = ctx.countTokens
+    ? ctx.countTokens(a.messages.map((m) => m.content).join('\n'))
+    : undefined;
+  const ids = {
+    call: ctx.call,
+    chunk: ctx.chunk,
+    model: ctx.model,
+    ...(ctx.correlationId ? { correlation_id: ctx.correlationId } : {}),
+  };
+  emit(
+    'info',
+    `prompt: ${a.sections.map((x) => `${x.name} ${x.chars}ch`).join(', ')}; total ${totalChars}ch` +
+      `${estTokens != null ? ` (≈${estTokens} tokens)` : ''} → ${ctx.model}`,
+    {
+      event: 'prompt.assembled',
+      ...ids,
+      sections: a.sections.map((x) => ({ name: x.name, source: x.source, chars: x.chars })),
+      total_chars: totalChars,
+      ...(estTokens != null ? { est_tokens: estTokens } : {}),
+    },
+  );
+  if (ctx.detail) {
+    emit('tool', `prompt detail: ${a.sections.length} section(s)`, {
+      event: 'prompt.assembled.detail',
+      ...ids,
+      sections: a.sections.map((x, index) => ({ index, ...x })),
+    });
+  }
+}
+
 export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutcome> {
   const threshold = input.mapThresholdLines ?? DEFAULT_MAP_THRESHOLD_LINES;
   const maxRetries = input.maxRetries ?? DEFAULT_REVIEW_MAX_RETRIES;
@@ -136,6 +212,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     callers: input.callers,
     repoMap: input.repoMap,
     prDescription: input.prDescription,
+    intent: input.intent,
     task: input.task,
   };
 
@@ -170,7 +247,18 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
       mode === 'map-reduce' ? `map: reviewing ${chunk.label}` : `Reviewing ${chunk.label} in one pass`,
       { file: chunk.label },
     );
-    const a = assemblePrompt({ ...promptParts, diff: annotateDiff(chunk.diffText) });
+    const a = assemblePrompt(
+      { ...promptParts, diff: annotateDiff(chunk.diffText) },
+      { countTokens: input.countTokens, detail: input.promptLogDetail },
+    );
+    emitPromptAssembled(emit, a, {
+      call: 'review',
+      chunk: chunk.label,
+      model: input.model,
+      correlationId: input.correlationId,
+      countTokens: input.countTokens,
+      detail: input.promptLogDetail === true,
+    });
     if (mode === 'single-pass') assembly = a.assembly;
     const res = await input.llm.completeStructured<Review>({
       model: input.model,
@@ -202,11 +290,27 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   }
   emit('result', `Citation grounding: ${grounding}`);
 
-  // Score is derived from the findings that SURVIVED grounding (not the model's
-  // self-reported number, and not the pre-grounding set) so the score, the
-  // findings list, and the deterministic event always agree.
+  // Scope policy runs AFTER grounding and BEFORE score/verdict: a downgrade
+  // changes severities, which the score and verdict are derived from. Never drops.
+  const scoped = applyIntentScope(ground.kept, input.intent);
+  if (scoped.stats.tagged > 0) {
+    emit(
+      'info',
+      `scope: ${scoped.stats.tagged} out-of-scope finding(s) tagged, ${scoped.stats.downgraded} downgraded, ${scoped.stats.kept} kept (security/CRITICAL)`,
+    );
+  }
+
+  // Score is derived from the findings that SURVIVED grounding and scoping (not
+  // the model's self-reported number, and not the pre-grounding set) so the
+  // score, the findings list, and the deterministic event always agree.
   return {
-    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept), verdict: verdictFromFindings(ground.kept) },
+    review: {
+      ...merged,
+      findings: scoped.findings,
+      score: scoreFromFindings(scoped.findings),
+      verdict: verdictFromFindings(scoped.findings),
+    },
+    scoped: scoped.stats,
     grounding,
     dropped: ground.dropped,
     mode,

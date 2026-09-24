@@ -32,6 +32,8 @@ export interface OpenRouterProviderOptions {
   /** Per-request timeout (ms) — the SDK retries on timeout/5xx/429 with backoff. */
   timeoutMs?: number;
   maxRetries?: number;
+  /** Custom fetch for the underlying client (tests capture the request body). */
+  fetch?: typeof fetch;
   /** Injected cost estimator; returns USD or null when the model is unknown. */
   estimateCost?: (model: string, tokensIn: number, tokensOut: number) => number | null;
 }
@@ -53,6 +55,7 @@ export class OpenRouterProvider implements LLMProvider {
       baseURL: this.baseURL,
       timeout: opts.timeoutMs ?? 90_000,
       maxRetries: opts.maxRetries ?? 2,
+      ...(opts.fetch ? { fetch: opts.fetch } : {}),
     });
   }
 
@@ -78,6 +81,11 @@ export class OpenRouterProvider implements LLMProvider {
         // OpenRouter session grouping — extra body field (spread is exempt from
         // excess-property checks). Only sent when talking to OpenRouter.
         ...(this.id === 'openrouter' && req.sessionId ? { session_id: req.sessionId } : {}),
+        // Route only to endpoints supporting every parameter (json_schema strict).
+        // Opt-in per request so the main review's request is unchanged.
+        ...(this.id === 'openrouter' && req.requireParameters
+          ? { provider: { require_parameters: true } }
+          : {}),
         // OpenRouter usage accounting — ask it to return the REAL generation
         // cost (USD) in `usage.cost`, instead of estimating from a price book.
         ...(this.id === 'openrouter' ? { usage: { include: true } } : {}),
