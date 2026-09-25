@@ -77,7 +77,6 @@ async function runFlow(file: string, flow: Flow): Promise<FlowResult> {
       }
       steps.push({ label, ok: true });
       console.log(`   ✓ ${label}`);
-      if (args[0] === "eval") console.log(`   DIAG ${stdout.trim()}`); // TEMP-DIAG
     } catch (e) {
       const msg = (e as Error).message.split("\n")[0];
       steps.push({ label, ok: false, detail: msg });
@@ -85,8 +84,6 @@ async function runFlow(file: string, flow: Flow): Promise<FlowResult> {
       // Best-effort failure screenshot for the artifact upload.
       mkdirSync(RESULTS_DIR, { recursive: true });
       await ab(["screenshot", join(RESULTS_DIR, `${id}-fail.png`)]).catch(() => {});
-      // TEMP-DIAG: dump list/pill state so CI logs show what the page looked like.
-      await ab(["eval", "JSON.stringify({url:location.href,scrollY:Math.round(scrollY),lists:[...document.querySelectorAll('[role=list]')].map(e=>e.getAttribute('aria-label')),pills:[...document.querySelectorAll('button[aria-label^=\"Show only\"]')].map(b=>b.getAttribute('aria-label')+' pressed='+b.getAttribute('aria-pressed')),cards:document.querySelectorAll('[role=listitem]').length})"]).then((o) => console.log(`   DIAG ${o.trim()}`)).catch((e2) => console.log(`   DIAG failed: ${(e2 as Error).message.split("\n")[0]}`));
       break;
     }
   }
