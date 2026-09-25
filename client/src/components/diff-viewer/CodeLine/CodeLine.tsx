@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { commentTargetFor, type CommentThread, type DiffCommentApi, cs } from "../comments";
 import { type Line } from "../helpers";
 import type { FindingRecord } from "@devdigest/shared";
-import { SEV } from "@devdigest/ui";
+import { Badge, SEV } from "@devdigest/ui";
 import { SEVERITY_LABEL_KEY, topSeverity, type DiffFindingApi } from "../findings";
 import { s, fs, lineRowFor, lineSignFor } from "../styles";
 import { CommentThreadView } from "../CommentThreadView";
@@ -84,7 +84,14 @@ export function CodeLine({
           {ln.text || " "}
         </span>
         {sev && sevLabelKey && (
-          <span style={{ ...fs.label, color: sev.c }}>{tr(sevLabelKey)}</span>
+          <Badge
+            icon={sev.icon}
+            color={sev.c}
+            bg={`color-mix(in srgb, ${sev.c} 12%, transparent)`}
+            style={{ ...fs.label, border: `1px solid ${sev.c}` }}
+          >
+            {tr(sevLabelKey)}
+          </Badge>
         )}
       </div>
 
