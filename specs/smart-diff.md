@@ -180,11 +180,16 @@ sequenceDiagram
 - Existing e2e flows asserting the Files changed tab content were not inspected.
 
 ## Delivery log
-- **Initiation / Planning:** planner produced this spec and `smart-diff.tasks.md`; the 5 open decisions were confirmed with their defaults, and "Original order" stays as the DB returns it.
-- **Implementation:** implementer ran sequentially, T1 (classifier, 5-role enum, i18n), T2 (route), T3 (groups and order toggle), T4 (inline findings). Commits: 3f5a28a (server), 0c29d10 (client).
+- **Initiation / Planning:** planner produced this spec and `smart-diff.tasks.md`. The 5 open decisions were confirmed with their defaults, and "Original order" stays as the DB returns it.
+- **Implementation:** implementer ran sequentially, one task per run: T1 (classifier, 5-role enum, i18n), T2 (route), T3 (groups and order toggle), T4 (inline findings). Commits: 3f5a28a (server), 0c29d10 (client).
 - **Validation:**
-  - architecture-reviewer: 0 critical, 0 high, 2 medium, 1 low. All three were fixed (public `chevronFor` export, `fs` styles moved to `styles.ts`, `hasReview` helper).
-  - plan-verifier: 22 PASS, 1 PARTIAL, 0 MISSING, 2 UNVERIFIED. The PARTIAL was the dot staying visible when comments are hidden; the spec now says so. The UNVERIFIED items are sticky header and live refresh in a browser, and the real GitHub/LLM run.
-  - Tests: server 282 unit + 2 integration, client 219, both typechecks green; both `brief.ts` copies identical.
-  - Also fixed after the verifier: singular "1 file" / "1 file with findings".
-- **Completion:** T5 (test PRs, demo video) is pending and needs GITHUB_TOKEN and an LLM key.
+  - architecture-reviewer: 0 critical, 0 high, 2 medium, 1 low. All three fixed (public `chevronFor` export, `fs` styles moved to `styles.ts`, `hasReview` helper).
+  - plan-verifier: 22 PASS, 1 PARTIAL, 0 MISSING, 2 UNVERIFIED. The PARTIAL was the finding dot staying visible when comments are hidden; this spec now says so. The UNVERIFIED items (sticky header, live refresh, real GitHub/LLM run) were then checked by hand on the demo PR.
+  - test-writer: added `FileCard.test.tsx` and DiffTab tests for finding placement, the outside-the-patch block, severity stripe and label, Accept, and plural labels (61b60db).
+  - doc-writer: `docs/smart-diff.md` and its index row (d8f5321).
+  - Tests: server 282 unit + 2 integration, client 232, both typechecks green; both `brief.ts` copies identical.
+- **Manual check on the demo PR** (vzhut/dev-digest#6, General + Security reviewers, `anthropic/claude-sonnet-4.6`) found three things the tests missed, all fixed:
+  - Finding cards were hidden by default because they shared the starter's `showComments=false`. Findings now have their own state (default visible); one toggle hides or shows both (cd97bb6, recorded in `client/INSIGHTS.md`).
+  - The group-header dot was a fixed blue and the file count sat on the left. The dot now takes the top severity colour and `● N   N files` is on the right (342f36a).
+  - The header lacked the role colour square and description, and the on-line severity label was plain text. Added both, the label is now an icon pill (3a0025a, 7ccf8bf).
+- **Completion:** Test fixture PR #6 lives on `demo/smart-diff-main`. Not done: a second edge-case PR (`.snap`, `SKILL.md`, `e2e/README.md`, large file), skipped as the same cases are covered by unit tests. Known limitation: "Original order" is whatever the DB returns, since the files query has no ORDER BY.
