@@ -33,4 +33,13 @@ describe("SmartDiffGroup header", () => {
     renderGroup({});
     expect(screen.queryByTestId("group-dot")).toBeNull();
   });
+
+  it("shows the role square and muted description before the right cluster", () => {
+    renderGroup({ description: "Verifies the change", color: "var(--ok)", findingFilesCount: 1 });
+    expect(screen.getByTestId("group-square").style.background).toBe("var(--ok)");
+    expect(screen.getByTestId("group-square").getAttribute("aria-hidden")).toBe("true");
+    const desc = screen.getByText("Verifies the change");
+    expect(screen.getByText("Core").compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(desc.compareDocumentPosition(screen.getByText(/3 files/i)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

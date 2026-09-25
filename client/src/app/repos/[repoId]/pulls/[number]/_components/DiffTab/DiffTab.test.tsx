@@ -74,10 +74,20 @@ describe("DiffTab smart grouping", () => {
     renderTab();
     const headers = screen.getAllByRole("button", { expanded: true }).concat(screen.getAllByRole("button", { expanded: false }));
     expect(headers.map((h) => h.textContent)).toEqual(
-      expect.arrayContaining(["Core1 file", "Tests1 file", "Docs1 file", "Boilerplate1 file"]),
+      expect.arrayContaining([
+        "CoreThe substance of the change — review closely1 file",
+        "TestsVerifies the change1 file",
+        "DocsExplains the change1 file",
+        "BoilerplateGenerated / mechanical — skim1 file",
+      ]),
     );
     const order = screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-expanded")).map((b) => b.textContent);
-    expect(order).toEqual(["Core1 file", "Tests1 file", "Docs1 file", "Boilerplate1 file"]);
+    expect(order).toEqual([
+      "CoreThe substance of the change — review closely1 file",
+      "TestsVerifies the change1 file",
+      "DocsExplains the change1 file",
+      "BoilerplateGenerated / mechanical — skim1 file",
+    ]);
 
     expect(screen.getByText("src/a.ts")).toBeInTheDocument();
     expect(screen.getByText("a.test.ts")).toBeInTheDocument();
@@ -167,8 +177,11 @@ describe("DiffTab inline findings", () => {
         <DiffTab prId="p1" filesCount={3} files={[file("src/a.ts"), file("src/b.ts"), file("a.test.ts")]} />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByRole("button", { name: /Core\s*2 files$/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Tests\s*1 file$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Core.*2 files$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Tests.*1 file$/ })).toBeInTheDocument();
+    expect(screen.getByText("The substance of the change — review closely")).toBeInTheDocument();
+    expect(screen.getByText("Verifies the change")).toBeInTheDocument();
+    expect(screen.getAllByTestId("group-square")).toHaveLength(2);
   });
 
   it("tells the user when no review has run yet", () => {

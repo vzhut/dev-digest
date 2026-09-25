@@ -8,6 +8,10 @@ import { s } from "./styles";
 
 interface SmartDiffGroupProps {
   label: string;
+  /** Muted one-liner after the label; truncates on narrow widths. */
+  description?: string;
+  /** Role colour of the square before the label. */
+  color?: string;
   fileCount: number;
   defaultCollapsed?: boolean;
   /** Files in the group that carry findings; the dot + count show when > 0. */
@@ -20,6 +24,8 @@ interface SmartDiffGroupProps {
 /** One role group: sticky collapsible header ("Core · 3 files") over a body. */
 export function SmartDiffGroup({
   label,
+  description,
+  color,
   fileCount,
   defaultCollapsed = false,
   findingFilesCount = 0,
@@ -35,7 +41,9 @@ export function SmartDiffGroup({
     <div style={s.wrap}>
       <button type="button" style={s.header} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <Icon.ChevronRight size={13} style={chevronFor(open)} />
-        <span>{label}</span>
+        {color ? <span style={{ ...s.square, background: color }} aria-hidden data-testid="group-square" /> : null}
+        <span style={s.label}>{label}</span>
+        {description ? <span style={s.desc}>{description}</span> : null}
         <span style={s.right}>
           {findingFilesCount > 0 ? (
             <span style={s.findings} title={t("smartDiff.filesWithFindings", { count: findingFilesCount })}>
