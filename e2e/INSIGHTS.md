@@ -78,17 +78,23 @@ _No entries yet._
 run (`Stats`, then `Skills`). Adding `--exact` made 8/8 pass twice in a row; a `networkidle` wait alone did not help.
 Use `--exact` for short names like tab labels.
 
-### 2026-09-25 — `--exact` fails on buttons whose aria-label carries a count
+### 2026-09-25 — off-screen click silently no-ops in CI; `--exact` fails on names with a count
 
 `e2e/specs/04-pr-findings.flow.json:16` · 2026-09-25
 
-The severity pill's accessible name is `Show only CRITICAL findings (1)` (`client/messages/en/prReview.json:37`), so
-`find role button click --name "Show only CRITICAL findings" --exact` fails deterministically
-(`✗ click the CRITICAL severity pill`). Don't add `--exact` to names with a `({count})` suffix.
-Flow 04 also flaked once in CI on the L03 branch (`find role list --name "1 finding shown"` ~150 ms after the click,
-green locally and on main); the async IntentCard now sits above the findings on the Agent runs tab, so a
-`wait --load networkidle` before the pill click was added (3/3 local runs green after). Root cause not proven.
-Flow 09 (`wait --text repo-conventions`) flaked once locally on a cold first run.
+Flow 04 failed in CI (`✗ only the CRITICAL finding card remains`, `find role list --name "1 finding shown"`) but passed
+locally, in `next dev` and in `next build && next start`. A temporary DIAG dump in `run.ts` showed why: after L03 the
+IntentCard pushes the findings panel down, so the severity pill sits at y≈913 in a 1280x577 viewport
+(`elementFromPoint` → `null`). `find role button click` on it reported success in CI, but `aria-pressed` stayed `false`
+500 ms later; locally the same click worked. `window.scrollY` is 0 either way, so it is not a page scroll.
+Fix: `scrollintoview <selector>` before the click, then `wait --fn` on `aria-pressed === 'true'`. Green in CI after that.
+Ruled out (did not help): `wait --load networkidle`, polling with `wait --fn`, viewport size (same locally), agent-browser
+version (0.38.1 both). Lesson: a "successful" `find … click` proves nothing — assert the state change it should cause,
+and scroll below-the-fold targets into view first.
+
+Also: the pill's accessible name is `Show only CRITICAL findings (1)` (`client/messages/en/prReview.json:37`), so
+`--exact` on `--name "Show only CRITICAL findings"` fails deterministically. Don't use `--exact` on names with a
+`({count})` suffix. Flow 09 (`wait --text repo-conventions`) flaked twice locally on a cold first run; unrelated, not fixed.
 
 ## Open Questions
 
