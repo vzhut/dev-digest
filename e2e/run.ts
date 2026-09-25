@@ -77,6 +77,7 @@ async function runFlow(file: string, flow: Flow): Promise<FlowResult> {
       }
       steps.push({ label, ok: true });
       console.log(`   ✓ ${label}`);
+      if (args[0] === "eval") console.log(`   DIAG ${stdout.trim()}`); // TEMP-DIAG
     } catch (e) {
       const msg = (e as Error).message.split("\n")[0];
       steps.push({ label, ok: false, detail: msg });
