@@ -3,6 +3,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { PrFile } from "@/lib/types";
 import messages from "../../../../messages/en/shell.json";
+import prReview from "../../../../messages/en/prReview.json";
 import { DiffViewer } from "./DiffViewer";
 
 afterEach(cleanup);
@@ -12,7 +13,7 @@ const B: PrFile = { path: "src/b.ts", additions: 1, deletions: 0, patch: "@@ -0,
 
 function ui(files: PrFile[]) {
   return (
-    <NextIntlClientProvider locale="en" messages={{ shell: messages }}>
+    <NextIntlClientProvider locale="en" messages={{ shell: messages, prReview }}>
       <DiffViewer files={files} />
     </NextIntlClientProvider>
   );
