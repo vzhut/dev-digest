@@ -1,5 +1,5 @@
 import type { Container } from '../../platform/container.js';
-import type { FindingActionKind, RunEventKind, RunTrace } from '@devdigest/shared';
+import type { FindingActionKind, RunEventKind, RunTrace, SmartDiff } from '@devdigest/shared';
 import { AppError, NotFoundError } from '../../platform/errors.js';
 import type { AgentRow } from '../../db/rows.js';
 import { ReviewRepository } from './repository.js';
@@ -7,6 +7,7 @@ import { type ReviewDto, type ReviewDtoFinding } from './helpers.js';
 import { ReviewRunExecutor, type Logger } from './run-executor.js';
 import { actOnFinding as actOnFindingImpl } from './findings.js';
 import { reviewToDto } from './helpers.js';
+import { buildSmartDiff, latestReviewFindings } from './smart-diff/build.js';
 
 // Re-export DTO types + converters for backward-compatible imports from
 // './service.js' (these previously lived here; logic now in ./helpers.ts).
@@ -172,6 +173,24 @@ export class ReviewService {
     }
     return rows.map(({ review, findings, usage }) =>
       reviewToDto(review, findings, review.agentId ? names.get(review.agentId) : null, usage),
+    );
+  }
+
+  /** Smart Diff: files grouped by role + finding lines of the latest review. No LLM call. */
+  async smartDiff(workspaceId: string, prId: string): Promise<SmartDiff> {
+    // getPull first: reviewsForPull/getPrFiles are not workspace-scoped.
+    const pull = await this.repo.getPull(workspaceId, prId);
+    if (!pull) throw new NotFoundError('Pull request not found');
+    const files = await this.repo.getPrFiles(prId);
+    const rows = await this.repo.reviewsForPull(prId);
+    return buildSmartDiff(
+      files.map((f) => ({ path: f.path, additions: f.additions, deletions: f.deletions })),
+      latestReviewFindings(
+        rows.map(({ review, findings }) => ({
+          kind: review.kind,
+          findings: findings.map((f) => ({ file: f.file, start_line: f.startLine })),
+        })),
+      ),
     );
   }
 
