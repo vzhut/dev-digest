@@ -120,9 +120,8 @@ describe("DiffTab inline findings", () => {
     expect(screen.getByTitle("1 file with findings")).toHaveTextContent("1");
     expect(screen.getAllByRole("img", { name: "Has review findings" })).toHaveLength(1);
 
-    // Hidden by default, like comments.
-    expect(screen.queryByText("Hardcoded key")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Comments and findings (2)" }));
+    // Visible by default (comments stay hidden).
+    expect(screen.getByRole("button", { name: "Comments and findings (2)" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Hardcoded key")).toBeInTheDocument();
     expect(screen.getByText("blocker")).toBeInTheDocument();
     // Off-patch (and dismissed) finding lands in the end-of-file block.
@@ -134,6 +133,42 @@ describe("DiffTab inline findings", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Comments and findings (2)" }));
     expect(screen.queryByText("Hardcoded key")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Comments and findings (2)" })).toHaveAttribute("aria-pressed", "false");
+
+    // Second click shows them again.
+    fireEvent.click(screen.getByRole("button", { name: "Comments and findings (2)" }));
+    expect(screen.getByText("Hardcoded key")).toBeInTheDocument();
+  });
+
+  it("calls the finding action with accept when the user accepts an inline finding", () => {
+    state.reviews = [review([finding({ id: "f1", start_line: 2, title: "Hardcoded key" })])];
+    render(
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+        <DiffTab prId="p1" filesCount={1} files={[patched("src/a.ts")]} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    expect(mutate).toHaveBeenCalledWith(expect.objectContaining({ findingId: "f1", action: "accept", prId: "p1" }));
+  });
+
+  it("pluralises the file count in the group header", () => {
+    state.smart = {
+      groups: [
+        { role: "core", files: [
+          { path: "src/a.ts", additions: 1, deletions: 0, finding_lines: [] },
+          { path: "src/b.ts", additions: 1, deletions: 0, finding_lines: [] },
+        ] },
+        { role: "tests", files: [{ path: "a.test.ts", additions: 1, deletions: 0, finding_lines: [] }] },
+      ],
+      split_suggestion: { too_big: false, total_lines: 3, proposed_splits: [] },
+    };
+    render(
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+        <DiffTab prId="p1" filesCount={3} files={[file("src/a.ts"), file("src/b.ts"), file("a.test.ts")]} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByRole("button", { name: /Core\s*2 files$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Tests\s*1 file$/ })).toBeInTheDocument();
   });
 
   it("tells the user when no review has run yet", () => {

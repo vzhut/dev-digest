@@ -24,8 +24,16 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
   const t = useTranslations("prReview");
   const { data: comments } = usePrComments(prId);
   const create = useCreatePrComment(prId);
-  // Comments start hidden so the diff is clean by default — toggle to reveal.
+  // Findings are visible by default; GitHub comments start hidden (clean diff).
+  // One toggle button drives both.
+  const [showFindings, setShowFindings] = React.useState(true);
   const [showComments, setShowComments] = React.useState(false);
+  const anyVisible = showFindings || showComments;
+  const toggleAll = () => {
+    const next = !anyVisible;
+    setShowFindings(next);
+    setShowComments(next);
+  };
   const [order, setOrder] = React.useState<"smart" | "original">("smart");
   // Loading / error → fall back to the original order.
   const { data: smart } = useSmartDiff(prId);
@@ -42,7 +50,7 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
       },
     [prId],
   );
-  const findingApi: DiffFindingApi = { byFile, show: showComments, FindingView };
+  const findingApi: DiffFindingApi = { byFile, show: showFindings, FindingView };
 
   const commentCount = comments?.length ?? 0;
   const toggleCount = commentCount + findings.length;
@@ -85,9 +93,9 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
               <Button
                 kind="ghost"
                 size="sm"
-                icon={showComments ? "EyeOff" : "Eye"}
-                aria-pressed={showComments}
-                onClick={() => setShowComments((v) => !v)}
+                icon={anyVisible ? "EyeOff" : "Eye"}
+                aria-pressed={anyVisible}
+                onClick={toggleAll}
               >
                 {t("smartDiff.toggleFindings", { count: toggleCount })}
               </Button>

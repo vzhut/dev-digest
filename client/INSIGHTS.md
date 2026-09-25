@@ -26,6 +26,14 @@ const onScroll = (e: Event) => {
 };
 ```
 
+### A shared "show comments" flag hid the inline finding cards by default
+
+`src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.tsx:28` · 2026-09-25
+
+The first Smart Diff pass drove the inline finding cards from the existing `showComments` state, which the starter initialises to `false` so the diff is clean. After Run review the group counter and file dot appeared but no card sat under the line until the eye icon was pressed. Every unit test passed, because they clicked the toggle before asserting.
+
+The homework mockups show the cards open by default, while a single toggle must still hide both findings and GitHub comments. Findings now have their own `showFindings` (default `true`), comments keep `showComments` (default `false`), and one button sets both to `!(showFindings || showComments)`. A test that asserts on visibility must assert the state on first render, not after toggling.
+
 ## Codebase Patterns
 
 ### An SSE subscription hook keys on a joined id string, not the array it is given
