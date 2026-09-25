@@ -20,8 +20,13 @@ export const s = {
     textAlign: "left",
   } satisfies CSSProperties,
   count: { color: "var(--text-muted)", fontWeight: 400 } satisfies CSSProperties,
-  findings: {
+  right: {
     marginLeft: "auto",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 12,
+  } satisfies CSSProperties,
+  findings: {
     display: "inline-flex",
     alignItems: "center",
     gap: 5,

@@ -8,7 +8,7 @@ import { usePrComments, useCreatePrComment, useSmartDiff, usePrReviews } from "@
 import { notify } from "@/lib/toast";
 import type { FindingRecord, PrFile } from "@devdigest/shared";
 import { COLLAPSED_ROLES, ROLE_LABEL_KEY } from "./constants";
-import { filesWithFindings, findingsByFile, groupFiles, hasReview, latestReviewFindings } from "./helpers";
+import { filesWithFindings, findingsByFile, groupFiles, hasReview, latestReviewFindings, topSeverityOfFiles } from "./helpers";
 import { SmartDiffGroup } from "./_components/SmartDiffGroup";
 import { InlineFinding } from "./_components/InlineFinding";
 
@@ -116,6 +116,7 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
             fileCount={g.files.length}
             defaultCollapsed={COLLAPSED_ROLES.includes(g.role)}
             findingFilesCount={filesWithFindings(g.files, byFile)}
+            topSeverity={topSeverityOfFiles(g.files, byFile)}
           >
             <DiffViewer files={g.files} commenting={commenting} findings={findingApi} />
           </SmartDiffGroup>

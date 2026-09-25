@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FindingRecord, PrFile, ReviewRecord, SmartDiff } from "@devdigest/shared";
-import { groupFiles, hasReview, latestReviewFindings, filesWithFindings, findingsByFile } from "./helpers";
+import { groupFiles, hasReview, latestReviewFindings, filesWithFindings, findingsByFile, topSeverityOfFiles } from "./helpers";
 
 const file = (path: string): PrFile => ({ path, additions: 1, deletions: 0, patch: null });
 const sf = (path: string) => ({ path, additions: 1, deletions: 0, finding_lines: [] });
@@ -55,5 +55,15 @@ describe("hasReview", () => {
     expect(hasReview([review("summary", [])])).toBe(false);
     expect(hasReview([])).toBe(false);
     expect(hasReview([review("summary", []), review("review", [])])).toBe(true);
+  });
+});
+
+describe("topSeverityOfFiles", () => {
+  it("returns the most severe finding among the given files, undefined when none", () => {
+    const f = (id: string, path: string, severity: string) => ({ id, file: path, severity }) as FindingRecord;
+    const byFile = findingsByFile([f("1", "a.ts", "SUGGESTION"), f("2", "b.ts", "CRITICAL"), f("3", "c.ts", "WARNING")]);
+    expect(topSeverityOfFiles([file("a.ts"), file("c.ts")], byFile)).toBe("WARNING");
+    expect(topSeverityOfFiles([file("a.ts"), file("b.ts")], byFile)).toBe("CRITICAL");
+    expect(topSeverityOfFiles([file("zzz.ts")], byFile)).toBeUndefined();
   });
 });

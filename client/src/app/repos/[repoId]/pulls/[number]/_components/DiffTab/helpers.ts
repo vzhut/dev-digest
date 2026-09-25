@@ -1,4 +1,5 @@
 import type { FindingRecord, PrFile, ReviewRecord, SmartDiff, SmartDiffRole } from "@devdigest/shared";
+import { topSeverity } from "@/components/diff-viewer";
 import { SMART_ROLE_ORDER } from "./constants";
 
 export interface FileGroup {
@@ -55,4 +56,13 @@ export function findingsByFile(findings: FindingRecord[]): Record<string, Findin
   const out: Record<string, FindingRecord[]> = {};
   for (const f of findings) (out[f.file] ??= []).push(f);
   return out;
+}
+
+/** Highest severity among the findings of the given files; undefined when none. */
+export function topSeverityOfFiles(
+  files: PrFile[],
+  byFile: Record<string, FindingRecord[]>,
+): string | undefined {
+  const all = files.flatMap((f) => byFile[f.path] ?? []);
+  return all.length > 0 ? topSeverity(all) : undefined;
 }
