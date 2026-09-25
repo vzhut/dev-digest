@@ -78,6 +78,18 @@ _No entries yet._
 run (`Stats`, then `Skills`). Adding `--exact` made 8/8 pass twice in a row; a `networkidle` wait alone did not help.
 Use `--exact` for short names like tab labels.
 
+### 2026-09-25 — `--exact` fails on buttons whose aria-label carries a count
+
+`e2e/specs/04-pr-findings.flow.json:16` · 2026-09-25
+
+The severity pill's accessible name is `Show only CRITICAL findings (1)` (`client/messages/en/prReview.json:37`), so
+`find role button click --name "Show only CRITICAL findings" --exact` fails deterministically
+(`✗ click the CRITICAL severity pill`). Don't add `--exact` to names with a `({count})` suffix.
+Flow 04 also flaked once in CI on the L03 branch (`find role list --name "1 finding shown"` ~150 ms after the click,
+green locally and on main); the async IntentCard now sits above the findings on the Agent runs tab, so a
+`wait --load networkidle` before the pill click was added (3/3 local runs green after). Root cause not proven.
+Flow 09 (`wait --text repo-conventions`) flaked once locally on a cold first run.
+
 ## Open Questions
 
 _No entries yet._
