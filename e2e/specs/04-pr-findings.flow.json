@@ -15,9 +15,9 @@
     { "cmd": ["wait", "--text", "Hardcoded Stripe secret key in commit"], "label": "seeded FindingCard is visible (newest run is open by default)" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "intent card and run data settle (no layout shift under the pill)" },
     { "cmd": ["find", "role", "button", "click", "--name", "Show only CRITICAL findings"], "label": "click the CRITICAL severity pill" },
-    { "cmd": ["find", "role", "list", "text", "--name", "1 finding shown", "--exact"], "label": "only the CRITICAL finding card remains" },
+    { "cmd": ["wait", "--fn", "document.querySelectorAll(\"[role=list][aria-label='1 finding shown']\").length === 1"], "label": "only the CRITICAL finding card remains" },
     { "cmd": ["wait", "--text", "Hardcoded Stripe secret key in commit"], "label": "the remaining card is the CRITICAL one" },
     { "cmd": ["find", "role", "button", "click", "--name", "Show only CRITICAL findings"], "label": "click the active pill again" },
-    { "cmd": ["find", "role", "list", "text", "--name", "2 findings shown", "--exact"], "label": "filter cleared — both finding cards are back" }
+    { "cmd": ["wait", "--fn", "document.querySelectorAll(\"[role=list][aria-label='2 findings shown']\").length === 1"], "label": "filter cleared — both finding cards are back" }
   ]
 }
