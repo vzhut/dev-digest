@@ -7,4 +7,5 @@ Linked from `AGENTS.md` via *Use when*.
 - [`intent-layer.md`](intent-layer.md) — the two-call flow (intent classifier → main review), allowed sources, ticket allowlist and env, scope policy.
 - [`prompt-logging.md`](prompt-logging.md) — what is logged when a prompt is built (sections, sources, sizes, model, correlation id), what never is, and the local-only verbose mode.
 - [`smart-diff.md`](smart-diff.md) — Files changed grouped by role: path-classifier rule order and disputed cases, `GET /pulls/:id/smart-diff` contract, inline finding anchoring (`RIGHT:start_line`, off-patch block, toggle), why no LLM.
+- [`devdigest-mcp.md`](devdigest-mcp.md) — the local stdio MCP server (`mcp-server/`): launch via `.mcp.json` + `DEVDIGEST_API_URL`, the five tools, state/error table, blocking `run_agent_on_pr` (120 s limit, 115 s margin, `get_findings` fallback), token economy, safety, `get_blast_radius` homework hook.
 - [`agent-prompts/`](agent-prompts/) — built-in reviewer system prompts, and choosing a model.
