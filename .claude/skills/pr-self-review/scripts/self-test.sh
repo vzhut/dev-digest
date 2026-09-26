@@ -82,6 +82,10 @@ silent "R8 prose about keys"    "$P_SECRET_KEY" 'Set OPENAI_API_KEY in .env befo
 fires  "R8 pem block"           "$P_SECRET_PEM" "-----${_P:-BEGIN} RSA PRIVATE KEY-----"
 fires  "R8 env file path"       "$P_SECRET_ENVFILE" 'server/.env.local'
 silent "R8 env in a doc name"   "$P_SECRET_ENVFILE" 'docs/environment.md'
+fires  "R8 env template is safe"  "$P_SECRET_ENVFILE_SAFE" 'server/.env.example'
+fires  "R8 env sample is safe"    "$P_SECRET_ENVFILE_SAFE" '.env.sample'
+silent "R8 env local is NOT safe" "$P_SECRET_ENVFILE_SAFE" 'server/.env.local'
+silent "R8 plain .env NOT safe"   "$P_SECRET_ENVFILE_SAFE" 'server/.env'
 
 # The table above must not itself look like a leak, or this gate blocks every change to it.
 if grep -qE "$P_SECRET_KEY|$P_SECRET_PEM" "$HERE/self-test.sh"; then

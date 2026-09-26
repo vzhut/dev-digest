@@ -3,6 +3,17 @@
 All notable changes to this skill. Versioning per `SKILL.md` → *Versioning*:
 MAJOR — a change that flips a verdict · MINOR — a new rule or routing row · PATCH — wording.
 
+## 1.2.2 — 2026-09-24
+
+### R8 flagged `.env.example` as a committed secret file
+
+`P_SECRET_ENVFILE` (`(^|/)\.env($|\.)`) also matches `server/.env.example`, the documentation file that is
+meant to be committed, so any change that documented a new variable got a CRITICAL and a BLOCK. The real
+`.env` is git-ignored and never reaches the change set. A second pattern, `P_SECRET_ENVFILE_SAFE`
+(`.env.example`, `.env.sample`, `.env.template`), is now subtracted; `.env`, `.env.local` and the like still
+fire. `self-test.sh` pins both directions. Found while gating the Intent Layer change, first time the file
+was touched on a branch since the rule was written.
+
 ## 1.2.1 — 2026-09-21
 
 ### R11 gave the wrong namespace to files with two translators

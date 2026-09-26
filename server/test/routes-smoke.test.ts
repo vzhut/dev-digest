@@ -64,4 +64,12 @@ describe('routes (no DB)', () => {
     expect(res.json().error.code).toBe('validation_error');
     await app.close();
   });
+
+  it('GET /pulls/:id/intent rejects a non-uuid id with 422 (validated at the edge)', async () => {
+    const app = await buildApp({ config });
+    const res = await app.inject({ method: 'GET', url: '/pulls/not-a-uuid/intent' });
+    expect(res.statusCode).toBe(422);
+    expect(res.json().error.code).toBe('validation_error');
+    await app.close();
+  });
 });

@@ -1,6 +1,6 @@
 {
   "name": "PR detail shows the seeded review run, verdict, findings, and filters them by severity",
-  "description": "From PR #482, open the Agent runs tab and confirm the seeded review run renders (verdict 'request changes', 2 findings) in its accordion header. The newest run's accordion is open by default (FindingsTab passes defaultOpen to the first run), so the VerdictBanner and the seeded FindingCard ('Hardcoded Stripe secret key in commit') are revealed without an extra click. Exercises the refactored ReviewRunAccordion / VerdictBanner / FindingsPanel / FindingCard. Read-only seeded data (no model call). Assumes a freshly-seeded DB where acme/payments-api (PR #482) is the first repo — guaranteed by e2e-web.yml; run locally via the hermetic stack (see e2e/README.md). Then exercises the severity counter pills (spec client/specs/run-severity-filter.md): the seeded run has 1 CRITICAL + 1 WARNING, clicking CRITICAL leaves exactly one finding card, clicking it again restores both. The findings list is a named ARIA list (\"N findings shown\"), so the assertion is the rendered cards, not the pill label.",
+  "description": "From PR #482, open the Agent runs tab and confirm the seeded review run renders (verdict 'request changes', 2 findings) in its accordion header. The newest run's accordion is open by default (FindingsTab passes defaultOpen to the first run), so the VerdictBanner and the seeded FindingCard ('Hardcoded Stripe secret key in commit') are revealed without an extra click. Exercises the refactored ReviewRunAccordion / VerdictBanner / FindingsPanel / FindingCard. Read-only seeded data (no model call). Assumes a freshly-seeded DB where acme/payments-api (PR #482) is the first repo — guaranteed by e2e-web.yml; run locally via the hermetic stack (see e2e/README.md). Then exercises the severity counter pills (spec client/specs/run-severity-filter.md): the seeded run has 1 CRITICAL + 1 SUGGESTION (the out-of-scope N+1 finding, downgraded from WARNING by L03), clicking CRITICAL leaves exactly one finding card, clicking it again restores both. The findings list is a named ARIA list (\"N findings shown\"), so the assertion is the rendered cards, not the pill label.",
   "steps": [
     { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
     { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
@@ -13,10 +13,13 @@
     { "cmd": ["wait", "--text", "request changes"], "label": "seeded run accordion shows its verdict" },
     { "cmd": ["wait", "--text", "2 findings"], "label": "accordion header shows the seeded finding count" },
     { "cmd": ["wait", "--text", "Hardcoded Stripe secret key in commit"], "label": "seeded FindingCard is visible (newest run is open by default)" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "intent card and run data settle (no layout shift under the pill)" },
+    { "cmd": ["scrollintoview", "button[aria-label^='Show only CRITICAL']"], "label": "scroll the CRITICAL pill into view (it sits below the intent card, off-screen)" },
     { "cmd": ["find", "role", "button", "click", "--name", "Show only CRITICAL findings"], "label": "click the CRITICAL severity pill" },
-    { "cmd": ["find", "role", "list", "text", "--name", "1 finding shown", "--exact"], "label": "only the CRITICAL finding card remains" },
+    { "cmd": ["wait", "--fn", "document.querySelector(\"button[aria-label^='Show only CRITICAL']\").getAttribute('aria-pressed') === 'true'"], "label": "the pill registered the click (aria-pressed)" },
+    { "cmd": ["wait", "--fn", "document.querySelectorAll(\"[role=list][aria-label='1 finding shown']\").length === 1"], "label": "only the CRITICAL finding card remains" },
     { "cmd": ["wait", "--text", "Hardcoded Stripe secret key in commit"], "label": "the remaining card is the CRITICAL one" },
     { "cmd": ["find", "role", "button", "click", "--name", "Show only CRITICAL findings"], "label": "click the active pill again" },
-    { "cmd": ["find", "role", "list", "text", "--name", "2 findings shown", "--exact"], "label": "filter cleared — both finding cards are back" }
+    { "cmd": ["wait", "--fn", "document.querySelectorAll(\"[role=list][aria-label='2 findings shown']\").length === 1"], "label": "filter cleared — both finding cards are back" }
   ]
 }

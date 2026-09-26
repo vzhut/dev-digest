@@ -26,6 +26,12 @@ const EnvSchema = z.object({
   // Note: even when on, sections only populate once the repo is indexed; an
   // unindexed repo degrades gracefully. Per-agent override: agents.repo_intel.
   REPO_INTEL_ENABLED: z.string().optional(),
+  // Comma-separated hostnames Jira/Linear ticket links may be fetched from (intent
+  // layer). Empty (default) = nothing is fetched; ticket links are recorded as blocked.
+  INTENT_TICKET_HOSTS: z.string().optional(),
+  // Per-section detail (tokens, caps) in the prompt-assembly log. Local development
+  // only: honoured when NODE_ENV=development, ignored (with a startup warning) anywhere else.
+  PROMPT_LOG_VERBOSE: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
@@ -59,10 +65,21 @@ export type AppConfig = {
    * EXACTLY like the ripgrep-only baseline.
    */
   repoIntelEnabled: boolean;
+  /** Lowercased hosts ticket links may be fetched from (`INTENT_TICKET_HOSTS`). Default `[]`. */
+  intentTicketHosts: string[];
+  /**
+   * Detailed prompt-assembly logging (`PROMPT_LOG_VERBOSE=true`). Only ever true in
+   * local development; the log stays metadata-only either way (never prompt text).
+   */
+  promptLogVerbose: boolean;
+  /** `PROMPT_LOG_VERBOSE` was requested outside development and therefore ignored. */
+  promptLogVerboseIgnored: boolean;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = EnvSchema.parse(env);
+  const verboseRequested = parsed.PROMPT_LOG_VERBOSE === 'true';
+  const isLocal = parsed.NODE_ENV === 'development';
   const cloneDirRaw =
     parsed.DEVDIGEST_CLONE_DIR ?? join(homedir(), '.devdigest', 'workspace');
   const cloneDir = isAbsolute(cloneDirRaw) ? cloneDirRaw : resolve(process.cwd(), cloneDirRaw);
@@ -77,5 +94,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     webOrigin: `http://localhost:${parsed.WEB_PORT}`,
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
+    intentTicketHosts: (parsed.INTENT_TICKET_HOSTS ?? '')
+      .split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
+    promptLogVerbose: verboseRequested && isLocal,
+    promptLogVerboseIgnored: verboseRequested && !isLocal,
   };
 }

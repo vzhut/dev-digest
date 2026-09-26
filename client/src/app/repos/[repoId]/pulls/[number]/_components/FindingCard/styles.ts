@@ -47,6 +47,11 @@ export const s = {
     fontWeight: 600,
     color: "var(--text-muted)",
   } satisfies CSSProperties,
+  downgradedTag: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
   metaRow: {
     display: "flex",
     alignItems: "center",

@@ -15,8 +15,13 @@
 export {
   assemblePrompt,
   wrapUntrusted,
+  renderIntentSection,
+  INJECTION_GUARD,
   type PromptParts,
   type PromptSkill,
+  type PromptSection,
+  type PromptSectionSource,
+  type PromptLogOptions,
   type AssembledPrompt,
 } from './prompt.js';
 
@@ -46,7 +51,26 @@ export {
   type ReviewEvent,
   type ReviewStrategy,
   type ReviewMode,
+  type ScopedReview,
 } from './review/run.js';
+
+// Intent layer: classifier prompt + derive, deterministic confidence, scope policy.
+export { buildIntentPrompt, type IntentPrompt } from './intent/prompt.js';
+export { deriveIntent, type DeriveIntentArgs, type DeriveIntentResult } from './intent/derive.js';
+export { computeIntentConfidence, meaningfulChars } from './intent/confidence.js';
+export {
+  applyIntentScope,
+  type ScopedFinding,
+  type ScopeStats,
+} from './intent/scope.js';
+export type {
+  IntentPromptInput,
+  IntentFile,
+  LoadedIntentSource,
+  UnavailableIntentSource,
+  PromptComponent,
+  ReviewIntent,
+} from './intent/types.js';
 
 // Output: grounded Review → GitHubReviewPayload (body + inline comments + event).
 export {

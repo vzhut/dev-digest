@@ -9,7 +9,9 @@
     "replyToAuthor": "Reply to author",
     "replyPlaceholder": "Reply to the author about this finding…",
     "sendReply": "Send reply",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "outOfScope": "Out of scope",
+    "downgradedFrom": "downgraded from {severity}"
   },
   "trifecta": {
     "lethal": "LETHAL TRIFECTA — ALL 3 PRESENT",
@@ -150,5 +152,47 @@
     "cancel": "Cancel",
     "openTrace": "Open run trace",
     "liveReview": "Live review"
+  },
+  "intent": {
+    "title": "Intent",
+    "inScope": "In scope",
+    "outOfScope": "Out of scope",
+    "inScopeList": "{count, plural, one {# in-scope item} other {# in-scope items}}",
+    "outOfScopeList": "{count, plural, one {# out-of-scope item} other {# out-of-scope items}}",
+    "none": "Nothing listed",
+    "riskAreas": "Risk areas",
+    "confidenceLabel": "Confidence: {level}",
+    "confidence": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "lowConfidenceNote": "Low confidence — not used to downgrade findings.",
+    "sources": "Sources",
+    "sourceKind": {
+      "pr_title": "title",
+      "pr_description": "description",
+      "file_list": "file list",
+      "hunk_headers": "hunk headers",
+      "github_issue": "issue",
+      "repo_file": "spec file",
+      "external_ticket": "ticket"
+    },
+    "sourceStatus": {
+      "used": "used",
+      "truncated": "truncated",
+      "missing": "missing",
+      "blocked": "blocked"
+    },
+    "missing": "Missing context",
+    "stale": "This PR changed since the intent was detected. Re-classify to refresh it.",
+    "rerun": "Re-classify",
+    "detect": "Detect intent",
+    "emptyTitle": "No intent detected yet",
+    "emptyBody": "A cheap model reads the PR title, description, linked issues and file list to summarise what the change is meant to do.",
+    "errorTitle": "Couldn't load the PR intent",
+    "errorBody": "The intent could not be loaded.",
+    "rerunError": "Re-classifying the intent failed.",
+    "meta": "{model} · {cost}"
   }
 }

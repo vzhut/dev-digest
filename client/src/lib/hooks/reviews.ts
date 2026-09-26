@@ -8,6 +8,7 @@ import { api, API_BASE } from "../api";
 import { notify } from "../toast";
 import type {
   FindingActionKind,
+  PrIntentResponse,
   PrReviewComment,
   ReviewRecord,
   ReviewRunResponse,
@@ -22,6 +23,7 @@ export const reviewKeys = {
   runs: (prId: string | null | undefined) => ["pr-runs", prId] as const,
   reviews: (prId: string | null | undefined) => ["reviews", prId] as const,
   comments: (prId: string | null | undefined) => ["pr-comments", prId] as const,
+  intent: (prId: string | null | undefined) => ["pr-intent", prId] as const,
 };
 
 // ---- Active (in-flight) runs — server-side source of truth ----
@@ -65,7 +67,11 @@ export function useInvalidatePrRuns(prId: string | null | undefined) {
       if (prId) qc.invalidateQueries({ queryKey: reviewKeys.activeRuns(prId) });
     },
     history: () => {
-      if (prId) qc.invalidateQueries({ queryKey: reviewKeys.runs(prId) });
+      if (prId) {
+        qc.invalidateQueries({ queryKey: reviewKeys.runs(prId) });
+        // A review derives the PR intent when it is missing or stale, so refresh the card too.
+        qc.invalidateQueries({ queryKey: reviewKeys.intent(prId) });
+      }
     },
   };
 }
@@ -154,6 +160,28 @@ export function useRunReview() {
       }),
     onSuccess: (_d, { prId }) => {
       qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
+    },
+  });
+}
+
+// ---- PR intent (what the PR is meant to change) ----
+/** The PR's stored intent; `data.intent` is null until it was derived once. */
+export function usePrIntent(prId: string | null | undefined) {
+  return useQuery({
+    queryKey: reviewKeys.intent(prId),
+    queryFn: () => api.get<PrIntentResponse>(`/pulls/${prId}/intent`),
+    enabled: !!prId,
+  });
+}
+
+/** Force a (paid) intent re-derivation and put the fresh record straight into the cache. */
+export function useRerunIntent(prId: string | null | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<NonNullable<PrIntentResponse["intent"]>>(`/pulls/${prId}/intent`),
+    onSuccess: (intent) => {
+      qc.setQueryData<PrIntentResponse>(reviewKeys.intent(prId), { intent });
+      qc.invalidateQueries({ queryKey: reviewKeys.intent(prId) });
     },
   });
 }

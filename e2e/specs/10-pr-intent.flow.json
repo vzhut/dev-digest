@@ -1,0 +1,22 @@
+{
+  "name": "PR detail shows the seeded intent card, and out-of-scope findings carry their scope badge",
+  "description": "Opens PR #482 and checks the seeded pr_intent (L03 intent layer, spec specs/intent-layer.md): the summary, the 'N in-scope items' named list, the risk-area chip, the confidence badge and the missing-context notice (specs/ratelimit.md). Then switches to the Agent runs tab and checks that the seeded N+1 finding shows the 'Out of scope' badge and 'downgraded from WARNING'. Read-only seeded data: never clicks Re-classify / Detect intent (that calls the LLM). Waits for the PR row text before clicking (list fetch race, see e2e/INSIGHTS.md) and uses --exact for list names. Assumes a freshly-seeded DB (run via ./scripts/e2e.sh).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["wait", "--text", "Add token-bucket rate limiting to the public API endpoints"], "label": "intent summary is visible" },
+    { "cmd": ["find", "role", "list", "text", "--name", "2 in-scope items", "--exact"], "label": "in-scope list carries the seeded count" },
+    { "cmd": ["wait", "--text", "Confidence: Medium"], "label": "confidence badge is shown" },
+    { "cmd": ["wait", "--text", "Public webhook endpoints"], "label": "risk-area chip is visible" },
+    { "cmd": ["wait", "--text", "specs/ratelimit.md"], "label": "missing-context notice names the spec file" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Agent runs"], "label": "switch to the Agent runs tab" },
+    { "cmd": ["wait", "--url", "tab=findings"], "label": "findings tab is active in the URL" },
+    { "cmd": ["wait", "--text", "N+1 query in user list endpoint"], "label": "seeded out-of-scope finding is visible" },
+    { "cmd": ["wait", "--text", "Out of scope"], "label": "finding shows the Out of scope badge" },
+    { "cmd": ["wait", "--text", "downgraded from WARNING"], "label": "finding shows its original severity" }
+  ]
+}

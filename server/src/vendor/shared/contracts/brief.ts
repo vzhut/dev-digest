@@ -7,11 +7,43 @@ import { z } from 'zod';
 
 // ---- Intent ----
 export const Intent = z.object({
-  intent: z.string(),
-  in_scope: z.array(z.string()),
-  out_of_scope: z.array(z.string()),
+  intent: z.string().describe('One-sentence summary of what the PR intends to change'),
+  in_scope: z.array(z.string()).describe('Changes the PR is meant to make'),
+  out_of_scope: z.array(z.string()).describe('Changes that would be unrelated to the PR intent'),
+  risk_areas: z
+    .array(z.string())
+    .nullish()
+    .describe('Areas a reviewer should look at closely'),
 });
 export type Intent = z.infer<typeof Intent>;
+
+/** Confidence in the derived intent — computed by our code from the sources, never asked of the model. */
+export const IntentConfidence = z.enum(['high', 'medium', 'low']);
+export type IntentConfidence = z.infer<typeof IntentConfidence>;
+
+export const IntentSourceKind = z.enum([
+  'pr_title',
+  'pr_description',
+  'file_list',
+  'hunk_headers',
+  'github_issue',
+  'repo_file',
+  'external_ticket',
+]);
+export type IntentSourceKind = z.infer<typeof IntentSourceKind>;
+
+export const IntentSourceStatus = z.enum(['used', 'truncated', 'missing', 'blocked']);
+export type IntentSourceStatus = z.infer<typeof IntentSourceStatus>;
+
+/** One input the intent was derived from (or could not be derived from). */
+export const IntentSource = z.object({
+  kind: IntentSourceKind,
+  ref: z.string(),
+  status: IntentSourceStatus,
+  reason: z.string().nullish(),
+  chars: z.number().int(),
+});
+export type IntentSource = z.infer<typeof IntentSource>;
 
 // ---- Blast radius ----
 export const ChangedSymbol = z.object({

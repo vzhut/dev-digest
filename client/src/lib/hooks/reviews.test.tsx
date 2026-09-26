@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { reviewKeys, useInvalidatePrRuns } from "./reviews";
+import { reviewKeys, useInvalidatePrRuns, useRerunIntent } from "./reviews";
+import { api } from "../api";
 
 function setup(prId: string | null) {
   const qc = new QueryClient();
@@ -21,6 +22,8 @@ describe("useInvalidatePrRuns", () => {
     result.current.history();
     expect(spy).toHaveBeenNthCalledWith(1, { queryKey: reviewKeys.activeRuns("pr1") });
     expect(spy).toHaveBeenNthCalledWith(2, { queryKey: reviewKeys.runs("pr1") });
+    // a settled review may have derived the intent, so history() refreshes it too
+    expect(spy).toHaveBeenNthCalledWith(3, { queryKey: reviewKeys.intent("pr1") });
   });
 
   it("does nothing before the PR id is known", () => {
@@ -31,8 +34,25 @@ describe("useInvalidatePrRuns", () => {
   });
 });
 
+describe("useRerunIntent", () => {
+  it("POSTs the re-run and writes the fresh record into the intent cache", async () => {
+    const record = { pr_id: "pr1", intent: "Add rate limiting" };
+    const post = vi.spyOn(api, "post").mockResolvedValue(record);
+    const qc = new QueryClient();
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useRerunIntent("pr1"), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+    expect(post).toHaveBeenCalledWith("/pulls/pr1/intent");
+    expect(qc.getQueryData(reviewKeys.intent("pr1"))).toEqual({ intent: record });
+    post.mockRestore();
+  });
+});
+
 // --- useRunEvents: SSE lifecycle -------------------------------------------
-import { act } from "@testing-library/react";
 import { useRunEvents } from "./reviews";
 
 class FakeEventSource {

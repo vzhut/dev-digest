@@ -7,6 +7,7 @@ import { seed } from '../src/db/seed.js';
 import { MockLLMProvider, MockEmbedder, MockGitClient } from '../src/adapters/mocks.js';
 import * as t from '../src/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { FakeIntentLLM } from './helpers/intent.js';
 import type { Review } from '@devdigest/shared';
 
 const hasDocker = await dockerAvailable();
@@ -119,6 +120,11 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
         git: new MockGitClient({ diff: DIFF }),
         llm: {
           [provider]: new MockLLMProvider(provider, { structured }),
+          // Every review now runs the intent classifier first (default model is
+          // OpenRouter). Stub it to fail fast so these tests stay offline even on a
+          // machine whose ~/.devdigest/secrets.json holds a real OPENROUTER_API_KEY;
+          // the intent step is fail-soft, so reviews proceed without intent.
+          openrouter: new FakeIntentLLM(undefined, new Error('intent classifier disabled in this test')),
         },
       },
     });

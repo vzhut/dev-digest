@@ -13,6 +13,7 @@ import {
   MonoLink,
   ConfidenceNum,
   Button,
+  Badge,
   Markdown,
   type Severity,
   type Category,
@@ -61,6 +62,14 @@ export function FindingCard({
           <div style={s.titleRow}>
             <span style={s.title(muted, dismissed)}>{f.title}</span>
             <CategoryTag category={f.category as Category} />
+            {f.scope === "out_of_scope" && (
+              <Badge color="var(--text-secondary)">{t("finding.outOfScope")}</Badge>
+            )}
+            {f.original_severity && (
+              <span style={s.downgradedTag}>
+                {t("finding.downgradedFrom", { severity: f.original_severity })}
+              </span>
+            )}
             {accepted && <span style={s.acceptedTag}>{t("finding.accepted")}</span>}
             {dismissed && <span style={s.dismissedTag}>{t("finding.dismissed")}</span>}
           </div>

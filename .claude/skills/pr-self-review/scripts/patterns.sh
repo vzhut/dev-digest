@@ -40,6 +40,8 @@ P_CORE_IMPURE="from ['\"](pg|postgres|drizzle-orm|fs|node:fs|octokit|simple-git)
 P_SECRET_KEY='(sk-(proj|svcacct|ant-api[0-9]{2})-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{50,}|A[SK]IA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|AIza[A-Za-z0-9_-]{30,})'
 P_SECRET_PEM='BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY'
 P_SECRET_ENVFILE='(^|/)\.env($|\.)'
+# Committed templates are meant to be tracked: `.env.example` is documentation, not a secret.
+P_SECRET_ENVFILE_SAFE='(^|/)\.env\.(example|sample|template)$'
 
 # ---- R9 linter/formatter configs ----------------------------------------------------------
 P_TOOLING='(eslint|prettier|biome|\.editorconfig)'

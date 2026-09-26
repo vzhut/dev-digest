@@ -1,6 +1,6 @@
 import type { Container } from '../../platform/container.js';
 import type { Provider, Review, RunTrace, UnifiedDiff } from '@devdigest/shared';
-import { reviewPullRequest, countBlockers } from '@devdigest/reviewer-core';
+import { reviewPullRequest, countBlockers, type ReviewIntent } from '@devdigest/reviewer-core';
 import { RunLogger } from '../../platform/run-logger.js';
 import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
@@ -8,6 +8,20 @@ import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './reposit
 import { REVIEW_STRATEGY } from './constants.js';
 import { taskLine, resolveRunSkills, toPromptSkills, type ResolvedSkill } from './helpers.js';
 import { loadDiff } from './diff-loader.js';
+
+/** Result of the shared intent pre-work (derived through the container, not `modules/intent`). */
+type IntentEnsureResult = Awaited<ReturnType<Container['prIntent']['ensureForReview']>>;
+
+/** The intent as the engine takes it; null when the classifier produced nothing. */
+function toReviewIntent(r: IntentEnsureResult): ReviewIntent | null {
+  const rec = r.record;
+  if (!rec) return null;
+  return {
+    intent: { intent: rec.intent, in_scope: rec.in_scope, out_of_scope: rec.out_of_scope, risk_areas: rec.risk_areas ?? [] },
+    confidence: rec.confidence,
+    missingContext: rec.missing_context,
+  };
+}
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
 export class RunCancelledError extends Error {
@@ -58,6 +72,7 @@ export class ReviewRunExecutor {
     repo: typeof schema.repos.$inferSelect,
     jobs: { agent: AgentRow; runId: string }[],
     logger?: Logger,
+    correlationId?: string,
   ): Promise<void> {
     // ONE logger fanned out over every queued run: shared pre-work (diff +
     // intent) is streamed into each target agent's Live Log and persisted into
@@ -66,7 +81,7 @@ export class ReviewRunExecutor {
       this.container.runBus,
       jobs.map((j) => j.runId),
       logger,
-      { prId: pull.id },
+      { prId: pull.id, ...(correlationId ? { correlation_id: correlationId } : {}) },
     );
 
     // Pre-work failure (e.g. diff load) fails EVERY queued run. The error was
@@ -104,6 +119,16 @@ export class ReviewRunExecutor {
     }
     runLog.info(`Diff ready — ${diff.files.length} changed file(s); starting ${jobs.length} agent run(s)`);
 
+    // Shared pre-work: the intent classifier (CALL 1), once for every queued run.
+    // Fail-soft by contract — `ensureForReview` never throws and an intent failure
+    // must NOT go through `failAll`: the review proceeds without intent.
+    const intent = await this.container.prIntent.ensureForReview(workspaceId, pull, repo, {
+      diffRaw: diff.raw,
+      runLog,
+      ...(correlationId ? { correlationId } : {}),
+      ...(logger ? { log: logger } : {}),
+    });
+
     for (const { agent, runId } of jobs) {
       const agentStart = Date.now();
       logger?.info(
@@ -111,7 +136,7 @@ export class ReviewRunExecutor {
         `review: agent "${agent.name}" started (${agent.provider}/${agent.model})`,
       );
       try {
-        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog);
+        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog, intent, correlationId);
         logger?.info(
           {
             runId,
@@ -143,6 +168,8 @@ export class ReviewRunExecutor {
     agent: AgentRow,
     runId: string,
     parentLog: RunLogger,
+    intent: IntentEnsureResult,
+    correlationId?: string,
   ): Promise<RunOutcome> {
     const start = Date.now();
     // Narrow the fanned-out pre-work logger to THIS run; the shared diff/intent
@@ -200,6 +227,17 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // Derived PR intent → its own untrusted-wrapped prompt section + the scope
+      // policy after grounding. Omitted (prompt byte-identical) when unavailable.
+      const reviewIntent = toReviewIntent(intent);
+      if (reviewIntent) {
+        runLog.info(
+          `intent: injected (confidence ${reviewIntent.confidence}, ${reviewIntent.intent.in_scope.length} in-scope, ${reviewIntent.intent.out_of_scope.length} out-of-scope)`,
+        );
+      } else {
+        runLog.info(`intent: not injected (${intent.origin === 'failed' ? 'derivation failed' : 'none available'})`);
+      }
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -222,6 +260,12 @@ export class ReviewRunExecutor {
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
+        ...(reviewIntent ? { intent: reviewIntent } : {}),
+        // Prompt log: metadata only (section names, sources, sizes). The tokenizer
+        // is injected so the pure engine stays free of it; detail is local-dev only.
+        ...(correlationId ? { correlationId } : {}),
+        countTokens: (text: string) => this.container.tokenizer.count(text),
+        promptLogDetail: this.container.config.promptLogVerbose,
         task,
         sessionId: `${repo.owner}/${repo.name}#${pull.number}:${agent.name}`,
         onEvent: (e) => runLog.event(e.kind, e.msg, e.data),
@@ -290,12 +334,26 @@ export class ReviewRunExecutor {
           grounding,
         },
         prompt_assembly: outcome.assembly,
-        tool_calls: outcome.chunks.map((c) => ({
-          tool: 'review_file',
-          args: c.label,
-          meta: outcome.mode,
-          ms: Math.round(durationMs / Math.max(outcome.chunks.length, 1)),
-        })),
+        tool_calls: [
+          // CALL 1 — shown apart from the main review call; its usage lives on
+          // pr_intent, not on this run (spec D4).
+          ...(intent.origin === 'failed'
+            ? []
+            : [
+                {
+                  tool: 'intent_classify',
+                  args: intent.record ? `${intent.record.provider}/${intent.record.model}` : '',
+                  meta: intent.origin === 'derived' ? 'fresh' : 'cached',
+                  ms: intent.ms,
+                },
+              ]),
+          ...outcome.chunks.map((c) => ({
+            tool: 'review_file',
+            args: c.label,
+            meta: outcome.mode,
+            ms: Math.round(durationMs / Math.max(outcome.chunks.length, 1)),
+          })),
+        ],
         raw_output: outcome.raw,
         memory_pulled: [],
         specs_read: [],

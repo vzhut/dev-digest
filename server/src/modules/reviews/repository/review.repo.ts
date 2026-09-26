@@ -1,10 +1,13 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../../../db/client.js';
 import * as t from '../../../db/schema.js';
-import type { Finding } from '@devdigest/shared';
+import type { Finding, Severity } from '@devdigest/shared';
 import type { FindingRow, PullRow } from '../../../db/rows.js';
 
 export type ReviewRow = typeof t.reviews.$inferSelect;
+
+/** A finding as persisted: the reviewer's Finding plus the scope policy's `original_severity`. */
+export type PersistableFinding = Finding & { original_severity?: Severity | null };
 
 // ---- reviews + findings ---------------------------------------------------
 
@@ -29,7 +32,7 @@ export async function insertReview(
 export async function insertFindings(
   db: Db,
   reviewId: string,
-  findings: Finding[],
+  findings: PersistableFinding[],
 ): Promise<FindingRow[]> {
   if (findings.length === 0) return [];
   const rows = await db
@@ -48,6 +51,9 @@ export async function insertFindings(
         confidence: f.confidence,
         kind: f.kind ?? 'finding',
         trifectaComponents: f.trifecta_components ?? null,
+        // Intent scope policy: tag + the severity before a downgrade (null = none).
+        scope: f.scope ?? null,
+        originalSeverity: f.original_severity ?? null,
       })),
     )
     .returning();

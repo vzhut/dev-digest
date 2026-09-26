@@ -137,7 +137,8 @@ added "$P_SECRET_PEM" && say CRITICAL R8-secret diff "a private key was added"
 added_in '' "$P_SECRET_KEY" | while IFS= read -r l; do
   say CRITICAL R8-secret "${l%%:*}" "looks like a live credential: ${l#*:}"
 done
-changed "$P_SECRET_ENVFILE" && say CRITICAL R8-secret .env "a .env file is part of this change"
+grep -E "$P_SECRET_ENVFILE" "$FILES" | grep -vE "$P_SECRET_ENVFILE_SAFE" | grep -q . \
+  && say CRITICAL R8-secret .env "a .env file is part of this change"
 
 # ---- R9 no linter/formatter unasked ---------------------------------------------------
 changed "$P_TOOLING" && say HIGH R9-tooling "config" "a linter/formatter config appeared — AGENTS.md says not to add one unasked"

@@ -74,6 +74,13 @@ The `preventDefault` on `mousedown` serves a second purpose. It keeps focus on t
 
 ## Recurring Errors & Fixes
 
+### `@testing-library/user-event` is not installed, so the skill's `userEvent.setup()` tests don't compile
+
+`client/package.json` (devDependencies) · 2026-09-24
+
+The `react-testing-library` skill tells agents to always use `userEvent`, and the intent-card plan asks for click flows. Importing it fails in both places: `tsc` reports `TS2307: Cannot find module '@testing-library/user-event'` and vitest fails the suite with `Failed to resolve import "@testing-library/user-event"`. Only `@testing-library/react` (with `fireEvent`) and `jest-dom` are present, and every existing client test uses `fireEvent`. Use `fireEvent.click` here; adding the dependency would touch `package.json` and the lockfile, which needs a deliberate decision.
+
+
 ### `borderColor` is a shorthand too — toggling it next to `borderLeftColor` still warns
 
 `src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/styles.ts:5` · 2026-09-17

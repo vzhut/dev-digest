@@ -185,6 +185,47 @@ case in `test/reviews.it.test.ts` and the failed-run assertion in `test/backfill
 
 ## Tool & Library Notes
 
+### Ticket fetcher validates DNS before `fetch`, but cannot pin the connect address (rebinding window remains)
+
+`server/src/adapters/tickets/http.ts:1` · 2026-09-24
+
+The Jira/Linear fetcher resolves the allowlisted host with `dns.lookup({all:true})` and refuses when any record is
+private/loopback/link-local/metadata (`adapters/tickets/ip.ts`), then calls global `fetch`, which resolves again on
+its own. Node's `fetch` (undici) offers no `lookup`/dispatcher hook without importing the `undici` package, which the
+server does not depend on, so a rebinding resolver can still swap the address between the check and the connect. The
+operator-owned `INTENT_TICKET_HOSTS` allowlist is the bound on that risk. Closing it fully means adding `undici` and a
+custom `Agent({ connect: { lookup } })` that validates the address it actually connects to.
+
+Also: an over-64 KB response is reported as `missing` ("response too large"), not truncated, because a cut-off JSON
+document cannot be parsed. Existing `.it` expectations of "external trackers not configured" became
+"host not allowlisted" once the container always injects the (empty-allowlist) fetcher.
+
+### A new pre-review LLM call makes existing review tests hit the real provider on a machine with a key
+
+`server/test/reviews.it.test.ts:47` · `server/src/modules/reviews/run-executor.ts` (intent pre-work) · 2026-09-24
+
+Once every review ran the intent classifier first (default model `openrouter/deepseek/deepseek-v4-flash`), the
+existing `reviews.it` tests, which inject only an `openai`/`anthropic` mock, resolved `container.llm('openrouter')`
+through the real `LocalSecretsProvider` (`~/.devdigest/secrets.json`). On a dev machine that holds an
+`OPENROUTER_API_KEY` this made a real, paid network call per review: each run took ~9 s and
+`waitForPrRuns` (10 s cap) timed out, so "PR list COST is the sum…" failed with `expected null to be close to 0.002`.
+A CI box with no key would have gone green and hidden it. Any new pre-work or feature that resolves a provider
+outside the ones a test injects has the same trap.
+
+Fix: inject a fail-fast stub for every provider the flow can reach (`llm.openrouter: new FakeIntentLLM(undefined,
+new Error(...))` in `appWith`); fail-soft pre-work then degrades in milliseconds and the test stays offline. Reviews
+dropped from ~9 s to ~1 s. Check `python3 -c "import json;print(list(json.load(open('$HOME/.devdigest/secrets.json'))))"`
+before trusting a "hermetic" test run.
+
+### `agent_runs` goes terminal just BEFORE `run_traces` is written — poll for the trace
+
+`server/src/modules/reviews/run-executor.ts` (`completeAgentRun` then `saveRunTrace`) · `server/test/helpers/runs.ts` · 2026-09-24
+
+`waitForPrRuns` returns as soon as every `agent_runs` row is `done`, but `saveRunTrace` runs a moment later. Under
+the parallel `.it` suite `GET /runs/:id/trace` occasionally answered before the trace existed, so assertions on
+`trace.log` / `prompt_assembly` failed intermittently (passed alone, failed in the full run). Reviews and findings
+are written before `completeAgentRun`, so only trace-reading tests are exposed. Poll the trace endpoint until 200
+(see `runReview` in `test/review-intent-run.it.test.ts`).
 
 ### A fine-grained GitHub PAT only sees the repositories chosen when it was created
 
@@ -210,6 +251,71 @@ the migration was never written. Fix: give it a real pty with `expect` (`spawn p
 `expect -re "create column" { send "\r"; exp_continue }`) — each prompt's first option is already the
 "+ create column" answer we want, so a bare Enter per prompt is correct here. Don't reach for `answer as rename`
 answers this way without checking each prompt's default first — they differ per column.
+
+### The intent classifier's repo-file sources read `not found` when the local clone lacks the PR head
+
+`server/src/modules/intent/service.ts` (repo-file sources via `GitRepoFileReader`, refs `[pull.headSha, 'HEAD']`) · 2026-09-24
+
+Live smoke on PR #3 ("Skills Lab", body links `specs/skills.md` and `specs/skills-lab-completion.md`) came back with
+`missing_context: ["specs/skills-lab-completion.md (not found)", "specs/skills.md (not found)", …]` although both files
+exist on that branch. In `server/clones/vzhut/dev-digest`, `git cat-file -t 89165ace…` fails ("could not get object info")
+and `git ls-tree HEAD -- specs/skills.md` is empty: the clone is on `477e1b4` and never fetched the PR head. This is the
+same missing-head condition as the empty-diff entry above (`loadDiff` falls back to `pr_files` patches), but there is no
+patch fallback for arbitrary spec files, so the source is honestly reported missing and confidence stays capped. The
+result is correct, not a bug, but it means linked specs are only ever used when the clone has the PR head. To see whether
+a "not found" is real, check `git -C <clone> cat-file -t <head_sha>` before debugging the reader.
+
+### deepseek-v4-flash latency through OpenRouter is erratic, and the 45 s classifier timeout was hit once in four calls
+
+`server/src/modules/intent/constants.ts:40` · 2026-09-24
+
+Four live `POST /pulls/:id/intent` calls with prompts of 560–6650 input tokens took 10.6 s (1037 out), 18.7 s (395 out),
+26.3 s (600 out) and one `502 external_service_error: intent classifier timed out after 45000ms`. Latency did not track
+output size (the 395-token call was slower than the 1037-token one), so a per-token estimate is useless for choosing the
+timeout. The failure is fail-soft in a review (`ensureForReview` logs it and reviews without intent) but a user who clicks
+Re-classify gets a 502. A retry of the identical request succeeded, so treat a single timeout as transient. Cost per call
+was $0.0003–$0.0011. If timeouts keep showing up, raise `CLASSIFIER_TIMEOUT_MS` or retry once inside the service rather than
+lowering the prompt size. (Applied 2026-09-24: `CLASSIFIER_TIMEOUT_MS` is now 90 s, no retry.)
+
+### A thin PR description made the cheap classifier invent `out_of_scope` items, and `medium` confidence let them downgrade findings
+
+`reviewer-core/src/intent/confidence.ts` · `reviewer-core/src/intent/prompt.ts` · 2026-09-24
+
+Live intent for PR #482 (description: one 88-char sentence, no links, no hunk headers) came back `medium` with eight generic
+`out_of_scope` lines ("UI or frontend changes", "Documentation or test updates", "Any other feature additions") and eight
+generic `risk_areas`, both at the 8-item cap. Nothing in the PR excluded any of that; the model filled the lists because the
+prompt asked for them. `applyIntentScope` is only off for `low`, so `medium` would have downgraded a WARNING that matched
+one of those boilerplate items. Two fixes, both in reviewer-core: the classifier prompt now says `out_of_scope` is only what
+the text explicitly excludes (empty is fine, no generic exclusions) and that lists need not reach the cap, and confidence is
+`low` when no linked source loaded and the description is under `SUBSTANTIVE_DESCRIPTION_CHARS` (200), so a thin description
+no longer switches the scope filter on. The `.it` fixtures had to use a >=200-char description (`test/helpers/intent.ts`) to keep
+asserting the `medium` path. The prompt change is untested against a live model yet: re-classify a PR and read the lists.
+
+Update 2026-09-24: checked live on PR #2 ("Add a budget guard for runs", 82-char description, no links). Before the change the same PR got 4 in-scope, 4 boilerplate out-of-scope items and generic risks; after it, 3 in-scope, **0 out-of-scope**, 3 risk areas tied to the change (`>=` vs `>` at the boundary, unset budget, edge cases of the 8-line test), confidence `low`, 716/750 tokens, $0.00055, 20 s. One PR only, so it shows the direction, not a rate.
+
+### Structured log `data` reaches the Live Log and pino, but `run_traces.log` keeps only `{t, msg, kind}`
+
+`server/src/platform/run-logger.ts:44-48` · `server/src/app.ts:50` · 2026-09-24
+
+The prompt-assembly log (`event: 'prompt.assembled'`) carries its sections, model and correlation id in the event's `data`.
+That `data` is published to the SSE bus and mirrored to pino, but the persisted trace log elements are only
+`{"t":"17:43:19","msg":"…","kind":"tool"}` (`select e from run_traces, jsonb_array_elements(trace->'log') e`), so after a reload
+only the human `msg` survives; the structured form has to be read from stdout while the run happens. Tests therefore capture
+the events by spying on `container.runBus.publish`, not by reading the trace. Separately, Fastify's default request id is a
+per-process counter (`req-1`, `req-2`, …) that repeats after every restart, so it is useless as a correlation id across logs;
+`genReqId: () => randomUUID()` fixes that for every log line's `reqId`.
+
+### The intent resolver fetched issues from OTHER repositories with the operator's token
+
+`server/src/modules/intent/helpers.ts` (`addIssue`) · `server/src/modules/intent/service.ts:301` · 2026-09-24
+
+`extractReferences` returned `owner/repo#N` and `https://github.com/o/r/issues/N` for any repo, and the service passed each one to
+`GitHubClient.getIssue` with the server's GitHub token. A PR author could write `private-org/private-repo#1` in a description and
+the server would read that issue with whatever the token can see and put its text into the classifier prompt and the intent card.
+Now only the PR's own repository is fetched; anything else is recorded as blocked with `issue in another repository`. The same
+confused-deputy shape remains for Jira/Linear keys on an allowlisted host (any key the service account can read), which the
+operator-owned `INTENT_TICKET_HOSTS` bounds. In the same review the scope downgrade stopped applying to `bug` findings, because
+the `out_of_scope` claim is derived from author-written text.
 
 ## Recurring Errors & Fixes
 

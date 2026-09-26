@@ -11,6 +11,8 @@ import type { FindingRow, PullRow, ReviewRow } from './repository.js';
 export { reduceReviews, sliceDiff } from '@devdigest/reviewer-core';
 
 export interface ReviewDtoFinding extends Finding {
+  /** Severity before the intent scope policy downgraded it; null when not downgraded. */
+  original_severity: Finding['severity'] | null;
   review_id: string;
   accepted_at: string | null;
   dismissed_at: string | null;
@@ -50,6 +52,8 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
     confidence: row.confidence,
     kind: (row.kind as Finding['kind']) ?? 'finding',
     trifecta_components: (row.trifectaComponents as Finding['trifecta_components']) ?? null,
+    scope: (row.scope as Finding['scope']) ?? null,
+    original_severity: (row.originalSeverity as Finding['severity'] | null) ?? null,
     evidence: null,
     review_id: row.reviewId,
     accepted_at: row.acceptedAt?.toISOString() ?? null,
