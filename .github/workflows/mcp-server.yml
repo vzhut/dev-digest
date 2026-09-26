@@ -1,8 +1,8 @@
-# mcp suite — local stdio MCP server (@devdigest/mcp-server).
+# mcp-server suite — local stdio MCP server (@devdigest/mcp-server).
 # Thin wrapper over the DevDigest REST API; tests are hermetic (fake API client,
 # in-memory MCP transport, a stdio spawn against an unreachable URL).
 # Uses pnpm (pnpm-lock.yaml). No server/ or shared-contract dependency.
-name: mcp
+name: mcp-server
 
 on:
   push:
@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mcp-${{ github.ref }}
+  group: mcp-server-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mcp
+        working-directory: mcp-server
     steps:
       - uses: actions/checkout@v4
 
