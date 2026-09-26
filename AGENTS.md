@@ -11,7 +11,7 @@ Always search the relevant package's `docs/`, `specs/`, and `INSIGHTS.md` for wh
 user asks about FIRST — these are curated and may already answer it — then read code.
 
 ## Layout & stack
-NOT a monorepo workspace — four standalone packages, each with its own `package.json` + lockfile;
+NOT a monorepo workspace — five standalone packages, each with its own `package.json` + lockfile;
 cross-package code is shared only via tsconfig path aliases. All packages are **TypeScript 5.7**.
 
 | Package | Role | Stack (key libraries) | Pkg mgr | Port |
@@ -19,6 +19,7 @@ cross-package code is shared only via tsconfig path aliases. All packages are **
 | `server/` (`@devdigest/api`) | REST API, persistence, GitHub import, run orchestration, `repo-intel` indexer. Feature modules in `src/modules/<name>/`, adapters in `src/adapters/`, DI in `src/platform/container.ts` | ESM · Fastify 5 + fastify-type-provider-zod + fastify-sse-v2 · Drizzle ORM 0.38 + postgres.js · Postgres 16 + pgvector · Zod 3 · octokit · simple-git · @ast-grep/napi · openai / @anthropic-ai/sdk · p-queue · vitest 2 + testcontainers | pnpm | 3001 |
 | `client/` (`@devdigest/web`) | The studio UI. Routes in `src/app/`, API client `src/lib/api.ts` + hooks `src/lib/hooks/`, shared components `src/components/`, vendored UI kit `src/vendor/ui/` | Next.js 15 (App Router) · React 19 · TanStack Query 5 · next-intl 3 · Zod 3 · lucide-react · react-markdown · mermaid · vitest 2 + React Testing Library + jsdom | pnpm | 3000 |
 | `reviewer-core/` (`@devdigest/reviewer-core`) | Pure review engine: diff → prompt → LLM → grounding → findings. No DB/GitHub/FS; imported by the server as TS source | ESM · Zod 3 · openai SDK (OpenRouter structured output) behind an injected `LLMProvider` · vitest 2 | npm | — |
+| `mcp-server/` (`@devdigest/mcp-server`) | Local stdio MCP server: 5 tools (`list_agents`, `run_agent_on_pr`, `get_findings`, `get_conventions`, `get_blast_radius` stub) over the REST API; no DB, no imports from other packages | ESM · @modelcontextprotocol/sdk · Zod 3 · vitest 2 | pnpm | — |
 | `e2e/` (`@devdigest/e2e`) | Deterministic browser flows over seeded data (`specs/NN-name.flow.json`) | ESM · agent-browser CLI · tsx runner (`run.ts`) | npm | — |
 | `server/src/vendor/shared/` (`@devdigest/shared`) | Zod contracts shared by every package (client keeps its own copy — see Conventions) | Zod 3 | — | — |
 
@@ -36,6 +37,7 @@ Only Postgres runs in Docker (`docker-compose.yml`); API and web run on the host
 | `server` | unit: `pnpm exec vitest run --exclude '**/*.it.test.ts'` · integration (needs Docker): `pnpm exec vitest run .it.test` · both: `pnpm test` | `pnpm typecheck` |
 | `client` | `pnpm test` | `pnpm typecheck` |
 | `reviewer-core` | `npm test` | `npm run build` (type-check only, emits nothing) |
+| `mcp-server` | `pnpm test` | `pnpm typecheck` |
 | `e2e` | `./scripts/e2e.sh` from the repo root (isolated fresh stack on 5433/3101/3100; first run: `cd e2e && npm install`, plus `npm i -g agent-browser && agent-browser install`) | — |
 
 **There is no linter or formatter** — no package defines a `lint` script; typecheck + tests are the gate. Don't add one unasked.
@@ -72,19 +74,19 @@ Only Postgres runs in Docker (`docker-compose.yml`); API and web run on the host
 
 ## Recording insights (mandatory, unprompted)
 - In **every** task, apply the `engineering-insights` skill yourself (`.claude/skills/engineering-insights/SKILL.md`; in Claude Code invoke it as a skill, other agents read the file) — no need to be asked — the moment a non-obvious finding is confirmed (a silent failure, a surprising constraint, a failed approach and why, a tool quirk), and again when wrapping up a task.
-- Write to the `INSIGHTS.md` of the package where the work happened (`client/`, `server/`, `reviewer-core/`, `e2e/`); only genuinely cross-package findings go to the root `INSIGHTS.md`.
+- Write to the `INSIGHTS.md` of the package where the work happened (`client/`, `server/`, `reviewer-core/`, `mcp-server/`, `e2e/`); only genuinely cross-package findings go to the root `INSIGHTS.md`.
 - Every entry carries evidence as `path:line` (plus a command or error string when relevant) and the date from `date +%F`. Most tasks produce nothing — that's fine.
 
 ## Do-not-touch
 - `server/src/db/migrations/` (generated SQL + `meta/` snapshots & journal) — never hand-edit; change the schema and regenerate.
-- Lockfiles — `server/pnpm-lock.yaml`, `client/pnpm-lock.yaml`, `reviewer-core/package-lock.json`, `e2e/package-lock.json`: never hand-edit; they change only as a side effect of `pnpm install` / `npm install` when a dependency change is intended.
+- Lockfiles — `server/pnpm-lock.yaml`, `client/pnpm-lock.yaml`, `mcp-server/pnpm-lock.yaml`, `reviewer-core/package-lock.json`, `e2e/package-lock.json`: never hand-edit; they change only as a side effect of `pnpm install` / `npm install` when a dependency change is intended.
 - `server/src/vendor/shared/` and `client/src/vendor/` — vendored/shared; edit only for a deliberate contract change, mirrored into both copies.
 - `server/clones/` — runtime checkouts, not source. `e2e/test-results/` — failure screenshots.
 
 ## Use when
 - Full architecture, env, troubleshooting, lesson roadmap → read `README.md`
 - Test lanes and CI layout → read `TESTING.md`
-- Working inside a package → read that package's AGENTS.md: `server/AGENTS.md`, `client/AGENTS.md`, `reviewer-core/AGENTS.md`, `e2e/AGENTS.md`
+- Working inside a package → read that package's AGENTS.md: `server/AGENTS.md`, `client/AGENTS.md`, `reviewer-core/AGENTS.md`, `mcp-server/AGENTS.md`, `e2e/AGENTS.md`
 - Agent prompt templates, prompt assembly, output schema, scoring → read `docs/agent-prompts/`
 - Cross-package behaviour specs → read `specs/` · cross-package findings → read/append `INSIGHTS.md`
 - Before publishing work (push, PR create/merge) → run the `pr-self-review` skill **by hand** (`/pr-self-review`); it is manual-only — no hook blocks a push. Spec: `specs/pr-self-review-skill.md`
