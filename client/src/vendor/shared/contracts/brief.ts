@@ -62,16 +62,52 @@ export type BlastCaller = z.infer<typeof BlastCaller>;
 
 export const DownstreamImpact = z.object({
   symbol: z.string(),
+  /** File that declares the symbol. */
+  file: z.string().nullish(),
   callers: z.array(BlastCaller),
+  /** Caller count before the per-symbol cap; `callers` may hold fewer. */
+  callers_total: z.number().int().nullish(),
   endpoints_affected: z.array(z.string()),
   crons_affected: z.array(z.string()),
 });
 export type DownstreamImpact = z.infer<typeof DownstreamImpact>;
 
+/** Health of the repo-intel index the map was read from. */
+export const BlastIndexStatus = z.enum(['full', 'partial', 'degraded', 'failed']);
+export type BlastIndexStatus = z.infer<typeof BlastIndexStatus>;
+
+/** Why the map may be incomplete (mirrors the repo-intel facade's DegradedReason). */
+export const BlastDegradedReason = z.enum([
+  'flag_off',
+  'index_failed',
+  'index_partial',
+  'repo_too_large',
+  'no_data',
+]);
+export type BlastDegradedReason = z.infer<typeof BlastDegradedReason>;
+
+export const BlastStats = z.object({
+  symbols_changed: z.number().int(),
+  symbols_affected: z.number().int(),
+  callers: z.number().int(),
+  endpoints: z.number().int(),
+  crons: z.number().int(),
+});
+export type BlastStats = z.infer<typeof BlastStats>;
+
 export const BlastRadius = z.object({
   changed_symbols: z.array(ChangedSymbol),
   downstream: z.array(DownstreamImpact),
   summary: z.string(),
+  /** True when the map may be missing callers (index not full, or the facade fell back). */
+  degraded: z.boolean().nullish(),
+  reason: BlastDegradedReason.nullish(),
+  index_status: BlastIndexStatus.nullish(),
+  /** SHA the index was built from; caller line numbers refer to it. */
+  indexed_sha: z.string().nullish(),
+  stats: BlastStats.nullish(),
+  /** Endpoints known to be impacted but not attributable to a symbol (ripgrep fallback). */
+  unattributed_endpoints: z.array(z.string()).nullish(),
 });
 export type BlastRadius = z.infer<typeof BlastRadius>;
 
@@ -104,8 +140,13 @@ export const PrHistoryItem = z.object({
 });
 export type PrHistoryItem = z.infer<typeof PrHistoryItem>;
 
+export const PrHistoryDegradedReason = z.enum(['no_github_token', 'github_error']);
+export type PrHistoryDegradedReason = z.infer<typeof PrHistoryDegradedReason>;
+
 export const PrHistory = z.object({
   history: z.array(PrHistoryItem),
+  degraded: z.boolean().nullish(),
+  reason: PrHistoryDegradedReason.nullish(),
 });
 export type PrHistory = z.infer<typeof PrHistory>;
 
