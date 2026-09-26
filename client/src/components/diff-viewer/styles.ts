@@ -90,3 +90,32 @@ export function lineSignFor(kind: Line["kind"]): CSSProperties {
     flexShrink: 0,
   };
 }
+
+/** Inline-finding styles (rail, dots, labels). */
+export const fs = {
+  /** Same indented rail as comment threads. */
+  rail: { margin: "6px 14px 8px 58px", display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
+  fileDot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0 } satisfies CSSProperties,
+  label: {
+    gap: 5,
+    padding: "1px 8px",
+    margin: "0 8px",
+    flexShrink: 0,
+    alignSelf: "center",
+  } satisfies CSSProperties,
+  outsideWrap: {
+    borderTop: "1px solid var(--border)",
+    margin: "4px 14px 4px 58px",
+    paddingTop: 10,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  } satisfies CSSProperties,
+  outsideTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--text-muted)",
+  } satisfies CSSProperties,
+} as const;

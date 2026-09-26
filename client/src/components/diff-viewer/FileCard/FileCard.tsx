@@ -4,7 +4,8 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon } from "@devdigest/ui";
+import { Icon, SEV } from "@devdigest/ui";
+import type { FindingRecord } from "@devdigest/shared";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
 import { parsePatch, type Line } from "../helpers";
@@ -15,7 +16,8 @@ import {
   type CommentThread,
   type DiffCommentApi,
 } from "../comments";
-import { s, chevronFor } from "../styles";
+import { partitionFindings, topSeverity, type DiffFindingApi } from "../findings";
+import { s, fs, chevronFor } from "../styles";
 import { CodeLine } from "../CodeLine";
 import { OutdatedComments } from "../OutdatedComments";
 
@@ -30,8 +32,23 @@ function threadsForLine(ln: Line, matched: Map<string, CommentThread[]>): Commen
   return out;
 }
 
-export function FileCard({ file, commenting }: { file: PrFile; commenting?: DiffCommentApi }) {
+/** Findings anchored to a given parsed line (new-file side only). */
+function findingsForLine(ln: Line, matched: Map<string, FindingRecord[]>): FindingRecord[] {
+  if (matched.size === 0) return [];
+  return keysForLine(ln).flatMap((key) => matched.get(key) ?? []);
+}
+
+export function FileCard({
+  file,
+  commenting,
+  findings,
+}: {
+  file: PrFile;
+  commenting?: DiffCommentApi;
+  findings?: DiffFindingApi;
+}) {
   const t = useTranslations("shell");
+  const tr = useTranslations("prReview");
   const [open, setOpen] = React.useState(
     (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
   );
@@ -47,6 +64,17 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
     for (const ln of lines) for (const k of keysForLine(ln)) renderedKeys.add(k);
     return partitionThreads(fileThreads, renderedKeys);
   }, [comments, file.path, lines]);
+
+  // Same split for findings: anchored under their start line vs. outside the patch.
+  const fileFindings = findings?.byFile[file.path];
+  const { matchedFindings, outsideFindings } = React.useMemo(() => {
+    const renderedKeys = new Set<string>();
+    for (const ln of lines) for (const k of keysForLine(ln)) renderedKeys.add(k);
+    const r = partitionFindings(fileFindings ?? [], renderedKeys);
+    return { matchedFindings: r.matched, outsideFindings: r.outside };
+  }, [fileFindings, lines]);
+  const findingDot =
+    fileFindings && fileFindings.length > 0 ? SEV[topSeverity(fileFindings) as keyof typeof SEV] : undefined;
 
   const commentCount = commenting
     ? commenting.comments.filter((c) => c.path === file.path).length
@@ -64,6 +92,13 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
           <span style={s.addText}>+{file.additions}</span>{" "}
           <span style={s.delText}>−{file.deletions}</span>
         </span>
+        {findingDot && (
+          <span
+            role="img"
+            aria-label={tr("smartDiff.hasFindings")}
+            style={{ ...fs.fileDot, background: findingDot.c }}
+          />
+        )}
         {commentCount > 0 && (
           <span
             style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}
@@ -85,10 +120,22 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
                 path={file.path}
                 threads={threadsForLine(ln, matched)}
                 commenting={commenting}
+                findings={findingsForLine(ln, matchedFindings)}
+                findingApi={findings}
               />
             ))
           )}
           {commenting && commenting.showComments && <OutdatedComments threads={outdated} />}
+          {findings && findings.show && outsideFindings.length > 0 && (
+            <div style={fs.outsideWrap}>
+              <span style={fs.outsideTitle}>
+                {tr("smartDiff.outsideDiffTitle", { count: outsideFindings.length })}
+              </span>
+              {outsideFindings.map((f) => (
+                <findings.FindingView key={f.id} finding={f} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
