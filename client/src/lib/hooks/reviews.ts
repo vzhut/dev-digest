@@ -14,6 +14,7 @@ import type {
   ReviewRunResponse,
   RunEvent,
   RunSummary,
+  SmartDiff,
 } from "@devdigest/shared";
 
 /** Query keys for PR review data. Build keys only through these, so a query and
@@ -24,6 +25,7 @@ export const reviewKeys = {
   reviews: (prId: string | null | undefined) => ["reviews", prId] as const,
   comments: (prId: string | null | undefined) => ["pr-comments", prId] as const,
   intent: (prId: string | null | undefined) => ["pr-intent", prId] as const,
+  smartDiff: (prId: string | null | undefined) => ["pr-smart-diff", prId] as const,
 };
 
 // ---- Active (in-flight) runs — server-side source of truth ----
@@ -81,6 +83,15 @@ export function usePrReviews(prId: string | null | undefined) {
   return useQuery({
     queryKey: reviewKeys.reviews(prId),
     queryFn: () => api.get<ReviewRecord[]>(`/pulls/${prId}/reviews`),
+    enabled: !!prId,
+  });
+}
+
+/** Role-grouped view of the PR's files (Smart Diff). */
+export function useSmartDiff(prId: string | null | undefined) {
+  return useQuery({
+    queryKey: reviewKeys.smartDiff(prId),
+    queryFn: () => api.get<SmartDiff>(`/pulls/${prId}/smart-diff`),
     enabled: !!prId,
   });
 }
