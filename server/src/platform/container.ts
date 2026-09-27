@@ -16,6 +16,7 @@ import { runBus, type RunBus } from './sse.js';
 import { LocalSecretsProvider } from '../adapters/secrets/local.js';
 import { LocalNoAuthProvider } from '../adapters/auth/local.js';
 import { OctokitGitHubClient } from '../adapters/github/octokit.js';
+import { OctokitGitHubHistory, type GitHubHistory } from '../adapters/github/history.js';
 import { SimpleGitClient } from '../adapters/git/simple-git.js';
 import { RipgrepCodeIndex } from '../adapters/codeindex/ripgrep.js';
 import { OpenAIProvider } from '../adapters/llm/openai.js';
@@ -64,6 +65,8 @@ export interface ContainerOverrides {
   repoFiles?: RepoFileReader;
   /** Jira/Linear reader for ticket links (intent layer). */
   tickets?: TicketFetcher;
+  /** blast Prior PRs (T13) — commits-per-path → associated merged PRs. */
+  githubHistory?: GitHubHistory;
 }
 
 export class Container {
@@ -93,6 +96,7 @@ export class Container {
   private _repoFiles?: RepoFileReader;
   private _tickets?: TicketFetcher;
   private _prIntent?: IntentService;
+  private _githubHistory?: GitHubHistory;
 
   constructor(config: AppConfig, db: Db, private overrides: ContainerOverrides = {}) {
     this.config = config;
@@ -217,6 +221,16 @@ export class Container {
     return this._github;
   }
 
+  /** blast Prior PRs port (T13). Throws `ConfigError` when no GitHub token is configured. */
+  async githubHistory(): Promise<GitHubHistory> {
+    if (this.overrides.githubHistory) return this.overrides.githubHistory;
+    if (this._githubHistory) return this._githubHistory;
+    const token = await this.secrets.get('GITHUB_TOKEN');
+    if (!token) throw new ConfigError('GITHUB_TOKEN is not configured');
+    this._githubHistory = new OctokitGitHubHistory(token);
+    return this._githubHistory;
+  }
+
   /** Resolve an LLM provider by id; constructs from the secret key, cached. */
   async llm(id: 'openai' | 'anthropic' | 'openrouter'): Promise<LLMProvider> {
     const injected = this.overrides.llm?.[id];
@@ -272,6 +286,7 @@ export class Container {
   invalidateSecretCaches(): void {
     this.llmCache.clear();
     this._github = undefined;
+    this._githubHistory = undefined;
     this._embedder = undefined;
   }
 }

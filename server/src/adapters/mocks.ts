@@ -34,6 +34,7 @@ import type {
 } from '@devdigest/shared';
 import type { TicketFetcher, TicketResult } from './tickets/index.js';
 import type { RepoFileReader, RepoFileResult } from './git/repo-file-reader.js';
+import type { GitHubHistory, MergedPrsTouchingOptions, PriorPr } from './github/history.js';
 import { parseUnifiedDiff } from './git/diff-parser.js';
 
 /**
@@ -338,6 +339,27 @@ export class MockTicketFetcher implements TicketFetcher {
   async fetch(ref: { host: string; key: string }): Promise<TicketResult> {
     this.calls.push(ref);
     return this.tickets[`${ref.host}/${ref.key}`] ?? { error: 'missing', reason: 'ticket not found' };
+  }
+}
+
+/**
+ * GitHub history double (blast Prior PRs, spec OD5): returns a canned `PriorPr[]`
+ * (or throws a canned error, to exercise the `github_error` degraded path).
+ * Records every call so tests can assert cache hits make zero adapter calls.
+ */
+export class MockGitHubHistory implements GitHubHistory {
+  public calls: Array<{ repo: RepoRef; paths: string[]; opts: MergedPrsTouchingOptions }> = [];
+  constructor(
+    private opts: { results?: PriorPr[]; error?: Error } = {},
+  ) {}
+  async mergedPrsTouching(
+    repo: RepoRef,
+    paths: string[],
+    mpOpts: MergedPrsTouchingOptions,
+  ): Promise<PriorPr[]> {
+    this.calls.push({ repo, paths, opts: mpOpts });
+    if (this.opts.error) throw this.opts.error;
+    return this.opts.results ?? [];
   }
 }
 
