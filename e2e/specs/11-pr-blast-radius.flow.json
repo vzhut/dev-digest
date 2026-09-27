@@ -1,0 +1,14 @@
+{
+  "name": "PR detail shows the Blast Radius card in a deterministically degraded state",
+  "description": "Opens PR #482 (acme/payments-api) and checks the Blast Radius card on the default Overview tab (specs/blast-radius.md): the card title and the incomplete-index marker. The seed has no repo_index_state for acme/payments-api and clonePath: null, so the block is deterministically degraded regardless of the REPO_INTEL_ENABLED flag. Asserts only the incomplete-index title, not the reason text, since the reason is 'no_data' with the flag on and 'flag_off' with it off. Read-only seeded data. Assumes a freshly-seeded DB (run via ./scripts/e2e.sh).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles (Overview is the default tab)" },
+    { "cmd": ["wait", "--text", "BLAST RADIUS"], "label": "Blast Radius card title is visible (rendered uppercase via CSS text-transform)" },
+    { "cmd": ["wait", "--text", "Index incomplete"], "label": "the incomplete-index marker is visible (degraded regardless of the reason text)" }
+  ]
+}
