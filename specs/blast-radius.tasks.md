@@ -837,3 +837,29 @@ Owned paths never overlap across lanes. Inside a lane the tasks are sequential b
 - The exact line numbers in `docs/devdigest-mcp.md` (3, 58, 88, 161-167) and `mcp-server/README.md` (5, 41), carried over from the first pass and not re-read.
 
 ## Delivery log
+
+See `specs/blast-radius.md` "Delivery log" for the phase-by-phase narrative (commits, test/e2e results, review outcomes, T0 demo-data links). Task-level summary:
+
+| Task | Executor | Commit | Outcome |
+|---|---|---|---|
+| T0 | parent | (no code commit — GitHub-only) | 2 demo PRs on the fork ([#10](https://github.com/vzhut/dev-digest/pull/10), [#11](https://github.com/vzhut/dev-digest/pull/11)); repo resynced to `23e6c2c`/`full`; seeded PR #482 covers the incomplete-index scenario |
+| T1 | implementer | `60351d0` (pre-existing) | additive contracts, both vendor copies identical |
+| T2 | implementer | `bcd3b0d` | per-symbol cap, `callerTotals`, `flag_off` fix |
+| T3 | implementer | `909ee62` | `toBlastRadius`/`buildSummary` |
+| T4 | implementer | `909ee62` | `blast/` module + route |
+| T5 | implementer | `5f190b7` | `BlastRadiusCard` + hook |
+| T6 | doc-writer | `9a1948a` | verbatim MCP text (OD3) |
+| T7 | implementer | `1202333` | `get_blast_radius` implemented |
+| T8 | doc-writer | `9a1948a` | `docs/devdigest-mcp.md` updated |
+| T9 | parent | `9a1948a` | root `AGENTS.md` "stub" removed |
+| T10 | implementer | `bcd3b0d` | depth-2 endpoint attribution |
+| T11 | implementer | `5f190b7` | collapsible tree + resync |
+| T12 | implementer | `5f190b7` | Tree/Graph switch |
+| T13 | implementer | `909ee62` | Prior PRs server (`GitHubHistory`) |
+| T14 | implementer | `5f190b7` | `PriorPrsCard` |
+| T15 | implementer + parent | `b285678` | e2e flow, `./scripts/e2e.sh` green (unrelated flakiness on other flows) |
+| T16 | architecture-reviewer + plan-verifier | — (process, no commit) | plan-verifier PASS 14/14; architecture-reviewer 1 MEDIUM found and fixed, then clean |
+| T17 | parent | — (manual validation, no commit) | index-state/demo PRs/GitHub link verified live; Claude Code MCP round-trip not verified in this session (stale in-chat MCP connection) |
+| T18 | parent | `02a4401` (insights) + this Delivery log | `/pr-self-review` PASS; PR/video pending |
+
+Fix-only follow-up (not a plan task, raised by T16's architecture-reviewer pass): the duplicate `useResyncRepoIntel` was consolidated into `client/src/lib/hooks/repo-intel.ts`, folded into commit `5f190b7`.

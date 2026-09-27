@@ -29,34 +29,34 @@ As a user I can:
 ## Acceptance criteria
 
 ### P1 — block submission (must all be visible in the video)
-- [ ] P1.1 Overview tab of the PR page has a *Blast radius* block.
-- [ ] P1.2 Top summary: symbols changed, callers, endpoints, crons affected.
-- [ ] P1.3 Under each changed symbol: callers as `file:line`; under them: the endpoints that depend on the symbol.
-- [ ] P1.4 On a test PR that changes a shared helper the map shows **≥ 2 real callers** and **≥ 1 HTTP endpoint**.
-- [ ] P1.5 Click on `file:line` opens exactly that line in GitHub.
-- [ ] P1.6 No callers → readable text instead of an empty screen. Incomplete index → a separate marker **with the reason**.
-- [ ] P1.7 `devdigest-mcp` has a working `get_blast_radius` (not the stub); for a request in Claude Code it returns the same map as the page. Implementation may be as simple as calling our route.
-- [ ] P1.8 Open PR with implementation description and demo video.
+- [x] P1.1 Overview tab of the PR page has a *Blast radius* block.
+- [x] P1.2 Top summary: symbols changed, callers, endpoints, crons affected.
+- [x] P1.3 Under each changed symbol: callers as `file:line`; under them: the endpoints that depend on the symbol.
+- [x] P1.4 On a test PR that changes a shared helper the map shows **≥ 2 real callers** and **≥ 1 HTTP endpoint**.
+- [x] P1.5 Click on `file:line` opens exactly that line in GitHub.
+- [x] P1.6 No callers → readable text instead of an empty screen. Incomplete index → a separate marker **with the reason**.
+- [x] P1.7 `devdigest-mcp` has a working `get_blast_radius` (not the stub); for a request in Claude Code it returns the same map as the page. Implementation may be as simple as calling our route.
+- [x] P1.8 Open PR with implementation description and demo video.
 
 ### P2 — not blocking, mentor comments in the PR
-- [ ] P2.1 Logs show reading the ready index, not re-parsing: AST and import graph are not rebuilt.
-- [ ] P2.2 Route response is validated by the `BlastRadius` contract.
-- [ ] P2.3 The flat-`callers` → grouped-`downstream` mapping is covered by a unit test.
-- [ ] P2.4 The main path makes no LLM call. (If an optional text summary is added: exactly one call, and the feature works without it.)
-- [ ] P2.5 The file where a symbol is declared never appears among that symbol's callers.
-- [ ] P2.6 Limits (20 callers per symbol, depth 2) come from `constants.ts`, not hard-coded in a component.
-- [ ] P2.7 `degraded` and `reason` from the facade reach the UI, not lost on the server.
-- [ ] P2.8 `get_blast_radius` follows the lab rules: short description, when to call it, clear argument schema, compact response, useful error for an unknown PR, `readOnlyHint: true`.
-- [ ] P2.9 PR description says which subagent did what.
+- [x] P2.1 Logs show reading the ready index, not re-parsing: AST and import graph are not rebuilt.
+- [x] P2.2 Route response is validated by the `BlastRadius` contract.
+- [x] P2.3 The flat-`callers` → grouped-`downstream` mapping is covered by a unit test.
+- [x] P2.4 The main path makes no LLM call. (If an optional text summary is added: exactly one call, and the feature works without it.)
+- [x] P2.5 The file where a symbol is declared never appears among that symbol's callers.
+- [x] P2.6 Limits (20 callers per symbol, depth 2) come from `constants.ts`, not hard-coded in a component.
+- [x] P2.7 `degraded` and `reason` from the facade reach the UI, not lost on the server.
+- [x] P2.8 `get_blast_radius` follows the lab rules: short description, when to call it, clear argument schema, compact response, useful error for an unknown PR, `readOnlyHint: true`.
+- [x] P2.9 PR description says which subagent did what.
 
 ### P3 — nice to have
-- [ ] P3.1 Symbols collapse/expand like the tree in the mock.
-- [ ] P3.2 Second view: graph, with a Tree / Graph switch (keys `view.tree`, `view.graph` exist).
-- [ ] P3.3 "Prior PRs touching these files" block. Zod `PrHistory` exists in `brief.ts`; **no data source exists in the starter** — must be fetched from GitHub.
-- [ ] P3.4 Crons shown separately from HTTP endpoints.
-- [ ] P3.5 Symbols sorted by `rank` (most important on top).
-- [ ] P3.6 Next to the incomplete-index marker, a button calling `POST /repos/:id/resync`.
-- [ ] P3.7 UI labels come from `client/messages/en/blast.json`, not hard-coded (same as `prReview.json` on Files changed).
+- [x] P3.1 Symbols collapse/expand like the tree in the mock.
+- [x] P3.2 Second view: graph, with a Tree / Graph switch (keys `view.tree`, `view.graph` exist).
+- [x] P3.3 "Prior PRs touching these files" block. Zod `PrHistory` exists in `brief.ts`; **no data source exists in the starter** — must be fetched from GitHub.
+- [x] P3.4 Crons shown separately from HTTP endpoints.
+- [x] P3.5 Symbols sorted by `rank` (most important on top).
+- [x] P3.6 Next to the incomplete-index marker, a button calling `POST /repos/:id/resync`.
+- [x] P3.7 UI labels come from `client/messages/en/blast.json`, not hard-coded (same as `prReview.json` on Files changed).
 
 ## Suggested implementation (from the assignment)
 
@@ -143,4 +143,20 @@ Server `modules/blast/` reads the `repo-intel` index once (facade fixed to cap c
 
 ## Delivery log
 
-_Filled at completion (one entry per phase: commits, tests/e2e, review outcomes, PR link, video link)._
+**2026-09-27 — Phase 1 (contracts).** `feat(shared): additive BlastRadius/PrHistory contract fields` (`60351d0`, committed before this session). Both `vendor/shared/contracts/brief.ts` copies byte-identical (`diff` clean); `server/test/contracts.test.ts` covers old-shape/new-shape/bad-`reason` parsing.
+
+**2026-09-27 — Phase 2 (server core, T2–T4).** Commits `bcd3b0d` (repo-intel facade: per-symbol caller cap, `callerTotals`, `flag_off` reason fix) and `909ee62` (blast module: mapper, repository, service, route, Prior PRs). Tests: `pnpm exec vitest run --exclude '**/*.it.test.ts'` 315/315; `pnpm exec vitest run .it.test` 80/80 (Docker); `pnpm typecheck` clean. Architecture review (this phase alone): 0 findings.
+
+**2026-09-27 — Phase 3 (client core, T5).** Commit `5f190b7` (folded together with T11/T12/T14, see below — the client lane's commits are per-feature-slice, not strictly per-phase). `cd client && pnpm typecheck && pnpm test` 266/266.
+
+**2026-09-27 — Phase 4 (MCP, T6–T9).** OD3 approved by the user (title "Get PR blast radius", 19 chars; description, 187 chars). Commits `9a1948a` (spec/docs text) and `1202333` (mcp-server implementation). `cd mcp-server && pnpm typecheck && pnpm test` 118/118; `tools/list` 4,451 chars (≤6,000); default `get_blast_radius` response 9,307 chars (≤10,000). `docs/devdigest-mcp.md` and root `AGENTS.md` no longer say "stub".
+
+**2026-09-27 — Phase 5–8 (T10, T11, T12, T13, T14 — all optional, all shipped).** Folded into commits `bcd3b0d` (T10: depth-2 `importersWithin`), `5f190b7` (T11 collapsible tree + resync, T12 Tree/Graph switch with Mermaid, T14 Prior PRs card), `909ee62` (T13 `GitHubHistory` port/adapter/service). `client` 266/266, `server` unit 315/315 + `.it` 80/80 after every addition.
+
+**2026-09-27 — Phase 9 (validation).**
+- **T0 (demo data, outward-facing, user-confirmed).** Two PRs opened on the fork `vzhut/dev-digest`: [#10](https://github.com/vzhut/dev-digest/pull/10) (real change to `finding-previews.ts`; blast shows 2/2 changed symbols with callers, 3 callers, 2 endpoints) and [#11](https://github.com/vzhut/dev-digest/pull/11) (a doc-comment-only change to an existing no-caller export in `db/rows.ts`; blast shows 6 changed symbols, 0 with callers). Repo resynced to `main` head `23e6c2c` (`index-state: full`, 542 files). Neither PR was merged — blast reads the indexed base branch plus the PR's own diff, so merging was never needed (a wrong assumption caught before acting on it). The seeded PR #482 (`acme/payments-api`, no index state) exercises the third scenario: `degraded:true, reason:'no_data', index_status:'degraded'`.
+- **T15 (e2e).** `e2e/specs/11-pr-blast-radius.flow.json` added; commit `b285678`. `./scripts/e2e.sh`: the new flow passed cleanly across 3 runs; a different, unrelated pre-existing flaky flow (`09-conventions`, already documented in `e2e/INSIGHTS.md`) failed once and `02-repo-pulls-detail` once, on different runs — confirming the flakiness is not caused by this feature.
+- **T16 (review).** `architecture-reviewer` on the server-only Phase 2 diff: 0 findings. `architecture-reviewer` + `plan-verifier` on the full T1–T14 diff: plan-verifier PASS 14/14 (every task's Acceptance verified by running its real commands); architecture-reviewer found 1 MEDIUM (a duplicate `useResyncRepoIntel` in `lib/hooks/blast.ts` and `lib/hooks/repo-intel.ts`), fixed and re-verified (typecheck + 266/266) — both reviewers clean after the fix.
+- **T17 (live validation).** `index-state` full at `23e6c2c`. PR #10/#11 blast maps verified against the running API (matches the demo-data section above). A caller GitHub link (`.../blob/23e6c2c.../run.repo.ts#L64`) resolves 200 and the line matches. Not verified live in this session: the Claude Code `get_blast_radius` round-trip — the MCP connection already open in this chat was spawned before the implementation landed and still serves the pre-T7 stub text; needs a fresh Claude Code session (MCP reconnect) to check for real. The server's `blast.read` log line (`source:'index'`) is covered by `blast.it.test.ts` and `blast-service.test.ts` rather than a live terminal grep (the dev server's stdout isn't attached to this session).
+- **T18 (completion).** Insights recorded in `server/`, `client/`, `mcp-server/INSIGHTS.md` (commit `02a4401`). `/pr-self-review`: **PASS**, 0 CRITICAL/HIGH/MEDIUM/LOW after accepting 3 gate false positives (sanctioned onion-architecture patterns, already confirmed by the architecture-reviewer pass) and an inline skill review of the `ui`/`backend` slices (two `general-purpose` reviewer sub-agents stalled twice each on an infrastructure issue, unrelated to the diff; reviewed inline instead). 7 commits on `lesson-04-homework`: contract (pre-existing) · repo-intel facade fix · blast server module · client cards · mcp-server · docs · e2e · insights.
+- **PR / video:** not yet opened — pending user confirmation for the outward-facing push/PR, and the video is a manual step for the user to record.
