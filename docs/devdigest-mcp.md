@@ -1,6 +1,6 @@
 # devdigest-mcp — local MCP server for coding agents
 
-`mcp-server/` (`@devdigest/mcp-server`) is a **local-only, stdio** MCP server. It lets a coding agent (Claude Code first) list DevDigest reviewer agents, run one on a PR and get the finished result, read findings and repo conventions, and (stub) ask for a PR's blast radius. It is a thin HTTP adapter over the existing REST API on `:3001`: no DB, no GitHub token, no LLM key of its own. Behaviour spec and decisions D1–D5: [`specs/devdigest-mcp.md`](../specs/devdigest-mcp.md).
+`mcp-server/` (`@devdigest/mcp-server`) is a **local-only, stdio** MCP server. It lets a coding agent (Claude Code first) list DevDigest reviewer agents, run one on a PR and get the finished result, read findings and repo conventions, and read a PR's blast radius (impact map, L04). It is a thin HTTP adapter over the existing REST API on `:3001`: no DB, no GitHub token, no LLM key of its own. Behaviour spec and decisions D1–D6: [`specs/devdigest-mcp.md`](../specs/devdigest-mcp.md); the blast-radius contract and plan: [`specs/blast-radius.md`](../specs/blast-radius.md) and [`specs/blast-radius.tasks.md`](../specs/blast-radius.tasks.md).
 
 Why a separate process that speaks HTTP (D1): the API assumes one API process per DB — boot reaps every `running` run (`server/src/app.ts:79-90`) and a run executes fire-and-forget in the calling process (`server/src/modules/reviews/service.ts:139-143`). An MCP server embedded in `server/` would reap live runs on start and kill its own runs when the client exits.
 
@@ -55,7 +55,7 @@ Registered in this order in `mcp-server/src/tools/index.ts:43-89`. Inputs are **
 | `run_agent_on_pr` | `repo`, `pr`, `agent`, `wait_seconds` (int 30–120, default 120) | done: same shape as `get_findings` + `run_id`, `cost_usd`, `reused_run?`; timeout: `{status:"running", run_id, repo, pr, agent, next}` | **paid LLM call** · not readOnly, not destructive, not idempotent, openWorld |
 | `get_findings` | `repo`, `pr`, `agent?`, `run_id?` (uuid), `severity_min` (`CRITICAL`\|`WARNING`\|`SUGGESTION`, default `SUGGESTION`), `limit` (1–100, default 20), `response_format` (`concise`\|`detailed`, default concise) | `{status:"done", repo, pr, agent, run_id, verdict, score, blockers, counts:{critical,warning,suggestion}, findings:[{severity, title, where:"file:start-end", category}], shown, total, hint?, warning?, untrusted}`; `detailed` adds `summary` and per finding `rationale`, `suggestion`, `scope`, `id` (`format/findings.ts:225-263`) | free · readOnly, idempotent |
 | `get_conventions` | `repo`, `status` (`accepted`\|`pending`\|`all`, default accepted), `limit` (1–100, default 30), `response_format` | `{status:"ok", repo, scan_sha, conventions:[{category, rule, evidence:"path:start-end"}], shown, total, hint?, untrusted}`; `detailed` adds `snippet` (≤ 400), `url`, `status` (`format/conventions.ts:66-104`) | free · readOnly, idempotent |
-| `get_blast_radius` | `repo`, `pr`, `limit` (1–50, default 20) | **always `isError:true`** "not implemented … do not read this as zero impact" (`tools/get-blast-radius.ts:13-20`) | free · readOnly, idempotent |
+| `get_blast_radius` | `repo`, `pr`, `limit` (1–50, default 20) | `{status:"ok"\|"incomplete", repo, pr, summary, changed_symbols:[{name, file, kind}], downstream:[{symbol, file?, callers_total, callers:[{name, where:"file:line"}] (≤5), endpoints_affected?, crons_affected?}], unattributed_endpoints?, shown, total, hint?}`; `incomplete` adds `index_status`, `reason` (`mcp-server/src/tools/get-blast-radius.ts:12-26`, `mcp-server/src/format/blast.ts:60-117`) | free · readOnly, idempotent |
 
 Selection and ordering rules:
 - `get_findings` picks `run_id` → else latest run of `agent` → else latest run overall, with a `hint` "also reviewed by: A, B — pass agent" when other agents have runs. Runs and reviews are joined on `run_id`, never by index; a PR with reviews but no run (seeded data) falls back to the latest review (`format/findings.ts:160-200`).
@@ -85,7 +85,7 @@ Execution errors are `isError:true` with one or two sentences that name the next
 | conventions never extracted | get_conventions | `{status:"not_extracted", hint:"… run Extract on the repo's Conventions page in DevDigest"}` | `format/conventions.ts:68-74` |
 | scan exists, none accepted | get_conventions | `{status:"none_accepted", pending:N, hint:"N candidates await review — pass status=pending …"}` | `format/conventions.ts:78-89` |
 | rate limited (local or API 429) | run | error: "Run limit reached (5 per 10 min). Wait N s or use get_findings on an existing run." | `tools/run-agent-on-pr.ts:69,76,141-144` |
-| tool not built yet | get_blast_radius | error (see above); arg errors (repo/PR) come first | `tools/get-blast-radius.ts:16-24` |
+| repo index incomplete (partial/degraded/failed) | get_blast_radius | `isError` false, `{status:"incomplete", index_status, reason, hint:"repo index is <status> (<reason>) — callers may be missing; resync the repo in DevDigest, then retry"}` — never a bare empty map | `mcp-server/src/format/blast.ts:55-56,89,110-113` |
 | response over the size cap | all | primary list halved until it fits, hint appended; last resort `{status:"too_large", hint}` | `format/respond.ts:45-67` |
 
 ## `run_agent_on_pr`: a blocking call with a bounded wait
@@ -158,10 +158,51 @@ Levers used: short verbatim descriptions (changes need a spec edit first — spe
 2. MCP Inspector against the running API (`./scripts/dev.sh`): `cd mcp-server && pnpm inspect` — call each tool; try an unknown agent and `wait_seconds:30` on a slow run.
 3. Claude Code in the repo root: `/mcp` shows five tools; `/context` shows the MCP tools' token share; then ask it to review a PR and check that exactly one run appears in that PR's run history in the UI.
 
-## Homework hook: `get_blast_radius`
+## Blast radius (L04): `get_blast_radius`
 
-The tool name, input schema and final output shape are fixed now so the homework only adds data. Today it validates `repo`/`pr` and returns the not-implemented error; it must never return empty `changed_symbols`/`downstream`, which would read as "zero impact" (`tools/get-blast-radius.ts:1-6`).
+Impact map of a PR: which callers, HTTP endpoints and crons reach the changed symbols. Read-only, no LLM call anywhere in the path — the whole feature is a read of a pre-built index (spec decision D5, `specs/blast-radius.md`).
 
-- Final success type: `BlastRadiusResult` in `mcp-server/src/contracts.ts:186-202` — `{status:"ok", repo, pr, summary, changed_symbols:[{name, file, kind}], downstream:[{symbol, callers_total, callers:[{name, where}], endpoints_affected, crons_affected}], shown, total, hint?}`; downstream ordered by `callers_total` desc, `limit` 1–50.
-- Field names mirror the shared `BlastRadius` (`server/src/vendor/shared/contracts/brief.ts:48-76`).
-- Data source: the `repo-intel` facade (L04 scope, root `README.md:85`; `server/src/modules/repo-intel/README.md:9-12`). No server route computes blast radius yet, so the homework needs a new endpoint there, then a new method in `mcp-server/src/api/client.ts` and schema in `api/schemas.ts`.
+### Route and data source
+
+- The tool calls `GET /pulls/:id/blast` (PR uuid) — registered in `server/src/modules/blast/routes.ts:22-29`, module wired in `server/src/modules/index.ts`.
+- `BlastService.getBlast` (`server/src/modules/blast/service.ts:22-52`) does three things and nothing else: loads the PR's repo id and changed files (`BlastRepository.findPullContext`, `server/src/modules/blast/repository.ts:22-42`, workspace-scoped), reads `repoIntel.getIndexState(repoId)` and `repoIntel.getBlastRadius(repoId, files)` (`server/src/modules/repo-intel/types.ts:149,152`), then maps the pair to the wire `BlastRadius` contract with `toBlastRadius` (`server/src/modules/blast/helpers.ts:59-136`). No re-indexing, no re-parsing, no model call.
+- The MCP side: `mcp-server/src/tools/get-blast-radius.ts:12-26` resolves `repo`/`pr`, primes the PR with `GET /pulls/:id` first (empty-diff trap, `server/INSIGHTS.md:57-72`), calls `deps.api.getBlast(pr.id)`, then `buildBlastResult` (`mcp-server/src/format/blast.ts:60-117`) maps the server response to the tool's compact output. `mcp-server/src/api/client.ts:41,114` is the only fetch call (`GET /pulls/:id/blast`); `mcp-server/src/api/schemas.ts:116-151` (`BlastRadius`, `BlastDownstreamItem`, `BlastCallerItem`, `BlastChangedSymbol`) is the package's own re-parse of the response — no import from `server/` or `vendor/shared`.
+- Output field names mirror the shared `BlastRadius` (`server/src/vendor/shared/contracts/brief.ts:48-76`); the tool's final type is `BlastRadiusResult` (`mcp-server/src/contracts.ts:189-209`).
+
+### States: `ok` vs `incomplete`
+
+`toBlastRadius` merges the facade's per-call `degraded` flag with the repo's persistent index state (`server/src/modules/blast/helpers.ts:45-57,119-120`): `degraded = result.degraded === true || state.status !== 'full'` — a call can be non-degraded on its own but still ride a `partial`/`degraded`/`failed` index.
+
+| Index state (`repo-intel/types.ts:25`) | `reason` (`mergeReason`, `helpers.ts:45-57`) | Wire `degraded` | MCP `status` |
+|---|---|---|---|
+| `full` | none | `false` (unless the call itself set `degraded`) | `ok` |
+| `partial` | `index_partial` | `true` | `incomplete` |
+| `degraded` | `state.degradedReason` (`flag_off`\|`index_failed`\|`index_partial`\|`repo_too_large`\|`no_data`) or `no_data` | `true` | `incomplete` |
+| `failed` | `index_failed` | `true` | `incomplete` |
+
+- `mcp-server/src/format/blast.ts:88-89` sets `status: degraded ? 'incomplete' : 'ok'`. On `incomplete` it also sets `result.reason` and appends a resync `hint` — `"repo index is <status> (<reason>) — callers may be missing; resync the repo in DevDigest, then retry"` (`format/blast.ts:55-56,110-113`).
+- **Never a bare empty map.** A full index with no callers for the changed symbols still returns `status:"ok"` with an explicit `summary` built from numbers only (`buildSummary`, `server/src/modules/blast/helpers.ts:24-42`, e.g. "No indexed symbols in the changed files." or "None of 3 changed symbols has callers in the indexed code."), never a silent `downstream:[]` that could read as "zero impact" (trap 9).
+- `changed_symbols` in both the server response and the tool output only lists symbols that ended up in `downstream` — a symbol with no callers, and therefore no impact row, is dropped rather than listed pointlessly (`helpers.ts:122-126`, `mcp-server/src/format/blast.ts:85-99`).
+- Caller ordering: rank desc, then file, then line (`server/src/modules/blast/helpers.ts:21-22,79`; mirrored for the `downstream` group ordering at `:101-106`). The MCP additionally paginates `downstream` by `limit` (1–50, default 20, `mcp-server/src/contracts.ts:33,75-79`) and caps `callers` at `BLAST_CALLERS_SHOWN = 5` per symbol independent of `limit` (`contracts.ts:35`, `format/blast.ts:64,66`); the true count survives in `callers_total`.
+- Endpoints/crons are only attributed when the facade result carries precomputed per-file facts (`result.factsByFile`, non-degraded persistent path); otherwise they surface as flat, unattributed `unattributed_endpoints` rather than being guessed onto a symbol (`helpers.ts:77,83-88,109`, trap 4).
+
+Question answered: for a given repo-intel index status, what does the tool report and does it ever look like zero impact?
+
+```mermaid
+flowchart TD
+  A["repo-intel getIndexState + getBlastRadius"] --> B{"index status"}
+  B -- "full, call not degraded" --> OK["status: ok<br/>summary from real numbers"]
+  B -- "partial" --> INC1["status: incomplete<br/>reason: index_partial"]
+  B -- "degraded" --> INC2["status: incomplete<br/>reason: state.degradedReason or no_data"]
+  B -- "failed" --> INC3["status: incomplete<br/>reason: index_failed"]
+  OK --> C{"downstream empty?"}
+  C -- "yes" --> D["summary explains why<br/>(no symbols / no callers)<br/>never a bare empty map"]
+  C -- "no" --> E["downstream sorted by rank,<br/>paginated by limit"]
+  INC1 --> F["hint: resync the repo in DevDigest, then retry"]
+  INC2 --> F
+  INC3 --> F
+```
+
+### Verify it
+
+`cd server && pnpm exec vitest run server/test/blast-helpers.test.ts server/test/blast-service.test.ts server/test/blast.it.test.ts` and `cd mcp-server && pnpm test` (includes `format-blast.test.ts`) cover the state table above.

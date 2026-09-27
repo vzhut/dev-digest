@@ -85,11 +85,11 @@ Common rules for every tool:
 | `run_agent_on_pr` | `repo`, `pr`, `agent`, `wait_seconds?` (int 30–120, default 120) | done → same shape as `get_findings` concise + `run_id`, `cost_usd`, `reused_run?`; timeout (D3) → `{status:"running", run_id, repo, pr, agent, next:"call get_findings with run_id=… in a minute"}` | readOnly ✗, destructive ✗, idempotent ✗, openWorld ✓ |
 | `get_findings` | `repo`, `pr`, `agent?`, `run_id?` (uuid), `severity_min?` (`CRITICAL`\|`WARNING`\|`SUGGESTION`, default `SUGGESTION`), `limit?` (1–100, default 20), `response_format?` (`concise`\|`detailed`, default concise) | `{status:"done", repo, pr, agent, run_id, verdict, score, blockers, counts:{critical,warning,suggestion}, findings:[{severity, title, where:"file:start-end", category}], shown, total, hint?}` — detailed adds `summary`, per finding `rationale`, `suggestion`, `scope`, `id` | readOnly ✓, idempotent ✓, openWorld ✗ |
 | `get_conventions` | `repo`, `status?` (`accepted`\|`pending`\|`all`, default accepted), `limit?` (1–100, default 30), `response_format?` | `{repo, scan_sha, conventions:[{category, rule, evidence:"path:start-end"}], shown, total, hint?}` — detailed adds `snippet` (≤ 400 chars), `url`, `status` | readOnly ✓, idempotent ✓, openWorld ✗ |
-| `get_blast_radius` | `repo`, `pr`, `limit?` (1–50, default 20) | **Now:** `isError:true`, text: "get_blast_radius is not implemented yet (DevDigest L04 homework). No impact data exists — do not read this as zero impact. Use get_findings for review results." **Final success shape (homework):** `{status:"ok", repo, pr, summary, changed_symbols:[{name, file, kind}], downstream:[{symbol, callers_total, callers:[{name, where}], endpoints_affected, crons_affected}], shown, total, hint?}` | readOnly ✓, idempotent ✓, openWorld ✗ |
+| `get_blast_radius` | `repo`, `pr`, `limit?` (1–50, default 20) | **Now (superseded by L04, 2026-09-27):** ~~`isError:true`, text: "get_blast_radius is not implemented yet (DevDigest L04 homework). No impact data exists — do not read this as zero impact. Use get_findings for review results."~~ **Final success shape (shipped, L04):** `{status: "ok" \| "incomplete", repo, pr, summary, index_status?, reason?, changed_symbols:[{name, file, kind}], downstream:[{symbol, file?, callers_total, callers:[{name, where:"file:line"}], endpoints_affected?, crons_affected?}], unattributed_endpoints?, shown, total, hint?}` | readOnly ✓, idempotent ✓, openWorld ✗ |
 
-Ordering (so truncation drops the least useful): findings by severity rank CRITICAL > WARNING > SUGGESTION, then file, then start line (never by `confidence`); dismissed findings (`dismissed_at` set) excluded; conventions by status (accepted first) then category; blast radius downstream by `callers_total` desc.
+Ordering (so truncation drops the least useful): findings by severity rank CRITICAL > WARNING > SUGGESTION, then file, then start line (never by `confidence`); dismissed findings (`dismissed_at` set) excluded; conventions by status (accepted first) then category; blast radius downstream in server order (caller rank desc).
 
-Truncation: when `total > shown`, `hint` = "showing 20 of 143 — raise limit (max 100) or set severity_min=WARNING". Hard cap: any tool response > 24,000 chars is cut to the top items with the hint (≈ 6K tokens, below Claude Code's 10K warning — Unverified).
+Truncation: when `total > shown`, `hint` = "showing 20 of 143 — raise limit (max 100) or set severity_min=WARNING". Hard cap: any tool response > 24,000 chars is cut to the top items with the hint (≈ 6K tokens, below Claude Code's 10K warning — Unverified). `get_blast_radius` additionally caps `callers` at `BLAST_CALLERS_SHOWN = 5` per symbol (OD4 of `specs/blast-radius.tasks.md`), independent of the `limit` arg which only bounds `downstream`; the true count is always carried in `callers_total`.
 
 Empty/state messages (principle "error leads onward"):
 | Situation | Tool | Response |
@@ -108,6 +108,8 @@ Empty/state messages (principle "error leads onward"):
 | API timeout / unexpected response shape | all | `isError` with the next step (retry, or update `src/api/schemas.ts`); huge result → cut to the top items with a hint (`too_large` fallback, `format/respond.ts`) |
 | no enabled agents | list_agents | non-error `{agents:[], hint:"… enable or create one in DevDigest → Agents"}` |
 | rate limited (MCP or API 429) | run | `isError`: "Run limit reached (5 per 10 min). Wait N s or use get_findings on an existing run." |
+| repo index incomplete (L04) | get_blast_radius | `isError` false, `{status:"incomplete", reason, hint:"repo index is <status> (<reason>) — callers may be missing; resync the repo in DevDigest, then retry"}` — never a bare empty map |
+| full index, no callers for the changed symbols (L04) | get_blast_radius | `isError` false, `{status:"ok", downstream:[], summary:"no callers found for the changed symbols"}` — an explicit `summary`, not a silent empty list |
 
 ## Tool descriptions (verbatim — user-approved 2026-09-26)
 **Implementation rule:** these strings are used **character for character**. Do not reword, shorten or "improve" them; a change needs the user's approval and an edit here first. Tool descriptions and `instructions` live in `src/tools/index.ts` / `src/server.ts` (T8); field descriptions live next to the Zod raw shapes in `src/contracts.ts` (T2). `tools-list.test.ts` (T8) asserts each string equals the text below.
@@ -115,13 +117,15 @@ Empty/state messages (principle "error leads onward"):
 **`instructions`** (191 chars)
 > DevDigest local PR reviewer. Start with list_agents; run_agent_on_pr runs a paid review and waits up to 2 min; get_findings reads a finished run. Args: repo=owner/name, pr=number, agent=name.
 
-| Tool | Description | Chars |
-|---|---|---|
-| `list_agents` | List enabled review agents (name, id, model, one-line purpose). Call first: run_agent_on_pr needs an agent name or id from here. | 128 |
-| `run_agent_on_pr` | Run one review agent on a PR and wait up to 2 min; returns verdict, blockers and findings. Paid LLM call. If still running, returns run_id: fetch it later with get_findings. | 173 |
-| `get_findings` | Read findings of a finished review of a PR: verdict, blockers, score, findings by severity. Free, no LLM. Defaults to the latest run; filter by agent or run_id. | 160 |
-| `get_conventions` | Get the repo's accepted coding conventions (rule + evidence location), extracted earlier. Use to match repo style before reviewing or writing code. | 147 |
-| `get_blast_radius` | Impact map of a PR: changed symbols and their dependents. NOT IMPLEMENTED yet: always returns an error, never 'zero impact'. | 124 |
+| Tool | Title | Title chars | Description | Chars |
+|---|---|---|---|---|
+| `list_agents` | — (not yet fixed verbatim) | — | List enabled review agents (name, id, model, one-line purpose). Call first: run_agent_on_pr needs an agent name or id from here. | 128 |
+| `run_agent_on_pr` | — (not yet fixed verbatim) | — | Run one review agent on a PR and wait up to 2 min; returns verdict, blockers and findings. Paid LLM call. If still running, returns run_id: fetch it later with get_findings. | 173 |
+| `get_findings` | — (not yet fixed verbatim) | — | Read findings of a finished review of a PR: verdict, blockers, score, findings by severity. Free, no LLM. Defaults to the latest run; filter by agent or run_id. | 160 |
+| `get_conventions` | — (not yet fixed verbatim) | — | Get the repo's accepted coding conventions (rule + evidence location), extracted earlier. Use to match repo style before reviewing or writing code. | 147 |
+| `get_blast_radius` | Get PR blast radius | 19 | Impact map of a PR from the repo index: changed symbols, callers as file:line, affected HTTP endpoints and crons. Free, no LLM. Flags an incomplete index; never reports it as zero impact. | 187 |
+
+`get_blast_radius`'s title/description were approved by the user 2026-09-27 (OD3 of `specs/blast-radius.tasks.md`, recommended default), replacing the earlier not-implemented placeholder text. The other four tools' `title` annotation is not yet fixed verbatim in this spec — out of scope for this edit.
 
 | Field | Description | Chars |
 |---|---|---|
