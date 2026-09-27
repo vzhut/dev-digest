@@ -93,6 +93,36 @@ describe('api client', () => {
     expect(((await pending) as ApiError).code).toBe('aborted');
   });
 
+  it('getBlast parses the consumed fields and maps a 404 to ApiNotFoundError', async () => {
+    const { api, fetchMock } = client(async () =>
+      json({
+        changed_symbols: [{ name: 'runReview', file: 'server/src/modules/reviews/service.ts', kind: 'function' }],
+        downstream: [
+          {
+            symbol: 'runReview',
+            file: 'server/src/modules/reviews/service.ts',
+            callers: [{ name: 'handler', file: 'server/src/modules/pulls/routes.ts', line: 42 }],
+            callers_total: 1,
+            endpoints_affected: [],
+            crons_affected: [],
+          },
+        ],
+        summary: '1 of 1 changed symbol has callers: 1 caller, 0 endpoints, 0 crons.',
+        degraded: false,
+        reason: null,
+        index_status: 'full',
+        indexed_sha: 'abc123',
+        stats: { symbols_changed: 1, symbols_affected: 1, callers: 1, endpoints: 0, crons: 0 },
+      }),
+    );
+    const blast = await api.getBlast('p1');
+    expect(blast.downstream[0]?.callers[0]).toEqual({ name: 'handler', file: 'server/src/modules/pulls/routes.ts', line: 42 });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:3001/pulls/p1/blast');
+
+    const notFound = client(async () => json({ error: { code: 'not_found', message: 'Pull request not found' } }, 404));
+    await expect(notFound.api.getBlast('missing')).rejects.toBeInstanceOf(ApiNotFoundError);
+  });
+
   it('gives listPulls twice the timeout budget (it syncs GitHub)', async () => {
     const delay = (_: string, init: RequestInit) =>
       new Promise<Response>((res, rej) => {

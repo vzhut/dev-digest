@@ -33,6 +33,12 @@ The rate limiter (5 runs / 10 min) and the in-flight map (`prId:agentId`, which 
 
 `npm view @modelcontextprotocol/sdk@1.30.1 peerDependencies` gives `zod: ^3.25 || ^4.0`, so the `^3.24.1` range the other packages use is too low for it (a lockfile pinned to 3.24.x would break the peer). `mcp-server/` therefore declares `zod ^3.25.0` (installed 3.25.76) and pins the SDK exactly (`1.30.1`). `registerTool` accepts Zod 3 raw shapes (`ZodRawShapeCompat`, `node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.d.ts:150`); the in-memory transport is importable as `@modelcontextprotocol/sdk/inMemory.js` (`exports` `./*` wildcard).
 
+### Unbounded `changed_symbols` blows the 10,000-char response cap even though only `downstream` is paginated
+
+`src/format/blast.ts` · `test/response-size.test.ts` · 2026-09-27
+
+The server's `BlastRadius.changed_symbols` lists every changed symbol, not just the ones shown after the `limit`/`BLAST_CALLERS_SHOWN` caps on `downstream`. Copying it through unconditionally measured 11,257 chars on a realistic 50-symbol/20-caller fixture, over the response-size acceptance cap. Fix: `buildBlastResult` scopes `changed_symbols` to the symbols present in the *shown* `downstream` page — safe because the server already only emits changed symbols that have at least one caller, so the two arrays are 1:1 by construction.
+
 ## Recurring Errors & Fixes
 
 ### `registerTool` handler result type rejects the plain `ToolResult` interface

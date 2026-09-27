@@ -113,6 +113,43 @@ export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
 /** `GET /pulls/:id` is called only to prime the diff on the server; nothing is read from it. */
 export const PullDetail = z.unknown();
 
+export const BlastChangedSymbol = z.object({
+  name: z.string(),
+  file: z.string(),
+  kind: z.string(),
+});
+export type BlastChangedSymbol = z.infer<typeof BlastChangedSymbol>;
+
+export const BlastCallerItem = z.object({
+  name: z.string(),
+  file: z.string(),
+  line: z.number().int(),
+});
+export type BlastCallerItem = z.infer<typeof BlastCallerItem>;
+
+export const BlastDownstreamItem = z.object({
+  symbol: z.string(),
+  file: z.string().nullish(),
+  callers: z.array(BlastCallerItem),
+  /** Caller count before the per-symbol cap; `callers` may hold fewer. */
+  callers_total: z.number().int().nullish(),
+  endpoints_affected: z.array(z.string()).nullish(),
+  crons_affected: z.array(z.string()).nullish(),
+});
+export type BlastDownstreamItem = z.infer<typeof BlastDownstreamItem>;
+
+/** `GET /pulls/:id/blast`. `stats`/`indexed_sha` are not consumed. */
+export const BlastRadius = z.object({
+  changed_symbols: z.array(BlastChangedSymbol),
+  downstream: z.array(BlastDownstreamItem),
+  summary: z.string(),
+  degraded: z.boolean().nullish(),
+  reason: z.string().nullish(),
+  index_status: z.string().nullish(),
+  unattributed_endpoints: z.array(z.string()).nullish(),
+});
+export type BlastRadius = z.infer<typeof BlastRadius>;
+
 /** API error envelope. `details` is intentionally not declared: it is never echoed. */
 export const ApiErrorBody = z.object({
   error: z.object({ code: z.string(), message: z.string() }),

@@ -79,9 +79,9 @@ export const TOOLS: readonly RegisteredTool[] = [
   },
   {
     name: 'get_blast_radius',
-    title: 'Get PR blast radius (not implemented)',
+    title: 'Get PR blast radius',
     description:
-      "Impact map of a PR: changed symbols and their dependents. NOT IMPLEMENTED yet: always returns an error, never 'zero impact'.",
+      'Impact map of a PR from the repo index: changed symbols, callers as file:line, affected HTTP endpoints and crons. Free, no LLM. Flags an incomplete index; never reports it as zero impact.',
     inputShape: getBlastRadiusShape,
     annotations: READ_ONLY,
     handler: getBlastRadius,

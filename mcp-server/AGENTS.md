@@ -1,6 +1,6 @@
 # mcp-server (`@devdigest/mcp-server`)
 
-Local-only MCP server (stdio) that lets a coding agent drive DevDigest: list reviewer agents, run one on a PR, read findings and conventions, (stub) blast radius. It is a thin adapter over the DevDigest REST API on `:3001`; it has no DB, no GitHub token and no LLM key. Spec: `specs/devdigest-mcp.md`.
+Local-only MCP server (stdio) that lets a coding agent drive DevDigest: list reviewer agents, run one on a PR, read findings, conventions and a PR's blast radius. It is a thin adapter over the DevDigest REST API on `:3001`; it has no DB, no GitHub token and no LLM key. Spec: `specs/devdigest-mcp.md`.
 
 ## Before answering
 Search `mcp-server/INSIGHTS.md`, `docs/devdigest-mcp.md` and `specs/devdigest-mcp.md` first.

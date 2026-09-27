@@ -23,6 +23,23 @@ const AGENTS = Array.from({ length: 40 }, (_, i) => ({
   system_prompt: 'SECRET PROMPT',
 }));
 
+// 50 symbols x 20 callers — a large blast-radius map, per T7's acceptance.
+const BLAST_FIXTURE = {
+  changed_symbols: Array.from({ length: 50 }, (_, i) => ({ name: `symbol${i}`, file: `src/mod-${i % 9}/file.ts`, kind: 'function' })),
+  downstream: Array.from({ length: 50 }, (_, i) => ({
+    symbol: `symbol${i}`,
+    file: `src/mod-${i % 9}/file.ts`,
+    callers: Array.from({ length: 20 }, (_, j) => ({ name: `caller${j}`, file: `src/callers/file-${j}.ts`, line: 10 + j })),
+    callers_total: 20,
+    endpoints_affected: [`GET /route-${i}`],
+    crons_affected: [],
+  })),
+  summary: '50 of 50 changed symbols have callers: 1000 callers, 50 endpoints, 0 crons.',
+  degraded: false,
+  reason: null,
+  index_status: 'full',
+};
+
 function setup() {
   const review = makeReview({ agent_id: 'agent-0', run_id: 'run-1', findings: makeFindings(143) });
   const api = {
@@ -38,6 +55,7 @@ function setup() {
       scan: { sha: 'abc123' },
       candidates: Array.from({ length: 120 }, (_, i) => makeCandidate(i)),
     })),
+    getBlast: vi.fn(async () => BLAST_FIXTURE),
   } as unknown as ApiClient;
   const deps: ToolDeps = {
     api,
