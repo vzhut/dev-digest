@@ -12,9 +12,10 @@ const SEVERITY_RANK: Record<string, number> = { CRITICAL: 0, WARNING: 1, SUGGEST
 
 /** Cut a rationale to the preview length, marking the cut with an ellipsis. */
 export function previewSummary(rationale: string): string {
-  return rationale.length > FINDING_PREVIEW_SUMMARY_MAX
-    ? `${rationale.slice(0, FINDING_PREVIEW_SUMMARY_MAX).trimEnd()}…`
-    : rationale;
+  const collapsed = rationale.trim().replace(/\s+/g, ' ');
+  return collapsed.length > FINDING_PREVIEW_SUMMARY_MAX
+    ? `${collapsed.slice(0, FINDING_PREVIEW_SUMMARY_MAX).trimEnd()}…`
+    : collapsed;
 }
 
 /**
