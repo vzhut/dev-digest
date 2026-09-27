@@ -148,6 +148,22 @@ consumers and a different button layout than what the actual C12 design needed; 
 than extended. Validation: `pnpm typecheck`, `pnpm test` (44 files / 196 tests),
 `./scripts/e2e.sh` 9/9 (new flow `09-conventions.flow.json`).
 
+## Codebase Patterns
+
+### `vi.mock` on a hook module doesn't protect you when the real component's import path changes
+
+`src/app/repos/[repoId]/pulls/[number]/_components/BlastRadiusCard/BlastRadiusCard.test.tsx:9-12` · 2026-09-27
+
+A T11 homework fix moved `useResyncRepoIntel` from `hooks/blast.ts` (a duplicate) into the
+pre-existing `hooks/repo-intel.ts`. `IndexNotice.tsx` (rendered un-mocked inside
+`BlastRadiusCard.test.tsx`) was updated to import it from the new path, but the test file still had
+`vi.mock("@/lib/hooks/blast", () => ({ ...useResyncRepoIntel... }))`. Nothing failed loudly at the
+type level — `vi.mock` just silently stops intercepting anything, and the real hook (with real
+`useQuery`/`useMutation`) runs inside a test that only wraps in `NextIntlClientProvider`, no
+`QueryClientProvider`. The fix is to `vi.mock` the module at the path the component now actually
+imports from, not the path that used to hold the hook — grep every `vi.mock(...)` target whenever a
+hook is moved between files, not just its own test.
+
 ## Open Questions
 
 _No entries yet._
