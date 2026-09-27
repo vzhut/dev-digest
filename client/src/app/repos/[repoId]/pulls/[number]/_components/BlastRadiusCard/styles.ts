@@ -1,0 +1,73 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  card: {
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    background: "var(--bg-elevated)",
+    padding: 18,
+    marginBottom: 18,
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  } satisfies CSSProperties,
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  } satisfies CSSProperties,
+  viewSwitch: {
+    display: "flex",
+    gap: 4,
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    padding: 2,
+  } satisfies CSSProperties,
+  viewButton: {
+    border: "none",
+    borderRadius: 4,
+    background: "transparent",
+    color: "var(--text-muted)",
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "3px 8px",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  viewButtonActive: {
+    background: "var(--bg-elevated)",
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  title: {
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: "0.05em",
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+  } satisfies CSSProperties,
+  summary: {
+    margin: 0,
+    padding: "2px 0 2px 14px",
+    borderLeft: "3px solid var(--accent)",
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  empty: { fontSize: 13, color: "var(--text-muted)" } satisfies CSSProperties,
+  label: {
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: "0.05em",
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+  } satisfies CSSProperties,
+  list: {
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+  } satisfies CSSProperties,
+  skeleton: { display: "flex", flexDirection: "column", gap: 10 } satisfies CSSProperties,
+} as const;

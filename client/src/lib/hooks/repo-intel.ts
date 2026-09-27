@@ -1,4 +1,5 @@
-/* hooks/repo-intel.ts — React Query hooks for the repo-intel (T3) index state.
+/* hooks/repo-intel.ts — React Query hooks for the repo-intel (T3) index state
+   and its resync affordance (T11: polling + completion detection).
    Mirrors hooks/context.ts (useIndexStatus/useReindex) but targets the
    repo-intel facade's HTTP surface:
      GET  /repos/:id/index-state  → RepoIntelState
@@ -6,7 +7,8 @@
                                      reindex (202). NOT a destructive re-clone. */
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 
 /** Subset of the server's IndexState the badge + completion-poll need (kept
@@ -37,13 +39,67 @@ export function useRepoIntelStatus(repoId: string | null | undefined, poll = fal
   });
 }
 
-/** POST /repos/:id/resync → fetch latest + incremental reindex (resync, not re-clone). */
-export function useResyncRepoIntel(repoId: string | null | undefined) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => api.post<{ status: string }>(`/repos/${repoId}/resync`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["repo-intel-state", repoId] });
+/** POST /repos/:id/resync's response — mirrors repo-intel/routes.ts:60-63. */
+interface ResyncResponse {
+  status: string;
+  jobId?: string;
+  degraded?: boolean;
+  reason?: string;
+}
+
+export type ResyncPhase = "idle" | "pending" | "queued" | "failed";
+
+/**
+ * Kick off a repo-intel resync for `repoId`, then poll `useRepoIntelStatus`
+ * until the index advances, and call `onIndexed` once so the caller can
+ * refetch its own query — no query keys are hardcoded here, the caller owns
+ * that (e.g. `BlastRadiusCard` passes `useBlastRadius`'s `refetch`).
+ *
+ * `/resync` answers 202 even when the enqueue itself failed
+ * (`degraded:true, reason:'no_handler'`, `repo-intel/routes.ts:44-63`) — that
+ * maps straight to the "failed" phase, without ever polling.
+ */
+export function useResyncRepoIntel(repoId: string | null | undefined, onIndexed?: () => void) {
+  const [phase, setPhase] = useState<ResyncPhase>("idle");
+  const baseline = useRef<{ sha: string; updatedAt: string } | null>(null);
+  const onIndexedRef = useRef(onIndexed);
+  onIndexedRef.current = onIndexed;
+
+  // Poll only while a resync we started is in flight; useQuery clears the
+  // interval itself once `poll` flips back to false, or on unmount.
+  const status = useRepoIntelStatus(repoId, phase === "queued");
+
+  // The first poll response after a resync becomes the baseline (it may
+  // still be the pre-resync state — a stale cache read at mutate-time would
+  // race the very first poll tick and could look "changed" immediately).
+  // Only a *later* tick that differs from that baseline counts as "advanced".
+  useEffect(() => {
+    if (phase !== "queued" || !status.data) return;
+    const { lastIndexedSha, updatedAt } = status.data;
+    if (!baseline.current) {
+      baseline.current = { sha: lastIndexedSha, updatedAt };
+      return;
+    }
+    if (lastIndexedSha !== baseline.current.sha || updatedAt !== baseline.current.updatedAt) {
+      setPhase("idle");
+      baseline.current = null;
+      onIndexedRef.current?.();
+    }
+  }, [phase, status.data]);
+
+  const mutation = useMutation({
+    mutationFn: () => api.post<ResyncResponse>(`/repos/${repoId}/resync`),
+    onMutate: () => {
+      baseline.current = null;
+      setPhase("pending");
+    },
+    onSuccess: (res) => {
+      setPhase(res.degraded ? "failed" : "queued");
+    },
+    onError: () => {
+      setPhase("failed");
     },
   });
+
+  return { resync: () => mutation.mutate(), phase, isResyncing: mutation.isPending };
 }
