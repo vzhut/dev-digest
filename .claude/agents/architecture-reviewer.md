@@ -1,7 +1,7 @@
 ---
 name: architecture-reviewer
 description: Read-only architecture reviewer for DevDigest. Use AFTER a change is implemented (a branch, a commit range or a list of changed files) and BEFORE /pr-self-review or a PR, to check layering: server onion rings (route -> service -> repository, ports and adapters, composition root), reviewer-core purity (no DB, GitHub or filesystem), client placement and import boundaries (frontend-architecture), and @devdigest/shared changes mirrored in both copies. Every finding is path:line + violated rule + severity + recommendation; without evidence there is no finding. Cannot edit files. Not for security, style or spec-compliance review.
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Skill
 maxTurns: 40
 skills:

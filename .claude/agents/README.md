@@ -7,10 +7,11 @@ Project subagents for Claude Code. This file is a **map**: what each agent is fo
 | Agent | Role | Model | Tools | Writes |
 |---|---|---|---|---|
 | [`researcher`](researcher.md) | Read-only fact finding (repo or external) | `sonnet` | Read, Grep, Glob, Bash, WebFetch, WebSearch | nothing |
-| [`planner`](planner.md) | Turns a request into a phased Development Plan | `opus` | Read, Grep, Glob, Bash, Write, Skill | the spec + its task-cards file in `specs/` |
+| [`spec-creator`](spec-creator.md) | Turns a request (+ user-supplied design sources) into an EARS-format requirements spec | `opus` | Read, Grep, Glob, Write, Edit, Bash, WebFetch, Agent, Skill | one spec file in `specs/` + its README index row (package-local README bootstrapped if new) |
+| [`implementation-planner`](implementation-planner.md) | Turns a request into a phased Development Plan | `opus` | Read, Grep, Glob, Bash, Write, Skill | the spec + its task-cards file in `specs/` |
 | [`implementer`](implementer.md) | Executes one plan task, self-verifies | `sonnet` | Read, Grep, Glob, Edit, Write, Bash, Skill | files in the task's `Owned paths`, package `INSIGHTS.md` |
 | [`test-writer`](test-writer.md) | Adds/updates tests for existing code; never touches production code | `sonnet` | Read, Grep, Glob, Edit, Write, Bash, Skill | test files (`client/src/**/*.test.ts(x)`, `server/test/**`, `reviewer-core/test/**`), package `INSIGHTS.md` |
-| [`architecture-reviewer`](architecture-reviewer.md) | Read-only layering/placement review of a change set | `opus` | Read, Grep, Glob, Skill | nothing |
+| [`architecture-reviewer`](architecture-reviewer.md) | Read-only layering/placement review of a change set | `sonnet` (was `opus`, switched 2026-10-01 for cost) | Read, Grep, Glob, Skill | nothing |
 | [`plan-verifier`](plan-verifier.md) | Checks code against every spec item with executed evidence | `sonnet` | Read, Grep, Glob, Bash, Skill | nothing |
 | [`doc-writer`](doc-writer.md) | Turns an implemented spec into docs with Mermaid diagrams | `sonnet` | Read, Grep, Glob, Edit, Write, Skill | Markdown under `docs/` and `specs/` folders (+ the folder README index row) |
 
@@ -19,15 +20,27 @@ Not covered yet: security review agent. Before publishing, `/pr-self-review` is 
 ## How they fit together
 
 ```
-request ─▶ (researcher: optional facts) ─▶ planner ─▶ specs/<name>.md ─▶ implementer (per task T#) ─▶ report
-                                              │                                │
-                                  Clarification needed /            blocked + Questions
-                                  Open decisions ──▶ parent session asks the user, then re-invokes
+request ─▶ spec-creator ──(spawns, parallel)──▶ researcher × N ─▶ findings
+                │◀──────────────────────────────────────────────┘
+                ▼
+           specs/<name>.md (requirements, draft)
+                │
+     Clarification needed /
+     Open questions ──▶ parent asks the user, then re-invokes or edits the spec
+                │
+        human approves (Status: approved)
+                ▼
+             implementation-planner ─▶ specs/<name>.plan.md ─▶ implementer (per task T#) ─▶ report
+                │                                     │
+    Clarification needed /                  blocked + Questions
+    Open decisions ──▶ parent session asks the user, then re-invokes
 ```
 
-- The **parent session** (you / the main Claude) is the only one who talks to the user and who commits. Subagents have no `AskUserQuestion`: anything they can't decide comes back as a `Clarification needed` block, `Open decisions`, or `Status: blocked` + `Questions`, and the parent resumes them with the answers.
-- The plan file is the contract between `planner` and `implementer`. Pass the implementer the **absolute path** of the spec and a task ID (`T1`…). Tasks with `Depends-on: none` and disjoint `Owned paths` may run concurrently.
-- Maps to the AGENTS.md 5-phase workflow: `researcher` + `planner` = phases 1–2, `implementer` (+ optional `test-writer`) = phase 3, `architecture-reviewer` + `plan-verifier` = the review part of phase 4, `doc-writer` = docs in phase 5. E2e, commits and the Delivery log stay with the parent session.
+- `spec-creator` is the only non-parent agent allowed to spawn another agent, and only `researcher` (read-only, no side effects) — it runs independent research questions in parallel rather than serially, then folds `high`-confidence findings into the spec.
+- The **parent session** (you / the main Claude) is the only one who talks to the user and who commits. Subagents have no `AskUserQuestion`: anything they can't decide comes back as a `Clarification needed` block, `Open questions`/`Open decisions`, or `Status: blocked` + `Questions`, and the parent resumes them with the answers.
+- `spec-creator` and `implementation-planner` write to the **same `specs/` folder but never the same file**: `spec-creator` owns `YYYY-MM-DD-<feature>.md` (requirements, EARS; behaviour-level workflow/communication diagrams and boundary contracts allowed, implementation detail not); `implementation-planner` owns `<spec-basename>.plan.md` (the Implementation Plan) and `<spec-basename>.tasks.md`, and starts only once a human has moved the spec's `Status` to `approved`. It treats the spec as read-only: requirement problems go back to the parent (→ user or `spec-creator`), never into an edit of the spec. Before planning, the parent asks the user for the **execution mode** (single-agent vs multi-agent) unless already decided; the planner returns that question in its `Clarification needed` block when it is missing.
+- The plan file is the contract between `implementation-planner` and `implementer`. Pass the implementer the **absolute path** of the spec and a task ID (`T1`…). Tasks with `Depends-on: none` and disjoint `Owned paths` may run concurrently.
+- Maps to the AGENTS.md 5-phase workflow: `researcher` + `spec-creator` + `implementation-planner` = phases 1–2, `implementer` (+ optional `test-writer`) = phase 3, `architecture-reviewer` + `plan-verifier` = the review part of phase 4, `doc-writer` = docs in phase 5. E2e, commits and the Delivery log stay with the parent session.
 
 ```
 implementer ─▶ (test-writer: gaps) ─┬─▶ architecture-reviewer ─▶ findings ─┐
@@ -40,18 +53,20 @@ implementer ─▶ (test-writer: gaps) ─┬─▶ architecture-reviewer ─▶
 
 ### Working rules for the parent (from `specs/agent-improvements.md`, applied 2026-09-24)
 
-- **One author per artifact.** One `planner` at a time, and one owner per file. Before summarising a planner's result to the user, compare the file on disk with the agent's report — a discarded parallel plan can leave the report describing a file that no longer exists.
+- **One author per artifact.** One `implementation-planner` at a time, and one owner per file. Before summarising a planner's result to the user, compare the file on disk with the agent's report — a discarded parallel plan can leave the report describing a file that no longer exists.
 - **Who reads what.**
 
   | Agent | Reads | Hands back |
   |---|---|---|
-  | `planner` | researcher findings (trusts `high` + `path:line`), docs/specs/INSIGHTS, code | spec + `<name>.tasks.md` cards |
+  | `spec-creator` | researcher findings, docs/specs/INSIGHTS, code, supplied design material | one `specs/<name>.md` requirements spec |
+  | `implementation-planner` | the approved spec (if `spec-creator` wrote one), researcher findings (trusts `high` + `path:line`), docs/specs/INSIGHTS, code | plan + `<name>.tasks.md` cards |
   | `implementer` | its task card (+ the Design section the card points to) | short reply, full report in the scratchpad |
   | `plan-verifier` | the whole spec (needs every requirement) + code | item table, counts from a command |
   | `architecture-reviewer` | the diff file, then context around changed hunks | findings table |
   | `doc-writer` | the spec + implemented code | docs + index rows |
 
 - **Continue, don't cold-start.** The next phase of the same line of work (contracts → reviewer-core → server) should continue the same implementer with `SendMessage` while its context is small. Run agents in parallel only when their `Owned paths` are disjoint.
+- **Share the baseline, don't re-run it.** Run each touched package's typecheck/unit-test baseline once per wave (not per task) and pass the one-line result into every task's prompt in that wave; each `implementer` task then runs only its own targeted test files plus typecheck. Only the task the plan marks `Checkpoint: yes` for that package runs the full suite. This is why `implementation-planner` now emits a `Checkpoint` field in multi-agent task cards — see its "Checkpoint tasks" note — and why `plan-verifier`'s own full-suite baseline, not an implementer report, is the authoritative full-suite evidence for non-checkpoint packages.
 - **Hand-back format.** `implementer` replies in ≤ ~15 lines starting with `Status: …` and writes the full report to a scratchpad file the parent names. The read-only agents (`architecture-reviewer`, `plan-verifier`) can't write files, so their table is the report; keep it to the table plus Gaps / Not verified.
 
 ## researcher
@@ -59,21 +74,30 @@ implementer ─▶ (test-writer: gaps) ─┬─▶ architecture-reviewer ─▶
 - **Responsibility:** answers a concrete question about this repo (docs/specs/INSIGHTS first, then code) or about external sources (docs, web, changelogs). Never modifies anything, never delegates, never uses `deep-research`.
 - **Permissions:** read-only tools; Bash limited by instruction to inspection (`git log/show/blame/diff`, `ls`, `wc`, `date`).
 - **Input:** a concrete question. If there is none, or scope is ambiguous, it returns `## Clarification needed` (questions with defaults) and stops. `maxTurns: 30`. Run the external variant only when a decision depends on external facts.
-- **Output:** a short structured report (~120 lines at most) — Research question, Summary, an **exists / missing table** (main artifact of a repo report), Findings with `path:line` evidence, a confidence per finding (so the planner knows what it can skip re-checking) and source links, Traps, Sources consulted, **Not found / unverified**. Repo and external questions have separate templates.
+- **Output:** a short structured report (~120 lines at most) — Research question, Summary, an **exists / missing table** (main artifact of a repo report), Findings with `path:line` evidence, a confidence per finding (so the implementation-planner knows what it can skip re-checking) and source links, Traps, Sources consulted, **Not found / unverified**. Repo and external questions have separate templates.
 
-## planner
+## spec-creator
 
-- **Responsibility:** produces a Development Plan that respects the project's modules, skills, local `INSIGHTS.md` and architecture constraints, and names the skills the implementer should apply. Plans; never implements or reviews.
-- **Permissions:** read tools + Bash for inspection; `Write` only to create the plan spec (in `specs/`, main checkout, never overwriting). *The path restriction is prompt-enforced only — `Write` cannot be path-scoped in frontmatter and no hook backs it; check `git status` after a run.* `maxTurns: 40`.
+- **Responsibility:** turns a feature/change request, plus whatever design sources the user hands it directly (free text, a Figma link, local screenshots, or a pointer to existing code/docs), into one EARS-format requirements spec — problem/user, goals/non-goals, user stories, `AC-1…` acceptance criteria written as WHEN/WHILE/IF…THEN/WHERE triggers with `(shall)`, edge cases, non-functional requirements, inputs & provenance, untrusted inputs, a design-review section (gaps, uncovered corner cases, cross-module communication, UX proposals), and open questions. Specs; never plans tasks, implements or reviews code.
+- **Permissions:** read tools + `WebFetch` (Figma links only) + `Agent` (spawns `researcher` only, run in parallel for independent questions — no other agent, never itself) + Bash for inspection (`git rev-parse`, `ls`, `grep`, `date`); `Write`/`Edit` only for one new spec file under `specs/` (never overwrites — `Edit` the same file while `Status: draft`; a new dated file + `Supersedes` once it's `approved`/`implemented`) plus its folder's README index row, and may bootstrap a missing *package-local* `specs/README.md` before writing into it (root `specs/` is expected to already exist — a missing root folder is reported, not invented). Root `specs/` is reserved exclusively for cross-package specs — a single-package spec never goes there. *The path restriction is prompt-enforced only, like the implementation-planner's.* `maxTurns: 30`.
+- **Skills (preloaded, 8):** `onion-architecture`, `frontend-architecture`, `react-best-practices`, `next-best-practices`, `mermaid-diagram`, `zod`, `security`, `writing-for-agents` — enough to recognise module boundaries, client-side state/UX conventions, contracts and untrusted-input handling while drafting Inputs/Untrusted-inputs and Design review notes, without the full implementation-planner/implementer skill set (it decides no implementation detail).
+- **Input:** a feature/change request + target package (or enough to infer it) + whatever design sources the user supplies directly — a free-text description, a Figma link (fetched via `WebFetch`, treated as untrusted content), local image paths/screenshots, or a pointer to existing code/docs to treat as the design-of-record. It never goes looking for design material beyond what's handed to it, but may spawn `researcher` to settle an open question the local docs/code don't answer. Ambiguous module/boundary, or a request that explicitly depends on design material never actually supplied, → `Clarification needed`. Only that hard blocker is a block — anything softer becomes an inline `[NEEDS CLARIFICATION]` in the draft, never a second round-trip before a draft exists.
+- **Output:** `<package>/specs/YYYY-MM-DD-<feature-name>.md` (or root `specs/` when cross-package; date from `date +%F`, so specs are told apart by date and feature — no repo-wide counter) with a `Date:` line, `Status: draft` (it never sets `approved`/`implemented` — that's a human call), `US-n` user stories, numbered EARS acceptance criteria each with a `Verify:` hint and a `covers US-n` link, a `## Traceability` table (US ↔ AC ↔ edge cases, no orphans either direction), a Design review notes section holding only not-yet-promoted findings, and `[NEEDS CLARIFICATION]` open questions each with a recommended default. It re-reads the file it just saved before reporting. The message to the parent is short: absolute spec path, summary, the open questions verbatim, any `researcher` delegations and their confidence.
+- Hands its approved spec to `implementation-planner`, which writes the plan to `<spec-basename>.plan.md` next to it and never edits the spec.
+
+## implementation-planner
+
+- **Responsibility:** turns an **approved** requirements spec into an Implementation Plan that respects the project's modules, skills, local `INSIGHTS.md` and architecture constraints, and names the skills the implementer should apply. First it **reviews the spec's requirements** (per `AC-n`: clear / ambiguous / not testable / conflicts / gap), asks about anything unclear, and gives recommendations (tagged `requirement` or `approach`). It also **asks the user to choose the execution mode**: `single-agent` (one implementer pass over the whole plan) or `multi-agent` (disjoint `Owned paths`, parallel waves). Plans; never writes specs, implements or reviews. The spec is read-only to it.
+- **Permissions:** read tools + Bash for inspection; `Write` only to create `<name>.plan.md` and `<name>.tasks.md` next to the spec (main checkout, never overwriting). It never creates, edits, re-statuses or indexes a spec. *The path restriction is prompt-enforced only — `Write` cannot be path-scoped in frontmatter and no hook backs it; check `git status` after a run and confirm the spec is untouched.* `maxTurns: 40`.
 - **Skills (preloaded, 13; the implementer has the same minus `mermaid-diagram`):** `onion-architecture`, `fastify-best-practices`, `drizzle-orm-patterns`, `postgresql-table-design`, `frontend-architecture`, `react-best-practices`, `next-best-practices`, `react-testing-library`, `zod`, `typescript-expert`, `security`, `mermaid-diagram`, `engineering-insights`. Deliberate: it must plan UI, DB and contracts without violating rules the implementer will follow.
-- **Input:** a feature/change/bug request (+ researcher findings; it trusts `high`-confidence ones with `path:line`). Unplannable requests get a `Clarification needed` block instead of a plan.
-- **Output:** `specs/<kebab-name>.md` with status `ready | needs decisions | incomplete`, Definition of Done checklist, requirements `R1…`, context with `path:line`, affected packages and contracts, optional Mermaid design, **phased tasks** (`Executor`, `Owned paths`, `Depends-on`, `Risk`, `Known gotchas`, `Skills to use`, `Acceptance`), testing strategy, risks, open decisions, reviewer handoff, unverified, empty `## Delivery log` — **plus `specs/<kebab-name>.tasks.md`, one self-contained card per task** that implementers read instead of the whole spec. Each task's `Owned paths` are checked against its executor's allowed/forbidden paths. The message to the parent is short: absolute spec and cards paths, summary, open decisions.
+- **Input:** the absolute path of an approved spec (`Status: approved`), optionally researcher findings (it trusts `high`-confidence ones with `path:line`) and the execution mode. No spec, a non-approved spec, unclear requirements or an unknown execution mode → a `Clarification needed` block (questions with defaults + recommendations) instead of a plan. A spec can be waived explicitly for small fixes; the requirements are then the request quoted verbatim.
+- **Output:** `<spec-basename>.plan.md` with status `ready | needs decisions | incomplete`, the execution mode, Definition of Done, a per-`AC-n` **Requirements review**, **Recommendations**, context with `path:line`, affected packages and contracts, optional Mermaid design, **phased tasks** (`covers AC-n`, `Executor`, `Owned paths`, `Depends-on`, `Risk`, `Known gotchas`, `Skills to use`, `Acceptance`), execution order or waves, testing strategy, risks, open decisions, reviewer handoff, unverified, empty `## Delivery log` — **plus `<spec-basename>.tasks.md`, one self-contained card per task** that implementers read instead of the whole plan. Each task's `Owned paths` are checked against its executor's allowed/forbidden paths. The message to the parent is short: absolute plan and cards paths, mode, summary, review verdicts, recommendations, open decisions.
 
 ## implementer
 
 - **Responsibility:** executes one task (or the whole plan in dependency order) in `client/`, `server/`, `reviewer-core/` or `e2e/`; reads local INSIGHTS first; picks the skills each task needs; runs the existing tests and typecheck of touched packages. Checks only its own work against the plan — not an architecture or security review.
 - **Permissions:** `Edit`/`Write`/`Bash` with `permissionMode: acceptEdits` (the parent's mode can override it); `maxTurns: 60`. By instruction: edits only inside `Owned paths`; no `git commit/push/checkout/reset/stash`; never touches migrations, lockfiles, `server/clones/`, `e2e/test-results/`; vendored `shared` only when the task says so, mirrored in both copies; no other agents.
-- **Skills (preloaded, 12):** the planner's 13 minus `mermaid-diagram` (loaded via `Skill` only when a task lists a diagram); it applies only those each task needs and reports recommended / added / skipped.
+- **Skills (preloaded, 12):** the implementation-planner's 13 minus `mermaid-diagram` (loaded via `Skill` only when a task lists a diagram); it applies only those each task needs and reports recommended / added / skipped.
 - **Input:** absolute path of the spec + task ID + the task-cards file (+ optionally other tasks' owned paths and a scratchpad directory). It reads the card and the Design section it points to, not the whole spec. No plan → `blocked: no plan`. Runs only touched packages' checks per task; full suite, `.it` and e2e belong to the validation phase.
 - **Output:** short reply (≤ ~15 lines, `Status:` on line 1) + the full report in `<scratchpad>/implementer-<task>.md` when a scratchpad was given. The report — Status `done | partial | blocked`, Definition of Done, Read before coding, Changed files, Verification (commands and results), Skills applied, Questions (if blocked), Deviations, Insights recorded, Out of scope, Not verified. Side effects on disk: changed files in `Owned paths`, and entries in `<package>/INSIGHTS.md` when something non-obvious is confirmed.
 
@@ -90,6 +114,7 @@ implementer ─▶ (test-writer: gaps) ─┬─▶ architecture-reviewer ─▶
 - **Responsibility:** read-only review of layering and placement on the added/changed lines: server onion rings, reviewer-core purity, client placement and import boundaries, `@devdigest/shared` changes mirrored in both copies. Baselines (onion D1–D9, frontend accepted exceptions) are not findings. No PASS/BLOCK verdict — that stays with `/pr-self-review`.
 - **Permissions:** `Read, Grep, Glob, Skill` only — read-only by tool list, not by prompt text; `maxTurns: 40`.
 - **Skills (preloaded, 4):** `onion-architecture`, `frontend-architecture`, `next-best-practices`, `zod`. Reads `.claude/skills/pr-self-review/references/severity.md` for the shared severity scale.
+- **Model:** switched `opus` → `sonnet` on 2026-10-01 for cost (see "Known limits" — unverified whether finding quality holds at `sonnet`; watch the first few runs for missed layering violations an `opus` pass would have caught, especially subtler onion §2/§4.4 cases).
 - **Input:** base ref, `git diff --name-status` and a diff file to read, from the parent — **required**. Missing → `Clarification needed`. Checks explicitly that every new I/O port has an adapter, a mock in `adapters/mocks.ts` (onion §4.4) and a container override.
 - **Output:** findings table `# | Severity | path:line | Rule | What | Recommendation`, baseline hits skipped, Questions (low confidence), Not verified. No evidence → no finding; zero findings is valid.
 
@@ -106,7 +131,7 @@ implementer ─▶ (test-writer: gaps) ─┬─▶ architecture-reviewer ─▶
 - **Responsibility:** turns an implemented spec into docs-as-code with Mermaid diagrams, placed by a map derived from the real `docs/`/`specs/` folders, and adds the folder README index row. Never overwrites existing docs.
 - **Permissions:** `Edit`/`Write`, no Bash, default permission mode; `maxTurns: 40`. By instruction: only Markdown under `docs/` and `specs/` folders; never `docs/agent-prompts/`, `docs/skill-fixtures/`, `e2e/specs/*.flow.json`, package `README.md`s, `INSIGHTS.md`, the Delivery log.
 - **Skills (preloaded, 2):** `mermaid-diagram`, `writing-for-agents` (user-level, see Known limits).
-- **Input:** a spec path or topic and the wanted doc type. Unclear → `Clarification needed`. If the request names a forbidden path, line 1 of its reply is `Forbidden path requested: <path>` and the ready-to-paste edit goes in the report for the parent to apply (the rule is not loosened — the planner is what gets fixed).
+- **Input:** a spec path or topic and the wanted doc type. Unclear → `Clarification needed`. If the request names a forbidden path, line 1 of its reply is `Forbidden path requested: <path>` and the ready-to-paste edit goes in the report for the parent to apply (the rule is not loosened — the implementation-planner is what gets fixed).
 - **Output:** a docs report — Files written (path → type → why here), Index rows added, Diagrams, Spec/code mismatches, Suggestions outside its scope, Not verified (Mermaid not rendered; `mmdc` isn't installed).
 
 ## Sources behind the rules
@@ -124,17 +149,17 @@ Sources are Anthropic documentation and engineering posts, fetched by `researche
 
 | Rule | Source | Where it lives |
 |---|---|---|
-| Descriptions state the trigger ("Use BEFORE/AFTER…"), details go in the body | S1, S7 | `description` of planner and implementer |
-| Explicit `tools` allowlist (omitting it inherits everything); no `Agent` tool so subagents don't nest | S1, S8 | `tools` of both; "Don't spawn other agents" |
+| Descriptions state the trigger ("Use BEFORE/AFTER…"), details go in the body | S1, S7 | `description` of implementation-planner and implementer |
+| Explicit `tools` allowlist (omitting it inherits everything); no `Agent` tool so subagents don't nest | S1, S8 | `tools` of most agents; "Don't spawn other agents". **Exception:** `spec-creator` carries `Agent` and may spawn `researcher` (one level, read-only, no further nesting) to settle open questions in parallel — S5's multi-agent research pattern applied one level deep |
 | `skills:` injects full skill bodies at startup; a missing skill only logs a debug warning, so keep a `Skill` fallback | S1 | `skills:` of both; implementer's "Skill catalog" section |
-| Subagents have no `AskUserQuestion` → questions go back to the parent | S1 | planner "Clarify first" / Open decisions; implementer `blocked` + Questions; researcher `Clarification needed` |
+| Subagents have no `AskUserQuestion` → questions go back to the parent | S1 | implementation-planner "Clarify first" / Open decisions; implementer `blocked` + Questions; researcher `Clarification needed` |
 | `maxTurns` bounds a run | S1 | `maxTurns` in frontmatter |
 | Delegation carries objective, output format, boundaries and artifact references | S5 | "What you receive", "Hard constraints", "Output format" |
-| Write structured output to storage, return a short reference | S5, S6 | planner saves the spec and returns path + summary |
+| Write structured output to storage, return a short reference | S5, S6 | implementation-planner saves the spec and returns path + summary |
 | Separate generator from evaluator (fresh-context review) | S4, S7 (inference for "no self-review") | implementer DoD is a self-check against the plan only; reviewers are separate agents |
-| Plan → validate → execute for higher-risk work | S3 | planner→implementer; measurable `Acceptance`; DoD before hand-off |
-| Definition of Done checklist per agent | S8 | DoD sections of planner and implementer (items are ours) |
-| Progressive disclosure: don't paste skill content, reference by name | S2, S3 | planner "reference them by name" |
+| Plan → validate → execute for higher-risk work | S3 | implementation-planner→implementer; measurable `Acceptance`; DoD before hand-off |
+| Definition of Done checklist per agent | S8 | DoD sections of implementation-planner and implementer (items are ours) |
+| Progressive disclosure: don't paste skill content, reference by name | S2, S3 | implementation-planner "reference them by name" |
 | Plan/report formats, statuses, task fields | Inference from S5, S6, S8 — no official schema exists | "Output format" sections |
 | Reviewer tool list `Read, Grep, Glob` (read-only by tools, not prompt text); Bash is not read-only | A, B (below) | `tools` of `architecture-reviewer` and `plan-verifier` |
 | Verifier evidence = executed output; one row per item; "report only gaps that affect correctness or stated requirements, not style" | C (below) | `plan-verifier`, anti-sycophancy line in both evaluators |
@@ -150,13 +175,17 @@ Sources for the four review/docs agents (from `specs/review-and-docs-subagents.m
 
 ## Known limits
 
-- The planner's write scope and the implementer's `Owned paths` are instructions, not enforcement (no `PreToolUse` hook; hooks are deferred course material).
-- Preloading 13 skills into `planner` and 12 into `implementer` makes their context large (≈141 KB of `SKILL.md`, ≈35k tokens by size — an estimate). Not checked whether `skills:` injects the full file or only the description. Only `mermaid-diagram` was dropped from `implementer`; splitting it into server/client variants is deferred (`specs/agent-improvements.md`, "Later").
+- The implementation-planner's write scope and the implementer's `Owned paths` are instructions, not enforcement (no `PreToolUse` hook; hooks are deferred course material).
+- Preloading 13 skills into `implementation-planner` and 12 into `implementer` makes their context large (≈141 KB of `SKILL.md`, ≈35k tokens by size — an estimate). Not checked whether `skills:` injects the full file or only the description. Only `mermaid-diagram` was dropped from `implementer`; splitting it into server/client variants is deferred (`specs/agent-improvements.md`, "Later"). This is a bigger per-spawn cost than the per-task test runs below and isn't addressed yet.
+- **`architecture-reviewer` on `sonnet` (switched 2026-10-01, was `opus`) is unverified for finding quality.** No comparison run against the same diff on both models yet. `plan-verifier` was already `sonnet` — no change needed there; `test-writer` is also already `sonnet`. The remaining `opus` agents (`spec-creator`, `implementation-planner`) are run by hand outside `run-plan` and weren't touched here — they're the two heaviest single-shot calls (they author the spec and plan humans then approve), so cost pressure there is better addressed by not re-running them than by downgrading their model.
+- **Checkpoint/targeted-test convention (added 2026-10-01) is unverified: no smoke run yet.** `implementer` now runs targeted test files per task and the full suite only on the task the plan marks `Checkpoint: yes`; `implementation-planner` is supposed to place exactly one such task per wave per package; `plan-verifier`'s own baseline is the fallback full-suite evidence. Not yet checked: whether the planner reliably remembers to set `Checkpoint` on every multi-task-per-package wave, whether an implementer's targeted `vitest run <file>` selection actually covers files it indirectly broke (e.g. a changed shared helper used by an untouched test), and whether the parent reliably threads the wave's baseline result into later tasks' prompts instead of letting them re-run it. Watch the first few multi-agent runs for a missed checkpoint (a package wave ships with no full-suite run at all) before trusting it unattended.
 - Not yet verified: whether prompt caching hits across sequential agent spawns; whether `haiku` can run the mechanical stages (seed, e2e flow, docs) without missing INSIGHTS traps; whether `Bash(git diff:*)`-style restrictions work in an agent's `tools` (until then the diff-file input is the safe route).
 - The implementer's skill catalog duplicates [`../skills/README.md`](../skills/README.md); update both when a skill is added.
 - Bash is not read-only: `test-writer` and `plan-verifier` are restricted to verify commands and read-only inspection by instruction only. Check `git status` after every run; a hook guard is a possible follow-up (per-command `Bash(...)` rules in `tools` and frontmatter `hooks:` are unverified in Claude Code 2.1.281).
-- Write scope of `test-writer` (test files only) and `doc-writer` (`docs/`/`specs/` Markdown only) is instruction-only, like the planner's and implementer's. The four newer agents run in default permission mode (no `acceptEdits`), so each write asks for approval.
-- `writing-for-agents` (preloaded in `doc-writer`) is a **user-level** skill (`~/.claude/skills/`, not `.claude/skills/`): on another machine it is missing, and a missing preloaded skill only logs a debug warning. `tdd` is deliberately not preloaded (its red-before-green loop contradicts a test-after subagent).
+- Write scope of `test-writer` (test files only) and `doc-writer` (`docs/`/`specs/` Markdown only) is instruction-only, like the implementation-planner's and implementer's. The four newer agents run in default permission mode (no `acceptEdits`), so each write asks for approval.
+- `writing-for-agents` (preloaded in `doc-writer` and `spec-creator`) is a **user-level** skill (`~/.claude/skills/`, not `.claude/skills/`): on another machine it is missing, and a missing preloaded skill only logs a debug warning. `tdd` is deliberately not preloaded (its red-before-green loop contradicts a test-after subagent).
+- `implementation-planner` (renamed from `planner`) is new and unverified: no smoke run yet. Its "never edit the spec" and "write only `.plan.md` + `.tasks.md`" rules are instruction-only. The `## Delivery log` lives in the plan file, because `spec-creator` never touches a spec's Delivery log — AGENTS.md says "append to the feature's spec", so decide whether the parent writes it to the plan or to the spec. Older plans (`specs/*.tasks.md` without `.plan.md`) predate the split and keep the old layout.
+- `spec-creator` is new and unverified: no smoke run yet, no evidence on how well it drafts EARS criteria from real design material, its `WebFetch` path for Figma links has never been exercised (Figma usually needs auth the agent doesn't have — expect most links to fall back to an Open question), its folder-bootstrap path (creating a package-local `specs/README.md` that didn't exist) is untested, and it has never had to handle a missing root `specs/` folder. Its `researcher`-spawning path (parallel delegation for open questions) has never run — unverified whether `Agent` is actually usable from inside a subagent in this Claude Code build, and if it is, whether parallel `researcher` calls from a subagent behave like parallel calls from the parent. Its `Traceability`/`Verify:` fields are a first attempt at the EARS template — no evidence yet on whether they add real value or just ceremony once a few real specs exist.
 - `architecture-reviewer` has no Bash, so it depends on the parent passing the diff; `mmdc` isn't installed, so `doc-writer`'s Mermaid is never rendered by the agent.
 - The four newer agents are covered by smoke runs only (spec `specs/review-and-docs-subagents.md`, phase 3); no evals exist.
 - Verified only by two smoke runs (2026-09-24) on test-only client changes; server/DB/UI-component tasks and the `blocked` path haven't been exercised.
