@@ -1,17 +1,45 @@
 {
-  "title": "Onboarding Tour",
-  "sections": "Sections",
-  "sectionCount": "{count} sections",
-  "regenerate": "Regenerate",
-  "regenerating": "Regenerating…",
-  "unknownError": "Unknown error",
-  "generate": {
-    "title": "Generate onboarding tour",
-    "body": "DevDigest indexes the repo and specs, then writes a 5-section guided tour: overview, architecture, key modules, getting started, and conventions & gotchas.",
-    "cta": "Generate onboarding tour",
-    "generating": "Generating…"
+  "page": {
+    "title": "Onboarding Tour"
   },
-  "loadError": {
-    "title": "Couldn’t load the onboarding tour"
+  "sections": {
+    "toggle": "Toggle {title}",
+    "open": "Open",
+    "openAria": "Open {path} on GitHub",
+    "architecture": {
+      "title": "Architecture",
+      "diagramFallback": "The architecture diagram could not be rendered.",
+      "stack": "Stack",
+      "structure": "Structure",
+      "routes": "Routes",
+      "fileCount": "{count, plural, one {# file} other {# files}}"
+    },
+    "critical-paths": {
+      "title": "Critical paths",
+      "empty": "No critical paths were found."
+    },
+    "run-locally": {
+      "title": "Run locally",
+      "notice": "These commands come from the repo's own files. Review them before running anything; DevDigest never runs them for you.",
+      "empty": "No run instructions found in the repo's files",
+      "copyAria": "Copy command: {command}",
+      "copied": "Command copied",
+      "copyFailed": "Couldn't copy the command",
+      "from": "from {path}"
+    },
+    "reading-path": {
+      "title": "Reading path",
+      "hotnessNote": "Recent-change history isn't available in this clone, so the order uses import rank only.",
+      "empty": "No reading path was found."
+    },
+    "first-tasks": {
+      "title": "First tasks",
+      "needsLlm": "First tasks need the LLM step, which didn't produce any for this tour.",
+      "complexity": {
+        "low": "Low complexity",
+        "medium": "Medium complexity",
+        "high": "High complexity"
+      }
+    }
   }
 }
