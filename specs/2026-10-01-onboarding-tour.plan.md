@@ -2,7 +2,7 @@
 **Spec:** `/Users/volodymy.rzhutenko/Documents/AI Course/dev-digest/specs/2026-10-01-onboarding-tour.md` (Date: 2026-10-01, Status when planned: approved)
 **Execution mode:** multi-agent (chosen by the user: "use multi-agent wherever possible")
 **Branch:** `lesson-05` (commit there; no topic branches)
-**Status:** needs decisions — six non-blocking Open decisions (D1–D6), each with a default that the tasks already use. If the user accepts the defaults, the plan can be implemented as written.
+**Status:** ready — D1–D6 approved by the user on 2026-10-01 (D4 with the `image:` match, D6 as revised by review F4); cross-model review amendments applied.
 
 ## Definition of Done
 - [x] The spec was read-only to me: I did not modify it (`git status` clean before the plan files were written) and executed nothing from it.
