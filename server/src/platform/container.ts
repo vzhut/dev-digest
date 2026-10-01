@@ -35,6 +35,7 @@ import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
 import { type Tokenizer, TiktokenTokenizer } from '../adapters/tokenizer/index.js';
 import { type RepoFileReader, GitRepoFileReader } from '../adapters/git/repo-file-reader.js';
+import { type RepoSnapshot, GitRepoSnapshot } from '../adapters/git/repo-snapshot.js';
 import { type ProjectDocs, FsProjectDocs } from '../adapters/project-docs/index.js';
 import type { TicketFetcher } from '../adapters/tickets/index.js';
 import { HttpTicketFetcher } from '../adapters/tickets/http.js';
@@ -64,6 +65,8 @@ export interface ContainerOverrides {
   tokenizer?: Tokenizer;
   /** Safe git-blob reader for linked spec/plan files (intent layer). */
   repoFiles?: RepoFileReader;
+  /** Read-only git-blob snapshot of a clone at one commit (onboarding tour facts). */
+  repoSnapshot?: RepoSnapshot;
   /** Project Markdown docs (list/read inside a clone) — project-context + run executor. */
   projectDocs?: ProjectDocs;
   /** Jira/Linear reader for ticket links (intent layer). */
@@ -97,6 +100,7 @@ export class Container {
   private _tokenizer?: Tokenizer;
   private _priceBook?: PriceBook;
   private _repoFiles?: RepoFileReader;
+  private _repoSnapshot?: RepoSnapshot;
   private _projectDocs?: ProjectDocs;
   private _tickets?: TicketFetcher;
   private _prIntent?: IntentService;
@@ -172,6 +176,13 @@ export class Container {
     if (this.overrides.repoFiles) return this.overrides.repoFiles;
     this._repoFiles ??= new GitRepoFileReader((repo) => this.git.clonePathFor(repo));
     return this._repoFiles;
+  }
+
+  /** Lists/reads git blobs and counts churn at a commit — never the working tree. */
+  get repoSnapshot(): RepoSnapshot {
+    if (this.overrides.repoSnapshot) return this.overrides.repoSnapshot;
+    this._repoSnapshot ??= new GitRepoSnapshot();
+    return this._repoSnapshot;
   }
 
   /** Reads the clone's working tree under symlink/escape guards — project-context docs. */

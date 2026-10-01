@@ -34,6 +34,7 @@ import type {
 } from '@devdigest/shared';
 import type { TicketFetcher, TicketResult } from './tickets/index.js';
 import type { RepoFileReader, RepoFileResult } from './git/repo-file-reader.js';
+import type { RepoSnapshot, SnapshotChurn, SnapshotFileResult } from './git/repo-snapshot.js';
 import type { DocStat, ProjectDocReadResult, ProjectDocWriteResult, ProjectDocs } from './project-docs/index.js';
 import type { GitHubHistory, MergedPrsTouchingOptions, PriorPr } from './github/history.js';
 import { parseUnifiedDiff } from './git/diff-parser.js';
@@ -420,5 +421,42 @@ export class MockProjectDocs implements ProjectDocs {
     return text === undefined
       ? { status: 'missing', reason: 'not found' }
       : { status: 'ok', text, bytes: Buffer.byteLength(text) };
+  }
+}
+
+/**
+ * Repo snapshot double: canned head sha / commit date / file list / text files / churn.
+ * A path in `blocked` is `blocked`; any other unknown path is `missing`.
+ */
+export class FakeRepoSnapshot implements RepoSnapshot {
+  readonly reads: string[] = [];
+  constructor(
+    private opts: {
+      head?: string | null;
+      date?: Date | null;
+      files?: string[];
+      truncated?: boolean;
+      texts?: Record<string, string>;
+      blocked?: string[];
+      churn?: SnapshotChurn;
+    } = {},
+  ) {}
+  async headSha(_cloneDir: string): Promise<string | null> {
+    return this.opts.head === undefined ? 'a'.repeat(40) : this.opts.head;
+  }
+  async commitDate(_cloneDir: string, _sha: string): Promise<Date | null> {
+    return this.opts.date === undefined ? new Date('2026-01-01T00:00:00Z') : this.opts.date;
+  }
+  async listFiles(_cloneDir: string, _sha: string): Promise<{ files: string[]; truncated: boolean }> {
+    return { files: this.opts.files ?? [], truncated: this.opts.truncated ?? false };
+  }
+  async readText(_cloneDir: string, _sha: string, path: string, _maxBytes: number): Promise<SnapshotFileResult> {
+    this.reads.push(path);
+    if (this.opts.blocked?.includes(path)) return { status: 'blocked', reason: 'symlink not followed' };
+    const text = this.opts.texts?.[path];
+    return text === undefined ? { status: 'missing', reason: 'not found' } : { status: 'ok', text };
+  }
+  async churn(_cloneDir: string, _sha: string, _since: Date): Promise<SnapshotChurn> {
+    return this.opts.churn ?? { commits: 0, counts: new Map() };
   }
 }
