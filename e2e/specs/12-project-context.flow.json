@@ -7,9 +7,9 @@
     { "cmd": ["find", "text", "Project Context", "click"], "label": "open the Project Context nav item" },
     { "cmd": ["wait", "--url", "/context"], "label": "context route reached" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
-    { "cmd": ["find", "role", "heading", "text", "--name", "PROJECT CONTEXT", "--exact"], "label": "page heading renders (accessible name is upper-case: the heading has text-transform: uppercase)" },
-    { "cmd": ["wait", "--text", "acme/payments-api"], "label": "breadcrumb names the repo" },
     { "cmd": ["wait", "--text", "Repository not cloned yet"], "label": "not-cloned empty state (seed repo has no clone)" },
+    { "cmd": ["wait", "--text", "acme/payments-api"], "label": "breadcrumb names the repo" },
+    { "cmd": ["find", "role", "complementary", "text", "--name", "Project Context", "--exact"], "label": "left pane landmark is named Project Context (not the upper-cased h1: CSS changes the heading's accessible name)" },
     { "cmd": ["find", "role", "button", "click", "--name", "Edit search roots", "--exact"], "label": "open the search-roots editor from the left toolbar (it is collapsed by default)" },
     { "cmd": ["wait", "--text", "One glob per line"], "label": "search-roots editor hint renders" },
     { "cmd": ["wait", "--text", "Save roots"], "label": "search-roots editor offers Save (nothing is saved)" }
