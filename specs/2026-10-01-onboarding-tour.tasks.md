@@ -8,7 +8,10 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **D3:** `llm_calls: 0` → the badge reads "0 LLM calls" with no tokens or cost; tooltip "No LLM call was made".
 - **D4:** data-store compose services are those whose name equals or starts with `postgres|postgresql|mysql|mariadb|mongo|mongodb|redis|valkey|memcached|elasticsearch|opensearch|rabbitmq|kafka|minio|db`. The dev/start script comes from the root `package.json`, else the first sub-`package.json` (alphabetical) with `dev`, then `start`. `.env.example` is checked at the root and one level down.
 - **D5:** log `cost=$<cost_usd.toFixed(6)>` or `cost=unknown`.
-- **D6:** `M = files_total ?? files_indexed + files_skipped`.
+- **D6 (revised by review F4):** N = real `file_rank` row count; `M = stats.totalCandidates` only when present; otherwise show "N files" + "coverage unknown since the last refresh" (never a guessed M).
+- **F14:** `formatTokensTotal(0,0)` returns `"0 tok"` (null only for null/undefined, `client/src/lib/format-cost.ts:36`), so the UI special-cases `llm_calls === 0` itself (D3).
+- **D4 addition (F8):** a compose service also counts as a data store when its `image:` name matches the list (`postgres:16`). Parsing is a bounded hand-rolled line parser; no YAML dependency.
+- **F18:** a `Checkpoint: yes` task runs its full suite only after the other tasks of its wave have landed (the parent triggers it last; "after T1/T2 land" is not a DAG edge).
 - `GET /repos/:repoId/onboarding` → `{ status: 'none'|'ready'|'not_cloned'|'generating', tour?: Tour|null, index_sha: string|null }`, with precedence `generating` > `not_cloned` > `ready` > `none`. `tour` is kept while `generating` and omitted for `not_cloned`.
 - `POST /repos/:repoId/onboarding/generate` → `Tour`; 409 `not_cloned`, 409 `generation_in_progress`, 404 outside the workspace.
 - No DB migration: the whole `Tour` is stored in the existing `onboarding.json` jsonb column.
@@ -19,14 +22,15 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Covers:** AC-2, AC-13, AC-23, AC-26, AC-30, AC-31 (contract basis for all)
 - **Fixed decisions:**
   - New file `contracts/onboarding-tour.ts`, **byte-identical** in both copies, exported from both barrels.
-  - It contains `TourMode`, `SkeletonReason`, `TourComplexity`, `TourUsage`, `TourIndexInfo`, `Tour` (exactly the spec's boundary contract; `last_attempt` `.nullish()`), `OnboardingTourResponse` (with `index_sha`) and `TourFacts` (`source_sha`, `index` = `TourIndexInfo` + `usable`, `unusable_reason: no_data|failed|degraded|flag_off|no_ranked_files|null`, `last_indexed_sha`; `stack`, `structure`, `routes`, `run_locally[{command, source_path}]`, `critical_paths[{path, computed_reason}]`, `reading_path[{path, score, pagerank, hotness, computed_reason}]`, `readme: {path, text}|null`).
+  - It contains `TourMode`, `SkeletonReason`, `TourComplexity`, `TourUsage`, `TourIndexInfo`, `Tour` (exactly the spec's boundary contract; `last_attempt` `.nullish()`), `OnboardingTourResponse` (with `index_sha`) and `TourFacts` (`source_sha`, `index` = `TourIndexInfo` + `usable`, `unusable_reason: no_data|failed|degraded|flag_off|no_ranked_files|sha_missing|null`, `last_indexed_sha`; `stack`, `structure`, `routes`, `run_locally[{command, source_path}]`, `critical_paths[{path, computed_reason}]`, `reading_path[{path, score, pagerank, hotness, computed_reason}]`, `readme: {path, text}|null`).
   - Remove `OnboardingLink`, `OnboardingSection`, `Onboarding` from **both** `knowledge.ts` copies (no consumers) and update the doc comment in `server/src/vendor/shared/index.ts`. Change nothing else in `knowledge.ts`.
-- **Owned paths:** `server/src/vendor/shared/contracts/onboarding-tour.ts`, `server/src/vendor/shared/contracts/knowledge.ts`, `server/src/vendor/shared/index.ts`, `client/src/vendor/shared/contracts/onboarding-tour.ts`, `client/src/vendor/shared/contracts/knowledge.ts`, `client/src/vendor/shared/index.ts`, `server/test/onboarding-contracts.test.ts`
+  - F2: `server/test/contracts.test.ts:14,169-183` imports and parses `Onboarding`; remove that import and its parse case in the same commit (the server tsconfig only covers `src/**`, so typecheck would NOT catch it — vitest would).
+- **Owned paths:** `server/src/vendor/shared/contracts/onboarding-tour.ts`, `server/src/vendor/shared/contracts/knowledge.ts`, `server/src/vendor/shared/index.ts`, `client/src/vendor/shared/contracts/onboarding-tour.ts`, `client/src/vendor/shared/contracts/knowledge.ts`, `client/src/vendor/shared/index.ts`, `server/test/onboarding-contracts.test.ts`, `server/test/contracts.test.ts`
 - **Action:** Write the schemas and parse tests: full `llm` tour, skeleton tour, a tour with no `last_attempt` key, a response for each status.
 - **Traps that apply:** fields added later to jsonb contracts must be `.nullish()` (`server/INSIGHTS.md:149`); the client imports these only with `import type` (`client/INSIGHTS.md:125`); the two `knowledge.ts` copies already differ, so don't sync them.
 - **Acceptance:**
   - `diff` of the two `onboarding-tour.ts` copies is empty.
-  - `grep -rn "OnboardingSection\|OnboardingLink" server/src client/src` returns nothing.
+  - `grep -rnE "OnboardingSection|OnboardingLink|\bOnboarding\b" server/src server/test client/src` finds no use of the removed schemas (the new `OnboardingTourResponse` etc. are fine).
   - `server/test/onboarding-contracts.test.ts` passes.
   - Server and client `pnpm typecheck` pass.
   - Client full `pnpm test` passes (checkpoint).
@@ -39,11 +43,11 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - `StructuredRequest.singleAttempt?: boolean` and exported type `StructuredCallUsage { tokensIn, tokensOut, costUsd }` go in `server/src/vendor/shared/adapters.ts` only (server-copy-only precedent: `sessionId`).
   - With the flag: one request, no SDK/`withRetry` transport retry, no re-prompt. On a schema failure, throw an error with `usage` attached (D1).
   - Without the flag, behaviour is unchanged.
-- **Owned paths:** `server/src/vendor/shared/adapters.ts`, `reviewer-core/src/llm/openrouter.ts`, its test file next to it (name to verify), `server/src/adapters/llm/openai.ts`, `server/src/adapters/llm/anthropic.ts`, `server/test/llm-single-attempt.test.ts`
-- **Action:** OpenRouter passes `{ maxRetries: 0 }` as the per-request SDK option. OpenAI/Anthropic skip `withRetry` and the loop when the flag is set.
+- **Owned paths:** `server/src/vendor/shared/adapters.ts`, `reviewer-core/src/llm/openrouter.ts`, `reviewer-core/test/openrouter.test.ts`, `server/src/adapters/llm/openai.ts`, `server/src/adapters/llm/anthropic.ts`, `server/test/llm-single-attempt.test.ts`
+- **Action:** OpenRouter passes `{ maxRetries: 0 }` as the per-request SDK option. OpenAI/Anthropic skip `withRetry` and the loop when the flag is set. F1/F11: ALL THREE providers also pass per-request `{ maxRetries: 0, timeout: req.timeoutMs }` — `new OpenAI({ apiKey })` (`openai.ts:52`) and `new Anthropic({ apiKey })` (`anthropic.ts:46`) keep the SDK default of 2 retries and a 10-minute timeout otherwise. Add an optional injected `fetch` to both constructors so the retry behaviour is testable.
 - **Traps that apply:** `reviewer-core/**` changes also trigger `server-unit` CI; the constructor's `maxRetries: 2` (`reviewer-core/src/llm/openrouter.ts:56`) is the transport retry to disable.
 - **Acceptance:**
-  - Injected `fetch` returning 500 → exactly 1 fetch call, then reject.
+  - For EACH of the three providers: injected `fetch` returning 500 (and 429) → exactly 1 fetch call, then reject; a stubbed SDK client does not count as proof (it bypasses SDK retries).
   - Schema-invalid 200 → 1 call, `err.usage.tokensIn > 0`.
   - Existing provider tests green.
   - `cd reviewer-core && npm test && npm run build` (full suite: this is reviewer-core's only task).
@@ -56,7 +60,9 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Covers:** AC-7, AC-8, AC-11, AC-12, AC-13, AC-17, NFR Security
 - **Fixed decisions:**
   - Local port in `server/src/adapters/git/repo-snapshot.ts` with: `headSha(cloneDir)`, `commitDate(cloneDir, sha)`, `listFiles(cloneDir, sha)` → `{files, truncated}` (cap 200,000), `readText(cloneDir, sha, path, maxBytes)` → `ok|missing|blocked` (symlink blob/unsafe path → `blocked`), and `churn(cloneDir, sha, since)` → `{commits, counts}`.
-  - Also `cloneExists(cloneDir)` → `boolean` (TD-1): the single place that touches the filesystem for "is there a clone"; the onboarding service/routes call it through the port and never import `node:fs`.
+  - F13/TD-1: NO `cloneExists` here — Project Context already fixed TD-1 with `ProjectDocs.exists(cloneDir)` (`server/src/adapters/project-docs/index.ts:34`); the onboarding module reuses it (T12).
+  - F6: `listFiles` sets an explicit `maxBuffer` (≥ 32 MB) or streams via `spawn`; when the 200,000 cap is hit it returns `truncated: true`, never an empty list.
+  - F5: `churn` runs `git -c core.quotePath=false log -z --no-renames --since=<D2 date> --format=%H --name-only <sha>`, excludes boundary (grafted/shallow) commits listed in `.git/shallow`, and reports `commits` = non-boundary commits counted.
   - Git blobs only, never the working tree.
   - `execFile` (no shell), refs validated `/^(HEAD|[0-9a-f]{7,40})$/i`, `--` before paths, timeouts set, raw error text never surfaced.
 - **Owned paths:** `server/src/adapters/git/repo-snapshot.ts`, `server/src/adapters/mocks.ts`, `server/src/platform/container.ts`, `server/test/repo-snapshot.test.ts`
@@ -65,7 +71,8 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Acceptance:**
   - Temp-repo test: a `README.md` symlink to `/etc/hosts` → `blocked`.
   - `../x` and `-x` → `blocked`.
-  - `cloneExists` → `true` for a real clone dir, `false` for a missing path and for a path that is not a git repo; `FakeRepoSnapshot` exposes it too (TD-1).
+  - F6: a repo with > cap files → `truncated: true` and the cap is honoured; a 40k-path repo does not throw on buffer size.
+  - F5: a depth-2 clone → the boundary commit's files get no hotness; a non-ASCII filename (`é.ts`) in `churn` matches the index path unquoted.
   - `listFiles` returns every committed path.
   - `churn` counts on a 3-commit history; a `--depth 1` clone → `commits === 1`.
   - Server unit suite `pnpm exec vitest run --exclude '**/*.it.test.ts'` + `pnpm typecheck` pass after T1/T2 land (checkpoint).
@@ -80,7 +87,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - `activeKeyFor` matches only `/^\/repos\/[^/]+\/onboarding(\/|$)/`.
   - Editing `vendor/ui/nav.ts` is the sanctioned exception; say so in the commit body.
 - **Owned paths:** `client/src/vendor/ui/nav.ts`, `client/src/components/app-shell/helpers.ts`, `client/src/components/app-shell/helpers.test.ts` (new), `client/src/components/app-shell/nav.test.ts`
-- **Action:** Add the item using an icon that exists in `IconName` (to verify), narrow the matcher, add the tests.
+- **Action:** Add the item with the `Workflow` icon (or `ListChecks`) — `BookOpen` is not in `IconName` and `FileText` is already used by context/conventions (`client/src/vendor/ui/icons.tsx`). Narrow the matcher, add the tests.
 - **Traps that apply:** the g-shortcut uniqueness test (`nav.test.ts:13-18`).
 - **Acceptance:**
   - WORKSPACE keys are `["pulls","onboarding-tour","context"]`.
@@ -97,12 +104,15 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Reading path: `score = pagerank × (1 + hotness)`, `hotness = count / max` (0 when max is 0); ties by path asc; cap 8; junk excluded.
   - Critical paths: seeds = top non-junk files; junk dropped anywhere in a chain; plus route files; de-duplicated; ordered by score then path; cap 6.
   - Structure: depth ≤ 2, count desc then path, cap 40, excluding `node_modules|dist|build|coverage|.next|out|vendor|.git`.
-  - TD-4: the always-skipped directory names (`.git`, `node_modules`) live in ONE new shared constant + case-insensitive segment matcher in `server/src/modules/_shared/skipped-dirs.ts` (macOS case-insensitivity, as Project Context's guard); `buildStructure` uses it. Do not add a third literal copy. Re-pointing `project-context/service.ts` at it is out of scope (other lesson's module) — note it in the commit body.
+  - F9/TD-4: do NOT add a new skipped-dirs file. `buildStructure` imports the existing `EXCLUDED_DIRS` (`server/src/modules/repo-intel/constants.ts:17-26`) and the window uses the existing `HOTNESS_WINDOW_DAYS = 180` (`constants.ts:50`) — import only; `constants.ts` is not owned by any task. Segment match is case-insensitive.
+  - F8: no YAML/TOML parser is added (lockfiles are do-not-touch). Compose services and Makefile targets use a bounded hand-rolled line parser (top-level `services:` keys at 2-space indent; `^[A-Za-z0-9_.-]+:` targets, input capped at 64 KB). D4 also matches a service by its `image:` name (`postgres:16`), not only the service name.
+  - F10: hotness max is taken over the reading-path candidate set (ranked, non-junk files), not the whole clone (a lockfile or CHANGELOG would flatten every source file).
+  - F19: chain building skips junk targets when choosing the next hop, as well as in the seeds.
   - Routes: cap 50, ordered by file score then path.
   - Run-locally order: install, env copy, compose up (D4), dev/start. Script **names** only.
   - Computed reason: `imported by N files · rank pNN`.
   - Constants are exported `UPPER_SNAKE_CASE` at the top of `tour-facts.ts`. Outputs use `@devdigest/shared` `TourFacts` piece types.
-- **Owned paths:** `server/src/modules/repo-intel/junk-paths.ts`, `server/src/modules/repo-intel/tour-facts.ts`, `server/src/modules/_shared/skipped-dirs.ts`, `server/test/repo-intel-tour-facts.test.ts`, `server/test/repo-intel-junk-paths.test.ts`, `server/test/skipped-dirs.test.ts`
+- **Owned paths:** `server/src/modules/repo-intel/junk-paths.ts`, `server/src/modules/repo-intel/tour-facts.ts`, `server/test/repo-intel-tour-facts.test.ts`, `server/test/repo-intel-junk-paths.test.ts`
 - **Action:** Write pure functions `detectStack`, `buildStructure`, `buildRoutes`, `buildRunLocally`, `computeHotness`, `rankReadingPath`, `selectCriticalPaths`, `computedReason`. No I/O.
 - **Traps that apply:** never emit a script body (spec edge case: malicious `dev`).
 - **Acceptance:** tests reproduce each AC's Verify hint:
@@ -113,8 +123,11 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - AC-12: the hotness overtake; `test/x.ts` and `src/a.test.ts` excluded; 12 → 8.
   - AC-14: chain fixture, ≤ 6.
   - AC-21: reason format.
-  - TD-4: `skipped-dirs.test.ts` — `node_modules`, `NODE_MODULES`, `.Git` segments are skipped at any depth; `src/node_modulesx` is not; `grep -rn "node_modules" server/src/modules/repo-intel/tour-facts.ts` finds no string literal (it imports the constant).
-  - `pnpm exec vitest run test/repo-intel-tour-facts.test.ts test/repo-intel-junk-paths.test.ts test/skipped-dirs.test.ts && pnpm typecheck` pass.
+  - F9/TD-4: `grep -n "node_modules" server/src/modules/repo-intel/tour-facts.ts` finds no string literal; `NODE_MODULES/x.ts` is excluded from structure.
+  - F8: compose fixture with `image: postgres:16` under service `store` → data store; a 2-space-indented `services:` block parses; a 1 MB compose file is truncated, not crashed.
+  - F10: with `package-lock.json` at 500 commits and sources at 5–10, a source file's hotness is relative to the candidate max (≠ ~0).
+  - F19: a chain whose only continuation is a test util ends before it.
+  - `pnpm exec vitest run test/repo-intel-tour-facts.test.ts test/repo-intel-junk-paths.test.ts && pnpm typecheck` pass.
 - **Design pointer:** none
 
 ## T6 — Onboarding pure helpers, prompt, output schema, system prompt
@@ -214,6 +227,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Hotness note shown when `hotness_available: false`.
   - Skeleton: computed reasons, first-tasks message, no task cards.
   - `MermaidDiagram` with `chart="not a diagram"` shows the fallback.
+  - F15: `MermaidDiagram` has another consumer (`BlastRadiusCard/_components/BlastGraph/BlastGraph.tsx`); its tests still pass (the `fallback` prop is optional, default unchanged).
   - Full client `pnpm test` + `pnpm typecheck` pass (checkpoint).
 - **Design pointer:** plan → *Design / Client placement*
 
@@ -225,7 +239,9 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Unusable index: no state row → `no_data`; status `failed` → `failed`; status `degraded` → `degraded`; `!config.repoIntelEnabled` → `flag_off`; zero `file_rank` rows → `no_ranked_files`.
   - `source_sha = lastIndexedSha || snapshot.headSha`; every clone read happens at `source_sha` through `container.repoSnapshot`.
   - Churn window per D2.
-  - `files_total = stats.totalCandidates ?? null`, `bounded = (stats.bounded ?? 0) > 0`.
+  - F4 (replaces D6): `files_indexed` = the real count of `file_rank` rows (NOT `stats.filesIndexed`: `pipeline/incremental.ts:245-262` sets it to prior + slice and double-counts); `files_total = stats.totalCandidates ?? null` and `bounded` come from `stats` only when present (an incremental refresh drops them) — otherwise `files_total: null`, `bounded: false`, and the client shows "N files" plus "coverage unknown since the last refresh", never a guessed M.
+  - F7: if `git cat-file -e <lastIndexedSha>^{commit}` fails (force-push, shallow resync), the index is unusable: add `unusable_reason: sha_missing` (T1's enum gets it) → skeleton `index_degraded`, 0 LLM calls.
+  - F20: `lastIndexedSha === ''` (never indexed, `service.ts:198`) → `index_sha: null`.
   - README candidates: `README.md`, `readme.md`, `README` at the root.
   - Hotness is **not** written to `file_rank`.
 - **Owned paths:** `server/src/modules/repo-intel/service.ts`, `server/src/modules/repo-intel/types.ts`, `server/src/modules/repo-intel/repository.ts`, `server/src/modules/repo-intel/README.md`, `server/test/repo-intel-tour-facts.it.test.ts`
@@ -243,7 +259,8 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Two collections are `toEqual`, with 0 calls on a counting fake LLM.
   - Depth-1 clone → `hotness_available: false` and pagerank order.
   - Each of the five unusable cases gives its reason.
-  - Partial/bounded index → `files_total`/`bounded`.
+  - Partial/bounded index → `files_total`/`bounded`; after an incremental refresh (stats without `totalCandidates`) → `files_total: null` and `files_indexed` equals the `file_rank` row count (F4).
+  - A `lastIndexedSha` absent from the clone → `sha_missing` (F7).
   - `classifyPaths` returns file/dir/missing.
   - 5,000-file fixture collects in ≤ 3,000 ms (env slack documented).
   - Full server `pnpm test` (Docker) + `pnpm typecheck` pass, incl. conventions, blast and repo-intel tests (checkpoint).
@@ -280,9 +297,9 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Covers:** AC-4, AC-6, AC-15, AC-16, AC-17, AC-19, AC-20, AC-23, AC-24, AC-25, AC-26, AC-28, AC-30, AC-37
 - **Fixed decisions:**
   - Narrow deps: `repo`, `facts`, `classifyPaths`, `indexSha`, `cloneExists`, `llm`, `resolveModel`, `tokenizer`, `log`. No `Container`, no `modules/repo-intel` import.
-  - TD-1: the `not_cloned` check calls the injected `cloneExists` (wired in `routes.ts` from `container.repoSnapshot.cloneExists`, T3). No `node:fs`/`fs` import and no `stat` in `routes.ts` or `service.ts` (do not copy `project-context/routes.ts`'s `cloneExists`).
-  - The service is built once per plugin in `routes.ts`, so the in-flight `Map` is shared. Set the inflight entry **before** the first await; delete it in `finally`.
-  - Order: 404 → 409 `not_cloned` → 409 `generation_in_progress` → facts → `index_degraded` skeleton (no `resolveModel`/`llm` call) → `ConfigError` → `llm_unavailable` → `prompt.assembled` log → `withTimeout(completeStructured({singleAttempt:true, maxRetries:0, timeoutMs:90_000}), 90_000)` → merge or `llm_failed` (usage from `err.usage` per D1) → persist → one `onboarding: generated` log line.
+  - F13/TD-1: the `not_cloned` check calls the injected `cloneExists`, wired in `routes.ts` from `container.projectDocs.exists` (existing port, `server/src/adapters/project-docs/index.ts:34`; Project Context already moved its own check onto it). No `node:fs`/`fs` import and no `stat` in `routes.ts` or `service.ts`.
+  - The service is built once per plugin in `routes.ts`, so the in-flight `Map` is shared. F12: after the 404 and `not_cloned` checks, do `if (inflight.has(id)) throw 409; inflight.set(id, …)` in ONE synchronous block (no `await` between check and set); one `try/finally` wraps everything after the set and deletes the entry. F11: the 90 s limit is enforced by the per-request `timeout` from T2 (and an `AbortSignal` where the SDK takes one), not only by `withTimeout`, so a released lock never leaves a billable request running.
+  - Order: 404 → 409 `not_cloned` → 409 `generation_in_progress` → facts → `index_degraded` skeleton (no `resolveModel`/`llm` call) → `ConfigError` → `llm_unavailable` → `prompt.assembled` log → `completeStructured({singleAttempt:true, timeoutMs:90_000})` (+ `withTimeout` as a backstop) → merge or `llm_failed` (usage from `err.usage` per D1) → persist → one `onboarding: generated` log line.
   - A skeleton with a stored `llm` tour → `setLastAttempt` and return the stored tour. A successful `llm` tour clears `last_attempt`.
   - Add `ConflictError` (409, code) to `platform/errors.ts`.
 - **Owned paths:** `server/src/modules/onboarding/service.ts`, `server/src/modules/onboarding/routes.ts`, `server/src/modules/index.ts`, `server/src/platform/errors.ts`, `server/test/onboarding-service.test.ts`, `server/test/onboarding.it.test.ts`, `server/test/routes-smoke.test.ts` (only if it lists routes)
@@ -312,13 +329,13 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 ## T13 — e2e flow 13
 - **Executor / Type / Depends-on / Risk:** implementer writes; parent runs / e2e / T11, T12 / medium
 - **Covers:** AC-1, AC-4 or AC-6, AC-2/AC-21 (when a seeded clone exists)
-- **Fixed decisions:** assert text, not landmark roles. The e2e stack has no LLM key, so a cloned and indexed seed produces an `llm_unavailable` skeleton. The `clonePath: null` seed shows `not_cloned`.
+- **Fixed decisions:** assert text, not landmark roles. F3: the e2e stack does NOT guarantee the absence of an LLM key (`scripts/e2e.sh` sets no isolated HOME; secrets come from `~/.devdigest/secrets.json` and `process.env`, `server/src/platform/config.ts:84,91`), and clone presence depends on the real `~/.devdigest/workspace`. So flow 13 NEVER clicks Generate (a paid, nondeterministic call). It asserts only: `/onboarding` unchanged, sidebar navigation, breadcrumb, and the `not_cloned` state of the `clonePath: null` seed (`acme/payments-api`, `server/src/db/seed.ts:217,436`). Isolating HOME/clone dir in `e2e.sh` is a separate, explicit change, not done here.
 - **Owned paths:** `e2e/specs/13-onboarding-tour.flow.json`
 - **Action:** Follow `e2e/docs/writing-flows.md`:
   1. `/onboarding` still shows Add repository.
   2. Click sidebar "Onboarding Tour" for a seeded repo.
-  3. Assert the breadcrumb and one deterministic state.
-  - Which seed has a clone is unverified; check before writing the flow.
+  3. Assert the breadcrumb and the `not_cloned` state (no Generate click, F3).
+  - The `clonePath: null` seed is the only state the flow relies on.
 - **Traps that apply:** CI Chrome role differences (commits `a8756e8`, `ddc72d6`; `e2e/INSIGHTS.md`).
 - **Acceptance:** `./scripts/e2e.sh` passes, incl. an unchanged `06-onboarding` and the new `13-onboarding-tour`.
 - **Design pointer:** none

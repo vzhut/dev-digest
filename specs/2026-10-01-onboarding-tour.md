@@ -536,6 +536,8 @@ Context plan's Delivery log (`specs/2026-10-01-project-context.plan.md`, deferre
 | TD-5 | A document edit is local-only and is lost when a clone sync overwrites it (known limitation by design; durable edit = commit/push/PR is a separate feature) | `specs/2026-10-01-project-context.md` (Non-goals, AC-32) | A resync (`/resync`) also invalidates the tour's index commit (stale notice, AC-30) — the same overwrite mechanism |
 | TD-6 | Project Context's CI/GitHub runner path is out of scope; only studio (`source: 'local'`) runs are covered | `specs/2026-10-01-project-context.md` | Same gap applies to the tour: it is studio-only |
 
+Update (cross-model review): TD-1 is already fixed upstream (`ProjectDocs.exists`, `adapters/project-docs/index.ts:34`) and the tour reuses it; for TD-4 the existing `EXCLUDED_DIRS` (`repo-intel/constants.ts:17-26`) is reused instead of a new constant.
+
 Disposition: TD-1 and TD-4 are to be avoided (not repeated) by the onboarding tasks; TD-2, TD-3, TD-5 and TD-6 are not
 fixed by this feature.
 

@@ -56,7 +56,7 @@ Verdicts are against the repo as it is on `lesson-05` (HEAD `9d0572b`). Spec pro
 | AC-24 | clear (with gap note) | The edge case "the other tab … then shows the new tour on refetch" needs the client to refetch while `status: generating` | T8 polls `GET` every 2 s while `generating` |
 | AC-25 | clear | — | T8, T11, T12 |
 | AC-26 | clear | Depends on D1 for the failed-call tokens | T1, T2, T12 |
-| AC-27 | ambiguous (minor) | The format for `llm_calls: 0` is not given: `formatTokensTotal` returns null for 0/0 and `formatCostUsd(0)` gives `$0.0000` (`client/src/lib/format-cost.ts:20-25`) | **D3** — T11 |
+| AC-27 | ambiguous (minor) | The format for `llm_calls: 0` is not given: `formatTokensTotal(0,0)` returns `"0 tok"` (null only for null/undefined) and `formatCostUsd(0)` gives `$0.0000`; the UI special-cases `llm_calls === 0` (`client/src/lib/format-cost.ts:20-25`) | **D3** — T11 |
 | AC-28 | ambiguous (minor) | The `cost=$x` precision is not stated. AC-29 needs the log cost to "equal" the badge, but the badge rounds to 2–4 decimals | **D5** — T6, T14 |
 | AC-29 | clear (manual) | Manual demo; no automated check possible | T14 (parent) |
 | AC-30 | clear (contract gap) | The page needs the repo's current index sha; the spec's boundary contract lists only `{status, tour?}` ("exact names are for the plan") | `GET` response adds `index_sha` (T1, T12, T11) |
@@ -167,10 +167,10 @@ sequenceDiagram
 ```
 
 ### Placement (onion rings)
-- `adapters/git/repo-snapshot.ts`: driven adapter, local port `RepoSnapshot` (like `RepoFileReader`, `Tokenizer`), also exposing `cloneExists(cloneDir)` so no module or route touches `fs` for the clone check (TD-1). It runs `git` with `execFile` (no shell), validates refs, caps sizes and never surfaces raw error text.
+- `adapters/git/repo-snapshot.ts`: driven adapter, local port `RepoSnapshot` (like `RepoFileReader`, `Tokenizer`), It runs `git` with `execFile` (no shell), validates refs, caps sizes and never surfaces raw error text.
 - `modules/repo-intel/junk-paths.ts`, `tour-facts.ts`: domain, pure, no I/O. They take arrays and maps and return contract-shaped data. Unit-tested with plain inputs.
 - `modules/repo-intel/service.ts` (`collectTourFacts`, `classifyPaths`): application facade. It reads through `RepoIntelRepository` and `container.repoSnapshot`, calls the pure builders, and keeps the existing service-locator constructor (D3 deviation tolerated, not copied).
-- `modules/onboarding/`: new module with **narrow deps** (`onion-architecture` §5). `routes.ts` builds `new OnboardingService({ repo: new OnboardingRepository(app.container.db), cloneExists: (dir) => app.container.repoSnapshot.cloneExists(dir), facts: (id) => app.container.repoIntel.collectTourFacts(id), classifyPaths: …, llm: (p) => app.container.llm(p), resolveModel: (w, id) => app.container.resolveFeatureModel(w, id), tokenizer: app.container.tokenizer, log: app.log })` **once per plugin**, so the in-flight map is shared across requests. No `modules/repo-intel/*` import. The `TourFacts` type comes from `@devdigest/shared`.
+- `modules/onboarding/`: new module with **narrow deps** (`onion-architecture` §5). `routes.ts` builds `new OnboardingService({ repo: new OnboardingRepository(app.container.db), cloneExists: (dir) => app.container.projectDocs.exists(dir), facts: (id) => app.container.repoIntel.collectTourFacts(id), classifyPaths: …, llm: (p) => app.container.llm(p), resolveModel: (w, id) => app.container.resolveFeatureModel(w, id), tokenizer: app.container.tokenizer, log: app.log })` **once per plugin**, so the in-flight map is shared across requests. No `modules/repo-intel/*` import. The `TourFacts` type comes from `@devdigest/shared`.
 - `helpers.ts`, `prompt.ts`, `output-schema.ts`: domain (pure). `repository.ts`: Drizzle only, every query scoped by `workspaceId` through a join on `repos`.
 
 ### Client placement (`frontend-architecture`)
@@ -240,7 +240,7 @@ client/src/app/repos/[repoId]/onboarding/
     - Full server unit suite `pnpm exec vitest run --exclude '**/*.it.test.ts'` and `pnpm typecheck` pass (checkpoint, after T1/T2 land).
 
 - **T4** — Sidebar item and active-key fix (covers AC-1)
-  - **Action:** Add `{ key: "onboarding-tour", label: "Onboarding Tour", icon: <existing icon, e.g. "BookOpen" if present in `IconName`, else "FileText">, href: "/repos/:repoId/onboarding" }` between `pulls` and `context` in `client/src/vendor/ui/nav.ts` (the sanctioned vendor exception; say so in the commit body). Narrow `activeKeyFor` to `/^\/repos\/[^/]+\/onboarding(\/|$)/` for `onboarding-tour`, so `/onboarding` → `""`. Add nav-order and `activeKeyFor` unit cases.
+  - **Action:** Add `{ key: "onboarding-tour", label: "Onboarding Tour", icon: "Workflow" (or "ListChecks"; `BookOpen` is not in `IconName`, `FileText` is taken), href: "/repos/:repoId/onboarding" }` between `pulls` and `context` in `client/src/vendor/ui/nav.ts` (the sanctioned vendor exception; say so in the commit body). Narrow `activeKeyFor` to `/^\/repos\/[^/]+\/onboarding(\/|$)/` for `onboarding-tour`, so `/onboarding` → `""`. Add nav-order and `activeKeyFor` unit cases.
   - **Package / Type:** client — ui
   - **Executor:** implementer
   - **Skills to use:** frontend-architecture, react-testing-library
@@ -265,7 +265,7 @@ client/src/app/repos/[repoId]/onboarding/
       - `rankReadingPath(rankRows, hotness)` (`score = pagerank × (1 + hotness)`, ties by path, junk excluded, cap 8).
       - `selectCriticalPaths(chains, routeFiles, scoreOf)` (seeds = top non-junk, junk dropped anywhere, de-dup, order by score then path, cap 6).
       - `computedReason(inbound, percentile)` → `"imported by N files · rank pNN"`.
-    - Constants (caps, window 180 days, excluded dirs, data-store names) in `modules/repo-intel/constants.ts`? **No**, that file is owned by T10's area. Put them at the top of `tour-facts.ts` as exported `UPPER_SNAKE_CASE` constants.
+    - Constants: the existing `EXCLUDED_DIRS` and `HOTNESS_WINDOW_DAYS` in `modules/repo-intel/constants.ts` are imported (not owned by any task); new caps and data-store names go at the top of `tour-facts.ts` as exported `UPPER_SNAKE_CASE` constants.
   - **Package / Type:** server — backend (domain)
   - **Executor:** implementer
   - **Skills to use:** onion-architecture, typescript-expert
@@ -481,7 +481,7 @@ client/src/app/repos/[repoId]/onboarding/
       - `generate(workspaceId, repoId, correlationId)`, steps in order:
         1. 404 when the repo is not in the workspace.
         2. 409 `not_cloned`.
-        3. 409 `generation_in_progress` if `inflight.has(repoId)`; set inflight synchronously before any await.
+        3. 409 `generation_in_progress` if `inflight.has(repoId)`; check-and-set inflight in one synchronous block after the 404/`not_cloned` checks (no `await` between check and set), one `try/finally` after the set.
         4. `facts`.
         5. Skeleton `index_degraded` if `!usable` (no `llm`/`resolveModel` call).
         6. `resolveModel(workspaceId,'onboarding')` then `llm(provider)`; `ConfigError` → skeleton `llm_unavailable`.
@@ -528,7 +528,7 @@ client/src/app/repos/[repoId]/onboarding/
   - **Action:** Write `e2e/specs/13-onboarding-tour.flow.json`, following `e2e/docs/writing-flows.md`:
     1. Open `/onboarding` and assert the Add-repository screen is unchanged (flow 06 untouched).
     2. Navigate to a seeded repo's Onboarding Tour via the sidebar.
-    3. Assert the heading/breadcrumb and one deterministic state: `not_cloned` for the `clonePath: null` seed, or empty state + click *Generate tour*. The e2e stack has no LLM key, so a cloned+indexed seed produces an `llm_unavailable` skeleton banner and five cards.
+    3. Assert the heading/breadcrumb and one deterministic state: `not_cloned` for the `clonePath: null` seed, or empty state + click *Generate tour*. The e2e stack does NOT guarantee the absence of an LLM key (review F3), so flow 13 never clicks Generate; it asserts only the `not_cloned` state.
     - Assert text, not landmark roles (`e2e/INSIGHTS.md`, commit `a8756e8`).
   - **Package / Type:** e2e
   - **Executor:** implementer (writes the flow); **parent** runs it in T14
@@ -672,14 +672,42 @@ The spec added TD-1..TD-6 after the plan was first written. They are not ACs; th
 
 | TD | Handling | Task |
 |---|---|---|
-| TD-1 clone check via fs in a route | **Avoid.** `RepoSnapshot` gets `cloneExists(cloneDir)`; the onboarding service takes it as a narrow dep wired from `container.repoSnapshot`; no `fs` import in `modules/onboarding`. Grep in T12 acceptance. | T3, T12 |
+| TD-1 clone check via fs in a route | **Already fixed upstream** (`ProjectDocs.exists`, `adapters/project-docs/index.ts:34`). The onboarding service takes `cloneExists` as a narrow dep wired from `container.projectDocs.exists`; no `fs` import in `modules/onboarding`. Grep in T12 acceptance. | T12 |
 | TD-2 oversized view | **Avoid.** `OnboardingTourView.tsx` ≤ 200 lines; logic in a hook file, rows as sub-components. `wc -l` in T11 acceptance. | T11 |
 | TD-3 unused hooks/keys | **Avoid.** T8 exports only what T11 uses; every export grepped for a consumer after T11. | T8, T11 |
-| TD-4 duplicated skipped-dirs literal | **Avoid a third copy.** New shared `server/src/modules/_shared/skipped-dirs.ts` (case-insensitive `.git`/`node_modules` segment matcher) used by `buildStructure`. Re-pointing Project Context's own literal at it is **not** done here (another lesson's module, no scope creep) — noted in the T5 commit body as a follow-up. | T5 |
+| TD-4 duplicated skipped-dirs literal | **Avoid another copy.** No new file: `buildStructure` imports the existing `EXCLUDED_DIRS` (`repo-intel/constants.ts:17-26`). Re-pointing the other literals (`adapters/project-docs/fs.ts:8`, `project-context/service.ts:84`, `codeindex/ripgrep.ts:26`) is not done here — follow-up. | T5 |
 | TD-5 local-only edits lost on clone sync | **Not fixed.** No task; the tour's stale notice (AC-30) already covers a re-synced clone. | — |
 | TD-6 CI/GitHub runner out of scope | **Not fixed.** The tour is studio-only; nothing to build. | — |
 
-Effects on the DAG: none (T3 and T5 only gain owned files / acceptance lines; `_shared/skipped-dirs.ts` is owned by T5 alone, and `_shared/redact.ts` stays with T6). T12 reaches `RepoSnapshot` through T10 → T3, so no new edge is needed.
+Effects on the DAG: none (after review F9/F13 neither `_shared/skipped-dirs.ts` nor `RepoSnapshot.cloneExists` exists; T12 wires `container.projectDocs.exists`).
+
+## Cross-model review amendments (2026-10-01, reviewer: opus; verdict APPROVE WITH CHANGES)
+Applied to the task cards and, where the phase text above differs, **this section wins**.
+
+| F | Sev | Amendment | Task |
+|---|---|---|---|
+| F1 | HIGH | `singleAttempt` also passes per-request `{maxRetries: 0, timeout}` in all three providers (SDKs retry twice by default); optional injected `fetch`; a 500/429 test per provider asserts exactly 1 call | T2 |
+| F2 | HIGH | `server/test/contracts.test.ts:14,169-183` parses the removed `Onboarding`; T1 owns that file and removes the case | T1 |
+| F3 | HIGH | Flow 13 never clicks Generate; only nav, breadcrumb and `not_cloned` | T13 |
+| F4 | MED | N = real `file_rank` count; M only from `stats.totalCandidates`; else "coverage unknown" (D6 revised) | T10, T11 |
+| F5 | MED | churn: `-z`, `core.quotePath=false`, exclude shallow-boundary commits; depth-2 test | T3 |
+| F6 | MED | explicit `maxBuffer`/stream for `ls-tree`; `truncated: true`, never empty | T3 |
+| F7 | MED | `lastIndexedSha` missing in clone → `sha_missing` → `index_degraded` | T1, T10 |
+| F8 | MED | no YAML dependency: bounded hand-rolled line parsers; data stores also matched by `image:` (D4) | T5 |
+| F9 | MED | reuse `EXCLUDED_DIRS`/`HOTNESS_WINDOW_DAYS`; no new skipped-dirs file (TD-4 corrected) | T5 |
+| F10 | MED | hotness max over the reading-path candidate set | T5 |
+| F11 | MED | the 90 s limit is a per-request `timeout`/abort, `withTimeout` is only a backstop | T2, T12 |
+| F12 | LOW | check-and-set of inflight in one synchronous block | T12 |
+| F13 | LOW | TD-1 already fixed upstream; drop `RepoSnapshot.cloneExists`, wire `container.projectDocs.exists` | T3, T12 |
+| F14 | LOW | `formatTokensTotal(0,0)` = `"0 tok"`; UI special-cases 0 calls | T11 |
+| F15 | LOW | `MermaidDiagram` is also used by `BlastGraph`; its tests join T9 acceptance | T9 |
+| F16 | LOW | test path `reviewer-core/test/openrouter.test.ts` | T2 |
+| F17 | LOW | nav icon `Workflow`/`ListChecks` | T4 |
+| F18 | LOW | a wave's checkpoint task runs after its sibling tasks land (parent triggers it last) | all |
+| F19 | LOW | chain building skips junk at each hop | T5 |
+| F20 | LOW | `lastIndexedSha === ''` → `index_sha: null` | T10 |
+
+Reviewer's D1–D6 verdict: D1, D2 (+F5), D3 (+F14), D5 accepted; D4 accepted with the `image:` match; D6 replaced (F4); AC-14 interpretation accepted (+F19).
 
 ## Open decisions
 All are non-blocking; the tasks already use the default.
@@ -688,7 +716,7 @@ All are non-blocking; the tasks already use the default.
 - **D3:** How the usage badge renders a tour with `llm_calls: 0`. — recommended default: "0 LLM calls", with tokens and cost omitted and the tooltip "No LLM call was made". AC-27's format applies when `llm_calls === 1`. — used by: T11.
 - **D4:** AC-11 details. — recommended default: a compose service counts as a data store when its name equals or starts with one of `postgres`, `postgresql`, `mysql`, `mariadb`, `mongo`, `mongodb`, `redis`, `valkey`, `memcached`, `elasticsearch`, `opensearch`, `rabbitmq`, `kafka`, `minio`, `db`. The dev/start script comes from the root `package.json`; if the root has neither script, take the first `package.json` one level down (alphabetical) that has `dev`, then `start`, run as `<pm> --dir <sub> dev` for pnpm, `cd <sub> && <pm> run dev` otherwise. `.env.example` is checked at the root and one level down. — used by: T5.
 - **D5:** The `cost=` format in the AC-28 log line, and what "equal to the badge" means in AC-29. — recommended default: `cost=$<cost_usd.toFixed(6)>` (or `cost=unknown`); AC-29 is satisfied when the log value rounded with the badge's `formatCostUsd` rule equals the badge text. — used by: T6, T14.
-- **D6:** The "N of M files" subtitle when `files_total` is unknown. — recommended default: `M = files_total ?? files_indexed + files_skipped`; if `M === N` while the index is `partial`, show only the coverage note. — used by: T10, T11.
+- **D6:** The "N of M files" subtitle when `files_total` is unknown. — revised by review F4: N = real `file_rank` row count; `M = stats.totalCandidates` only when present; otherwise "N files" + "coverage unknown since the last refresh" (no guessed M). — used by: T10, T11.
 
 ## Handoff to reviewers
 - **Architecture reviewer:**
