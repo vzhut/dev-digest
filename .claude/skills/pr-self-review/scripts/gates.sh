@@ -116,7 +116,7 @@ fi
 # Repository files are exempt — that is where Drizzle belongs. The exemption has to be by
 # PATH: filtering the whole `path:line:content` string on the word dropped any route-handler
 # line that merely mentioned "repository", which is the sort of hole nobody notices.
-added_in 'server/src/modules/[^:]*\.ts' "$P_ONION_DB" | grep -vE '^server/src/modules/[^:]*/repository(/[^:]*)?\.ts:' | while IFS= read -r l; do
+added_in 'server/src/modules/[^:]*\.ts' "$P_ONION_DB" | grep -vE '^server/src/modules/[^:]*/repository(/[^:]*)?\.ts:' | grep -vE "$P_ONION_REPO_WIRING" | while IFS= read -r l; do
   say HIGH R7-onion "${l%%:*}" "Drizzle or db/schema in a non-repository file: ${l#*:}"
 done
 added_in 'server/src/modules/' "$(onion_cross_module_re)" | while IFS= read -r l; do
@@ -239,6 +239,14 @@ for f in $(grep -E '^(client/src/lib/|server/src/modules/.*/(helpers|findings)\.
     changed "^${base}\.test\.ts$" || grep -qE "$(basename "$base")" <(grep '\.test\.ts' "$FILES" || true) || \
       say HIGH R12-tests "$f" "new exported logic with no test touched in this change"
   fi
+done
+
+# ---- R14 client value import from the @devdigest/shared barrel ----------------------------
+# Type-only imports are erased; a value import (`import { SomeSchema } from "@devdigest/shared"`)
+# makes webpack resolve the barrel's `./contracts/x.js` specifiers and fail, while vitest and tsc
+# stay green (client/INSIGHTS.md, 2026-10-01). Mirror the few rules locally instead.
+added_in 'client/src/' "$P_CLIENT_SHARED_RUNTIME" | grep -vE "$P_CLIENT_SHARED_TYPE_ONLY" | grep -v '^client/src/vendor/' | while IFS= read -r l; do
+  say HIGH R14-client-shared "${l%%:*}" "runtime import from the @devdigest/shared barrel breaks webpack (tests and tsc stay green) — use 'import type' or mirror the rule locally: ${l#*:}"
 done
 
 # ---- R13 spec drift ----------------------------------------------------------------------

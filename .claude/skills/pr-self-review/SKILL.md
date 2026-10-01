@@ -2,8 +2,8 @@
 name: pr-self-review
 description: "Reviews all open local changes against this repo's own skills and returns a PASS/BLOCK verdict before anything reaches GitHub. Use it whenever the user is about to push, open, update or merge a pull request, asks 'is this ready to push?', 'can I open the PR?', 'review my changes', 'check my diff', or wants a pre-PR / pre-commit / pre-merge check — and always when a `git push`, `gh pr create` or `gh pr merge` was just blocked with a 'pr-self-review' message. It routes each changed file to the matching project skills (frontend-architecture, react-best-practices, next-best-practices, react-testing-library for client files; onion-architecture, fastify-best-practices, drizzle-orm-patterns, postgresql-table-design for server files; zod, typescript-expert, security across both), runs deterministic gates (typecheck, unit tests, migrations, lockfiles, shared contracts, i18n keys, secrets), and blocks the push when anything CRITICAL is found. Not for reviewing an already-open PR on GitHub or someone else's code."
 metadata:
-  version: 1.2.2
-  updated: 2026-09-24
+  version: 1.3.0
+  updated: 2026-10-01
   stack: node@22, pnpm@10, git, bash@3.2
 ---
 
@@ -45,7 +45,7 @@ deserves:
 
 | Tier | What ran | Cost | Opens |
 |---|---|---|---|
-| `gates` | R1–R13 only — typecheck, unit tests, and the deterministic rules | ~12s | `git push` |
+| `gates` | R1–R14 only — typecheck, unit tests, and the deterministic rules | ~12s | `git push` |
 | `full` | the gates **plus** the routed skill review of every added line | minutes | `gh pr create` · `gh pr merge` · `gh pr ready` |
 
 A `full` marker satisfies both, and a marker written before tiers existed is read as `full`.
@@ -88,7 +88,7 @@ If there is nothing to review, say so and stop — don't invent findings for an 
 bash .claude/skills/pr-self-review/scripts/gates.sh            # add --full if given
 ```
 
-Rules R1–R13, in `scripts/gates.sh` with a comment each: typecheck and unit tests of the
+Rules R1–R14, in `scripts/gates.sh` with a comment each: typecheck and unit tests of the
 touched packages, migrations, lockfiles, the two `@devdigest/shared` copies, prompt docs,
 the onion greps on added lines, secrets, linter configs, the module registry, i18n keys,
 missing tests, spec drift. Findings land in `.git/pr-self-review/work/gate-findings.tsv` as
@@ -229,7 +229,7 @@ point every week gets bypassed.
 |---|---|
 | `scripts/collect.sh` | change set + fingerprint; writes `work/` |
 | `scripts/route.sh` | file → group + skills (bash 3.2 compatible) |
-| `scripts/gates.sh` | R1–R13, the no-LLM rules |
+| `scripts/gates.sh` | R1–R14, the no-LLM rules |
 | `scripts/check-marker.sh` | the gate used by both hooks (`--hook` for Claude Code, `--require full`) |
 | `scripts/patterns.sh` | every gate regex, in one place so it can be tested |
 | `scripts/self-test.sh` | asserts each pattern's reach on the real tree + a fire/silent table |
