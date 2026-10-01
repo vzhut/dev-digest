@@ -7,6 +7,7 @@ import type {
   StructuredRequest,
   StructuredResult,
   ChatMessage,
+  StructuredCallUsage,
 } from '@devdigest/shared';
 import { withRetry, withTimeout } from '../../platform/resilience.js';
 import { toJsonSchema, parseWithRepair } from '../../platform/structured.js';
@@ -42,8 +43,8 @@ export class AnthropicProvider implements LLMProvider {
   readonly id = 'anthropic' as const;
   private client: Anthropic;
 
-  constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
+  constructor(apiKey: string, opts: { fetch?: typeof fetch } = {}) {
+    this.client = new Anthropic({ apiKey, ...(opts.fetch ? { fetch: opts.fetch } : {}) });
   }
 
   async listModels(): Promise<ModelInfo[]> {
@@ -89,7 +90,8 @@ export class AnthropicProvider implements LLMProvider {
   async completeStructured<T>(req: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const jsonSchema = toJsonSchema(req.schema, req.schemaName);
     const toolName = req.schemaName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const maxRetries = req.maxRetries ?? 2;
+    const single = req.singleAttempt === true;
+    const maxRetries = single ? 0 : (req.maxRetries ?? 2);
     const { system, rest } = splitSystem(req.messages);
     const messages: Anthropic.MessageParam[] = [...rest];
     let tokensIn = 0;
@@ -97,26 +99,26 @@ export class AnthropicProvider implements LLMProvider {
     let lastRaw = '';
 
     for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-      const res = await withRetry(() =>
-        withTimeout(
-          this.client.messages.create({
-            model: req.model,
-            system: system || undefined,
-            messages,
-            max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
-            temperature: req.temperature ?? 0,
-            tools: [
-              {
-                name: toolName,
-                description: `Return the result as ${req.schemaName}.`,
-                input_schema: jsonSchema.schema as Anthropic.Tool.InputSchema,
-              },
-            ],
-            tool_choice: { type: 'tool', name: toolName },
-          }),
-          req.timeoutMs ?? DEFAULT_TIMEOUT,
-        ),
-      );
+      const body = {
+        model: req.model,
+        system: system || undefined,
+        messages,
+        max_tokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
+        temperature: req.temperature ?? 0,
+        tools: [
+          {
+            name: toolName,
+            description: `Return the result as ${req.schemaName}.`,
+            input_schema: jsonSchema.schema as Anthropic.Tool.InputSchema,
+          },
+        ],
+        tool_choice: { type: 'tool' as const, name: toolName },
+      };
+      const timeout = req.timeoutMs ?? DEFAULT_TIMEOUT;
+      // Single-attempt: no withRetry, and the SDK's own retries (default 2) are off.
+      const res = single
+        ? await this.client.messages.create(body, { maxRetries: 0, timeout })
+        : await withRetry(() => withTimeout(this.client.messages.create(body), timeout));
       tokensIn += res.usage.input_tokens;
       tokensOut += res.usage.output_tokens;
 
@@ -144,9 +146,18 @@ export class AnthropicProvider implements LLMProvider {
       });
     }
 
-    throw new ExternalServiceError('Anthropic structured output failed schema validation', {
+    const err = new ExternalServiceError('Anthropic structured output failed schema validation', {
       raw: lastRaw,
     });
+    if (single) {
+      const usage: StructuredCallUsage = {
+        tokensIn,
+        tokensOut,
+        costUsd: estimateCost(req.model, tokensIn, tokensOut),
+      };
+      Object.assign(err, { usage });
+    }
+    throw err;
   }
 
   async embed(): Promise<number[][]> {

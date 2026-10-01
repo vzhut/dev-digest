@@ -6,6 +6,7 @@ import type {
   CompletionResult,
   StructuredRequest,
   StructuredResult,
+  StructuredCallUsage,
 } from '@devdigest/shared';
 import { withRetry, withTimeout } from '../../platform/resilience.js';
 import { toJsonSchema, parseWithRepair } from '../../platform/structured.js';
@@ -48,8 +49,8 @@ export class OpenAIProvider implements LLMProvider {
   readonly id = 'openai' as const;
   private client: OpenAI;
 
-  constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+  constructor(apiKey: string, opts: { fetch?: typeof fetch } = {}) {
+    this.client = new OpenAI({ apiKey, ...(opts.fetch ? { fetch: opts.fetch } : {}) });
   }
 
   async listModels(): Promise<ModelInfo[]> {
@@ -87,27 +88,30 @@ export class OpenAIProvider implements LLMProvider {
 
   async completeStructured<T>(req: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const jsonSchema = toJsonSchema(req.schema, req.schemaName);
-    const maxRetries = req.maxRetries ?? 2;
+    const single = req.singleAttempt === true;
+    const maxRetries = single ? 0 : (req.maxRetries ?? 2);
     const messages = [...req.messages];
     let tokensIn = 0;
     let tokensOut = 0;
     let lastRaw = '';
 
     for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-      const res = await withRetry(() =>
-        withTimeout(
-          this.client.chat.completions.create({
-            model: req.model,
-            messages,
-            ...tuningParams(req.model, req.temperature, req.maxTokens),
-            response_format: {
-              type: 'json_schema',
-              json_schema: { name: req.schemaName, schema: jsonSchema.schema, strict: true },
-            },
-          }),
-          req.timeoutMs ?? DEFAULT_TIMEOUT,
-        ),
-      );
+      const body = {
+        model: req.model,
+        messages,
+        ...tuningParams(req.model, req.temperature, req.maxTokens),
+        response_format: {
+          type: 'json_schema' as const,
+          json_schema: { name: req.schemaName, schema: jsonSchema.schema, strict: true },
+        },
+      };
+      const timeout = req.timeoutMs ?? DEFAULT_TIMEOUT;
+      // Single-attempt: no withRetry, and the SDK's own retries (default 2) are off.
+      const res = single
+        ? await this.client.chat.completions.create(body, { maxRetries: 0, timeout })
+        : await withRetry(() =>
+            withTimeout(this.client.chat.completions.create(body), timeout),
+          );
       lastRaw = res.choices?.[0]?.message?.content ?? '';
       tokensIn += res.usage?.prompt_tokens ?? 0;
       tokensOut += res.usage?.completion_tokens ?? 0;
@@ -129,9 +133,18 @@ export class OpenAIProvider implements LLMProvider {
       messages.push({ role: 'user', content: parsed.repromptMessage });
     }
 
-    throw new ExternalServiceError('OpenAI structured output failed schema validation', {
+    const err = new ExternalServiceError('OpenAI structured output failed schema validation', {
       raw: lastRaw,
     });
+    if (single) {
+      const usage: StructuredCallUsage = {
+        tokensIn,
+        tokensOut,
+        costUsd: estimateCost(req.model, tokensIn, tokensOut),
+      };
+      Object.assign(err, { usage });
+    }
+    throw err;
   }
 
   async embed(texts: string[]): Promise<number[][]> {
