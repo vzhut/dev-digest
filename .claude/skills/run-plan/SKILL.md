@@ -58,7 +58,18 @@ to `implementation-planner` instead.
 
 1. **Single-agent mode** (plan header says so): one `implementer` call, handed the whole plan
    path; it runs tasks in dependency order itself.
-2. **Multi-agent mode:** walk the plan's Execution waves table. Per wave:
+2. **Multi-agent mode:** first, **one environment precheck** (retro 2026-10-01: Docker was down
+   through waves 2–4 and was re-reported six times): `docker ps`, `lsof -nP -iTCP:3000,3001
+   -sTCP:LISTEN`, and whether any task needs `.it` tests, migrations or e2e. If a needed
+   dependency is missing, ask the user **once** (`AskUserQuestion`) before wave 1 instead of
+   starting tasks that will stall. If something already listens on 3000, `next dev` owns
+   `client/.next`: **no agent runs `pnpm build` in `client/`** (it corrupts the dev server's
+   cache; see `client/INSIGHTS.md`) — say so in every client task prompt. Then walk the plan's
+   Execution waves table. Per wave:
+   - Before a package's full-suite checkpoint, check for orphaned test workers from earlier
+     agents (`ps aux | grep '[v]itest'`; kill only ones no live agent owns, `kill -9` if needed).
+     A hung worker once made the server suite take 16 min instead of ~35 s and failed a timing
+     test.
    - Run the wave's baseline check yourself once per touched package (the exact commands from
      `AGENTS.md` "Commands — verify"), keep the one-line pass/fail summary.
    - Spawn one `implementer` per task, **in parallel** (one message, multiple `Agent` calls) when
@@ -113,7 +124,12 @@ Each round:
    files) run in parallel.
 4. **Re-review:** regenerate the diff against the *same* base ref; re-spawn **fresh**
    `architecture-reviewer` and `plan-verifier` instances (cheap, read-only — a fresh read avoids
-   anchoring on what last round claimed was fixed).
+   anchoring on what last round claimed was fixed). **Make the re-review incremental** (retro
+   2026-10-01: four full re-reads of a ~95%-identical 9.7k-line diff cost 95–168k tokens each):
+   from round 2 on, hand the architecture-reviewer the diff of **only the files the fix round
+   touched** plus the previous round's findings list and say "everything else was clean last
+   round"; keep the full diff only for the final pass before Phase E. The plan-verifier still
+   re-checks every item but should be told which items changed.
 5. Exit on zero qualifying findings, or the cap.
 
 Delivery-log line per round: `Phase C round <k> — <date> — fixed <n>, carried <n>, new <n>`.
