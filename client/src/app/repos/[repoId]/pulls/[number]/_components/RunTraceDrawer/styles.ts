@@ -97,6 +97,7 @@ export const s = {
   configProvider: { color: "var(--text-secondary)" } satisfies CSSProperties,
   specsWrap: { display: "flex", gap: 6, flexWrap: "wrap" } satisfies CSSProperties,
   specsNone: { color: "var(--text-muted)" } satisfies CSSProperties,
+  specMissing: { color: "var(--warn, var(--text-muted))", fontWeight: 600 } satisfies CSSProperties,
   spec: { fontSize: 12, color: "var(--text-secondary)" } satisfies CSSProperties,
   statsRow: { display: "flex", gap: 10 } satisfies CSSProperties,
   rawPre: {

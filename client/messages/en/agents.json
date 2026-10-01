@@ -49,6 +49,7 @@
     "tabs": {
       "config": "Config",
       "skills": "Skills",
+      "context": "Context",
       "evals": "Evals",
       "stats": "Stats",
       "ci": "CI"
@@ -112,6 +113,18 @@
     "save": "Save skills",
     "saving": "Saving…",
     "savedToast": "Agent skills saved"
+  },
+  "context": {
+    "title": "Project context",
+    "hint": "Attach repository documents (specs, docs, insights) this agent should read. Order matters; each document's full text is read at run time.",
+    "noRepo": {
+      "title": "No repository selected",
+      "body": "Select a repository to attach its project documents."
+    },
+    "loadError": "Could not load project context.",
+    "save": "Save context",
+    "saving": "Saving…",
+    "savedToast": "Agent context saved"
   },
   "mount": {
     "body": "Mount point for {owner}. The Agent Editor shell + tab routing are wired by A2 — {owner} renders this tab."

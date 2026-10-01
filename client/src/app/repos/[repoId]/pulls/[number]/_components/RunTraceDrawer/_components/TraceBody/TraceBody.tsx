@@ -42,11 +42,24 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
               {trace.specs_read.length === 0 ? (
                 <span style={s.specsNone}>{t("trace.config.none")}</span>
               ) : (
-                trace.specs_read.map((sp, i) => (
-                  <span key={i} className="mono" style={s.spec}>
-                    {sp}
-                  </span>
-                ))
+                trace.specs_read.map((sp, i) =>
+                  typeof sp === "string" ? (
+                    <span key={i} className="mono" style={s.spec}>
+                      {sp}
+                    </span>
+                  ) : (
+                    <span key={i} className="mono" style={s.spec}>
+                      {sp.path} · {t("trace.config.specTokens", { count: sp.tokens })}
+                      {sp.status === "missing" && (
+                        <span style={s.specMissing}>
+                          {" "}
+                          [{t("trace.config.specMissing")}
+                          {sp.reason ? `: ${sp.reason}` : ""}]
+                        </span>
+                      )}
+                    </span>
+                  ),
+                )
               )}
             </div>
           </Row>

@@ -11,6 +11,7 @@ import { ConfirmModal } from "@/components/confirm-modal";
 import { SKILL_TYPES } from "./constants";
 import { canSave, formFromSkill, isDirty, type SkillForm } from "./helpers";
 import { SkillBodyEditor } from "./_components/SkillBodyEditor";
+import { ProjectContextSection } from "./_components/ProjectContextSection";
 import { s } from "./styles";
 
 /** Config tab — name, directive description, type, markdown body, global enabled, save/delete. */
@@ -107,6 +108,7 @@ export function ConfigTab({ skill }: { skill: Skill }) {
           </span>
         )}
       </div>
+      <ProjectContextSection skillId={skill.id} />
       <div style={s.danger}>
         <div>
           <div style={s.dangerTitle}>{t("config.deleteTitle")}</div>
