@@ -2,7 +2,7 @@
 
 A local MCP server (stdio transport only) that lets a coding agent such as Claude Code drive DevDigest. It calls the DevDigest REST API (default `http://localhost:3001`) and holds no secrets.
 
-Tools: `list_agents`, `run_agent_on_pr`, `get_findings`, `get_conventions`, `get_blast_radius` (stub: always an error until the L04 homework).
+Tools: `list_agents`, `run_agent_on_pr`, `get_findings`, `get_conventions`, `get_blast_radius`.
 
 ## Setup
 ```bash
@@ -38,7 +38,7 @@ Project-scoped `.mcp.json` at the repo root:
 | `run_agent_on_pr` | Runs one agent on a PR and **blocks up to 120 s** (stops polling at ~115 s so it answers before Claude Code auto-backgrounds the call). Paid LLM call; at most 5 per 10 min per process. On timeout it returns `{status:"running", run_id}` and the run keeps going: read it later with `get_findings`. |
 | `get_findings` | Findings of a finished review (verdict, blockers, score, severity-sorted). Free. |
 | `get_conventions` | The repo's accepted conventions. Never triggers extraction. |
-| `get_blast_radius` | Stub: always an error until the L04 homework. |
+| `get_blast_radius` | Impact map of a PR from the repo index: changed symbols, callers, affected endpoints/crons. Free. Flags an incomplete index instead of reporting zero impact. |
 
 Args are flat: `repo` = `owner/name`, `pr` = number, `agent` = name or id.
 

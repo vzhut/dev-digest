@@ -33,6 +33,7 @@ import type {
   BlastCallerRow,
   BlastChangedSymbol,
   BlastResult,
+  DegradedReason,
   FileRankRow,
   IndexResult,
   IndexState,
@@ -52,6 +53,7 @@ import {
   RESYNC_JOB_KIND,
   SUPPORTED_EXT,
 } from './constants.js';
+import { capCallersPerSymbol, declFilesBySymbol, importersWithin } from './helpers.js';
 import { runFullIndex, type IndexPayload } from './pipeline/full.js';
 import { runIncremental } from './pipeline/incremental.js';
 
@@ -220,17 +222,19 @@ export class RepoIntelService implements RepoIntel {
   async getBlastRadius(repoId: string, changedFiles: string[]): Promise<BlastResult> {
     // T3: serve from the persistent index when it's built. Falls through to the
     // ripgrep best-effort below when the flag is off / index is absent.
-    if (this.container.config.repoIntelEnabled && changedFiles.length > 0) {
+    const flagOn = this.container.config.repoIntelEnabled;
+    if (flagOn && changedFiles.length > 0) {
       const persistent = await this.tryPersistentBlast(repoId, changedFiles);
       if (persistent) return persistent;
     }
 
+    const reason: DegradedReason = flagOn ? 'no_data' : 'flag_off';
     const empty: BlastResult = {
       changedSymbols: [],
       callers: [],
       impactedEndpoints: [],
       degraded: true,
-      reason: 'no_data',
+      reason,
     };
 
     const repo = await this.repo.getRepoBasics(repoId);
@@ -294,12 +298,18 @@ export class RepoIntelService implements RepoIntel {
       }
     }
 
+    const capped = capCallersPerSymbol(
+      callerRows,
+      declFilesBySymbol(changedSymbols),
+      MAX_CALLERS_PER_SYMBOL,
+    );
     return {
       changedSymbols,
-      callers: callerRows,
+      callers: capped.callers,
+      callerTotals: capped.totals,
       impactedEndpoints: [...endpoints],
       degraded: true,
-      reason: 'no_data',
+      reason,
     };
   }
 
@@ -369,21 +379,57 @@ export class RepoIntelService implements RepoIntel {
         rank: c.rank,
       });
     }
-    callers.sort((a, b) => b.rank - a.rank);
 
-    // Precomputed facts per caller file (endpoints + crons), so consumers can
-    // attribute them to the changed symbol whose callers live in that file.
-    const facts = await this.repo.getFileFacts(repoId, callerFiles);
+    // Widen endpoint attribution to a caller's importers (T10, OD2): a caller
+    // is often a service method with no route decorator of its own — the
+    // route file that imports it is where `extractEndpoints` actually finds
+    // the HTTP verb+path. `BFS_DEPTH - 1` importer hops from the caller
+    // (hop 1 is the caller itself, per the changed symbol).
+    const changedFileSet = new Set(changedFiles);
+    const edges = callerFiles.length > 0 ? await this.repo.getEdges(repoId) : [];
+    const importersByCaller = importersWithin(edges, callerFiles, BFS_DEPTH - 1);
+    const importerFiles = new Set<string>();
+    for (const importers of importersByCaller.values()) {
+      for (const file of importers) {
+        if (changedFileSet.has(file)) continue; // never attribute back to a changed file
+        importerFiles.add(file);
+      }
+    }
+
+    // Precomputed facts per caller file AND its importers (endpoints + crons).
+    const factFiles = [...new Set([...callerFiles, ...importerFiles])];
+    const facts = await this.repo.getFileFacts(repoId, factFiles);
     const endpoints = new Set<string>();
-    const factsByFile: Record<string, { endpoints: string[]; crons: string[] }> = {};
+    const factsByRawFile = new Map<string, { endpoints: string[]; crons: string[] }>();
     for (const f of facts) {
-      factsByFile[f.filePath] = { endpoints: f.endpoints, crons: f.crons };
+      factsByRawFile.set(f.filePath, { endpoints: f.endpoints, crons: f.crons });
       for (const e of f.endpoints) endpoints.add(e);
     }
 
+    // factsByFile[callerFile] = union of the caller's own facts and its
+    // importers' facts (within depth). Missing entries are treated as empty.
+    const factsByFile: Record<string, { endpoints: string[]; crons: string[] }> = {};
+    for (const callerFile of callerFiles) {
+      const own = factsByRawFile.get(callerFile);
+      const importerFacts = [...(importersByCaller.get(callerFile) ?? [])]
+        .map((f) => factsByRawFile.get(f))
+        .filter((f): f is { endpoints: string[]; crons: string[] } => f != null);
+      factsByFile[callerFile] = {
+        endpoints: [...new Set([...(own?.endpoints ?? []), ...importerFacts.flatMap((f) => f.endpoints)])],
+        crons: [...new Set([...(own?.crons ?? []), ...importerFacts.flatMap((f) => f.crons)])],
+      };
+    }
+
+    // Cap per changed symbol (not globally) AFTER facts were gathered for all caller files.
+    const capped = capCallersPerSymbol(
+      callers,
+      declFilesBySymbol(changedSymbols),
+      MAX_CALLERS_PER_SYMBOL,
+    );
     return {
       changedSymbols,
-      callers: callers.slice(0, MAX_CALLERS_PER_SYMBOL),
+      callers: capped.callers,
+      callerTotals: capped.totals,
       impactedEndpoints: [...endpoints],
       factsByFile,
       degraded: false,

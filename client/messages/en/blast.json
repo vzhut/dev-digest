@@ -9,10 +9,53 @@
     "tree": "tree",
     "graph": "graph"
   },
+  "tree": {
+    "expand": "Show callers for {symbol}",
+    "collapse": "Hide callers for {symbol}"
+  },
+  "resync": {
+    "button": "Resync",
+    "pending": "Requesting resync…",
+    "queued": "Resync queued — refreshing…",
+    "failed": "Resync failed to queue"
+  },
   "callerCount": "{count} callers",
   "noDownstream": "{count} changed symbol(s), no downstream callers found.",
   "graph": {
     "empty": "No downstream callers to graph.",
     "ariaLabel": "Blast radius graph"
+  },
+  "title": "Blast radius",
+  "loading": "Loading blast radius…",
+  "error": "Couldn't load the blast radius.",
+  "retry": "Retry",
+  "noSymbols": "No indexed symbols in the changed files.",
+  "unattributed": "Endpoints affected but not attributable to a specific symbol",
+  "callersShown": "showing {shown} of {total}",
+  "section": {
+    "endpoints": "Endpoints",
+    "crons": "Cron / jobs"
+  },
+  "openAt": "Open {file}:{line} on GitHub",
+  "incomplete": {
+    "title": "Index incomplete",
+    "status": "({status})",
+    "reason": {
+      "flag_off": "the repo-intel index is turned off",
+      "index_failed": "the index failed to build",
+      "index_partial": "the index only partially covers this repo",
+      "repo_too_large": "the repo is too large to index fully",
+      "no_data": "no index data is available yet"
+    }
+  },
+  "history": {
+    "title": "Prior PRs",
+    "empty": "No prior merged PRs touched these files.",
+    "error": "Couldn't load prior PRs.",
+    "overlap": "{count} overlapping files",
+    "degraded": {
+      "no_github_token": "Connect a GitHub token to see prior PRs.",
+      "github_error": "GitHub couldn't be reached to look up prior PRs."
+    }
   }
 }

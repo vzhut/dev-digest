@@ -31,6 +31,8 @@ export const WAIT_SECONDS_MAX = 120;
 export const DEFAULT_FINDINGS_LIMIT = 20;
 export const DEFAULT_CONVENTIONS_LIMIT = 30;
 export const DEFAULT_BLAST_LIMIT = 20;
+/** Per-symbol caller cap, independent of the `limit` arg (which only bounds `downstream`). */
+export const BLAST_CALLERS_SHOWN = 5;
 
 const repo = z.string().min(1).max(200).describe(FIELD_DESCRIPTIONS.repo);
 const pr = z.number().int().positive().describe(FIELD_DESCRIPTIONS.pr);
@@ -179,23 +181,28 @@ export interface ConventionsResult {
 }
 
 /**
- * Final (homework) success shape of `get_blast_radius`; field names mirror the shared
- * `BlastRadius` (server/src/vendor/shared/contracts/brief.ts:48-76). Not emitted yet —
- * the tool returns an error until the L04 homework fills it.
+ * Success shape of `get_blast_radius` (L04 homework, implemented). `status` distinguishes a
+ * full repo index (`ok`) from one that may be missing callers (`incomplete`, with `reason`
+ * and a resync `hint`) — an incomplete index is never reported as an empty/zero-impact map.
+ * Field names mirror the shared `BlastRadius` (server/src/vendor/shared/contracts/brief.ts:48-76).
  */
 export interface BlastRadiusResult {
-  status: 'ok';
+  status: 'ok' | 'incomplete';
   repo: string;
   pr: number;
   summary: string;
+  index_status?: string;
+  reason?: string;
   changed_symbols: { name: string; file: string; kind: string }[];
   downstream: {
     symbol: string;
+    file?: string;
     callers_total: number;
     callers: { name: string; where: string }[];
     endpoints_affected?: string[];
     crons_affected?: string[];
   }[];
+  unattributed_endpoints?: string[];
   shown: number;
   total: number;
   hint?: string;

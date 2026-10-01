@@ -20,7 +20,7 @@ const DESCRIPTIONS: Record<string, string> = {
   get_conventions:
     "Get the repo's accepted coding conventions (rule + evidence location), extracted earlier. Use to match repo style before reviewing or writing code.",
   get_blast_radius:
-    "Impact map of a PR: changed symbols and their dependents. NOT IMPLEMENTED yet: always returns an error, never 'zero impact'.",
+    'Impact map of a PR from the repo index: changed symbols, callers as file:line, affected HTTP endpoints and crons. Free, no LLM. Flags an incomplete index; never reports it as zero impact.',
 };
 const FIELDS: Record<string, string> = {
   repo: 'owner/name, e.g. acme/api',

@@ -80,8 +80,20 @@ export interface BlastResult {
    * Per-caller-file precomputed facts, so consumers (blast) can attribute
    * endpoints/crons to the changed symbol whose callers live in that file.
    * Present on the persistent (non-degraded) path; absent otherwise.
+   *
+   * Each entry is the UNION of the caller file's own facts and the facts of
+   * its importers within `BFS_DEPTH - 1` hops of the import graph (T10):
+   * hop 1 from the changed symbol is the caller itself, hop 2 is a file that
+   * imports the caller (e.g. the route file that wires up the caller's
+   * service), and so on up to `BFS_DEPTH`. An importer beyond that depth is
+   * never attributed.
    */
   factsByFile?: Record<string, { endpoints: string[]; crons: string[] }>;
+  /**
+   * Caller count per changed symbol BEFORE the per-symbol cap (`callers` holds at
+   * most MAX_CALLERS_PER_SYMBOL per symbol). Absent on results that predate the cap.
+   */
+  callerTotals?: Record<string, number>;
   degraded?: boolean;
   reason?: DegradedReason;
 }

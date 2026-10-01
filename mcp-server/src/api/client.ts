@@ -9,6 +9,7 @@ import {
   ActiveRun,
   Agent,
   ApiErrorBody,
+  BlastRadius,
   ConventionsResponse,
   PrMeta,
   PullDetail,
@@ -37,6 +38,7 @@ export interface ApiClient {
   listReviews(prId: string, o?: RequestOptions): Promise<ReviewRecord[]>;
   startReview(prId: string, agentId: string, o?: RequestOptions): Promise<ReviewRunResponse>;
   getConventions(repoId: string, o?: RequestOptions): Promise<ConventionsResponse>;
+  getBlast(prId: string, o?: RequestOptions): Promise<BlastRadius>;
 }
 
 export interface ApiClientOptions {
@@ -109,6 +111,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     listReviews: (prId, o) => get(`/pulls/${id(prId)}/reviews`, z.array(ReviewRecord), o),
     startReview: (prId, agentId, o) => request('POST', `/pulls/${id(prId)}/review`, ReviewRunResponse, { body: { agentId }, signal: o?.signal }),
     getConventions: (repoId, o) => get(`/repos/${id(repoId)}/conventions`, ConventionsResponse, o),
+    getBlast: (prId, o) => get(`/pulls/${id(prId)}/blast`, BlastRadius, o),
   };
 }
 
