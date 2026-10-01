@@ -22,11 +22,14 @@ export function isTextInput(el: EventTarget | null): boolean {
   );
 }
 
+/** Only the repo-scoped tour route; a bare `/onboarding` (or a lookalike) is not the tour. */
+const ONBOARDING_PATH = /^\/repos\/[^/]+\/onboarding(\/|$)/;
+
 /** Derive the active sidebar key from the current pathname. */
 export function activeKeyFor(pathname: string): string {
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname.includes("/multi-agent")) return "multi-agent";
-  if (pathname.includes("/onboarding")) return "onboarding-tour";
+  if (ONBOARDING_PATH.test(pathname)) return "onboarding-tour";
   if (pathname.includes("/context")) return "context";
   if (pathname.includes("/conventions")) return "conventions";
   if (pathname.includes("/pulls")) return "pulls";
