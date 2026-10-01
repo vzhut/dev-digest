@@ -48,8 +48,9 @@ export interface ProjectDoc {
 }
 
 export function wrapUntrusted(label: string, content: string): string {
-  // strip any attempt to close our own delimiter
-  const safe = content.replaceAll('</untrusted>', '<\\/untrusted>');
+  // strip any attempt to close our own delimiter — case-insensitive and whitespace-tolerant,
+  // because a model reads `</UNTRUSTED>` or `</untrusted >` as the closing tag too
+  const safe = content.replace(/<\/\s*untrusted\s*>/gi, '<\\/untrusted>');
   // the label is attacker-influenced for project docs (file paths): keep it inside its attribute
   const safeLabel = label.replaceAll('"', '&quot;').replace(/[\r\n]/g, '');
   return `<untrusted source="${safeLabel}">\n${safe}\n</untrusted>`;
