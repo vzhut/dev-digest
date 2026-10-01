@@ -167,10 +167,10 @@ sequenceDiagram
 ```
 
 ### Placement (onion rings)
-- `adapters/git/repo-snapshot.ts`: driven adapter, local port `RepoSnapshot` (like `RepoFileReader`, `Tokenizer`). It runs `git` with `execFile` (no shell), validates refs, caps sizes and never surfaces raw error text.
+- `adapters/git/repo-snapshot.ts`: driven adapter, local port `RepoSnapshot` (like `RepoFileReader`, `Tokenizer`), also exposing `cloneExists(cloneDir)` so no module or route touches `fs` for the clone check (TD-1). It runs `git` with `execFile` (no shell), validates refs, caps sizes and never surfaces raw error text.
 - `modules/repo-intel/junk-paths.ts`, `tour-facts.ts`: domain, pure, no I/O. They take arrays and maps and return contract-shaped data. Unit-tested with plain inputs.
 - `modules/repo-intel/service.ts` (`collectTourFacts`, `classifyPaths`): application facade. It reads through `RepoIntelRepository` and `container.repoSnapshot`, calls the pure builders, and keeps the existing service-locator constructor (D3 deviation tolerated, not copied).
-- `modules/onboarding/`: new module with **narrow deps** (`onion-architecture` §5). `routes.ts` builds `new OnboardingService({ repo: new OnboardingRepository(app.container.db), facts: (id) => app.container.repoIntel.collectTourFacts(id), classifyPaths: …, llm: (p) => app.container.llm(p), resolveModel: (w, id) => app.container.resolveFeatureModel(w, id), tokenizer: app.container.tokenizer, log: app.log })` **once per plugin**, so the in-flight map is shared across requests. No `modules/repo-intel/*` import. The `TourFacts` type comes from `@devdigest/shared`.
+- `modules/onboarding/`: new module with **narrow deps** (`onion-architecture` §5). `routes.ts` builds `new OnboardingService({ repo: new OnboardingRepository(app.container.db), cloneExists: (dir) => app.container.repoSnapshot.cloneExists(dir), facts: (id) => app.container.repoIntel.collectTourFacts(id), classifyPaths: …, llm: (p) => app.container.llm(p), resolveModel: (w, id) => app.container.resolveFeatureModel(w, id), tokenizer: app.container.tokenizer, log: app.log })` **once per plugin**, so the in-flight map is shared across requests. No `modules/repo-intel/*` import. The `TourFacts` type comes from `@devdigest/shared`.
 - `helpers.ts`, `prompt.ts`, `output-schema.ts`: domain (pure). `repository.ts`: Drizzle only, every query scoped by `workspaceId` through a join on `repos`.
 
 ### Client placement (`frontend-architecture`)
@@ -654,6 +654,7 @@ The parent passes the wave's checkpoint result (one line per package, e.g. `serv
 - **Multi-agent note:** only the wave's `Checkpoint: yes` task per package runs the full suite. Every other task runs its own targeted test files plus typecheck, so the parent should not expect a full-suite result from a non-checkpoint task.
 
 ## Risks & traps
+- **Project Context tech debt repeated by copy-paste** (TD-1 fs call in a route, TD-4 skipped-dirs literal, TD-2 large view, TD-3 unused hooks) → each has a grep/`wc -l` acceptance line in T3/T5/T8/T11/T12 (see *Tech debt from Project Context*).
 - **Real paid LLM calls from tests** on a machine with `OPENROUTER_API_KEY` → inject fail-fast fakes for all three providers in every onboarding test — `server/INSIGHTS.md:229-245`.
 - **Changing provider defaults** while adding `singleAttempt` would alter every review → T2 keeps the flag-off path byte-for-byte and relies on the existing provider tests — `reviewer-core/src/llm/openrouter.ts:60-123`.
 - **Junk-path fix changes conventions sampling** (root `test/`, `tests/`, `migrations/` now excluded) → called out in the T10 commit body; conventions `.it` tests run in the T10 checkpoint — `server/src/modules/conventions/service.ts:95`.
@@ -665,6 +666,20 @@ The parent passes the wave's checkpoint result (one line per package, e.g. `serv
 - **Legacy `onboarding.json` i18n strings and `onboarding.system.md`** describe a different tour → both fully replaced (T9/T11, T6) — `client/messages/en/onboarding.json`, `server/src/prompts/onboarding.system.md:1`.
 - **Mermaid model output** can carry `click`/HTML → `securityLevel: "strict"` already set (`MermaidDiagram.tsx:37`); no change to that.
 - **git on untrusted repos**: no shell, `--` before paths, refs validated, symlink blobs blocked, output caps — T3.
+
+## Tech debt from Project Context (spec → *Tech debt carried from Project Context*)
+The spec added TD-1..TD-6 after the plan was first written. They are not ACs; the plan handles them as follows (the task cards carry the matching acceptance lines).
+
+| TD | Handling | Task |
+|---|---|---|
+| TD-1 clone check via fs in a route | **Avoid.** `RepoSnapshot` gets `cloneExists(cloneDir)`; the onboarding service takes it as a narrow dep wired from `container.repoSnapshot`; no `fs` import in `modules/onboarding`. Grep in T12 acceptance. | T3, T12 |
+| TD-2 oversized view | **Avoid.** `OnboardingTourView.tsx` ≤ 200 lines; logic in a hook file, rows as sub-components. `wc -l` in T11 acceptance. | T11 |
+| TD-3 unused hooks/keys | **Avoid.** T8 exports only what T11 uses; every export grepped for a consumer after T11. | T8, T11 |
+| TD-4 duplicated skipped-dirs literal | **Avoid a third copy.** New shared `server/src/modules/_shared/skipped-dirs.ts` (case-insensitive `.git`/`node_modules` segment matcher) used by `buildStructure`. Re-pointing Project Context's own literal at it is **not** done here (another lesson's module, no scope creep) — noted in the T5 commit body as a follow-up. | T5 |
+| TD-5 local-only edits lost on clone sync | **Not fixed.** No task; the tour's stale notice (AC-30) already covers a re-synced clone. | — |
+| TD-6 CI/GitHub runner out of scope | **Not fixed.** The tour is studio-only; nothing to build. | — |
+
+Effects on the DAG: none (T3 and T5 only gain owned files / acceptance lines; `_shared/skipped-dirs.ts` is owned by T5 alone, and `_shared/redact.ts` stays with T6). T12 reaches `RepoSnapshot` through T10 → T3, so no new edge is needed.
 
 ## Open decisions
 All are non-blocking; the tasks already use the default.

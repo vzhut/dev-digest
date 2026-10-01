@@ -56,6 +56,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Covers:** AC-7, AC-8, AC-11, AC-12, AC-13, AC-17, NFR Security
 - **Fixed decisions:**
   - Local port in `server/src/adapters/git/repo-snapshot.ts` with: `headSha(cloneDir)`, `commitDate(cloneDir, sha)`, `listFiles(cloneDir, sha)` → `{files, truncated}` (cap 200,000), `readText(cloneDir, sha, path, maxBytes)` → `ok|missing|blocked` (symlink blob/unsafe path → `blocked`), and `churn(cloneDir, sha, since)` → `{commits, counts}`.
+  - Also `cloneExists(cloneDir)` → `boolean` (TD-1): the single place that touches the filesystem for "is there a clone"; the onboarding service/routes call it through the port and never import `node:fs`.
   - Git blobs only, never the working tree.
   - `execFile` (no shell), refs validated `/^(HEAD|[0-9a-f]{7,40})$/i`, `--` before paths, timeouts set, raw error text never surfaced.
 - **Owned paths:** `server/src/adapters/git/repo-snapshot.ts`, `server/src/adapters/mocks.ts`, `server/src/platform/container.ts`, `server/test/repo-snapshot.test.ts`
@@ -64,6 +65,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Acceptance:**
   - Temp-repo test: a `README.md` symlink to `/etc/hosts` → `blocked`.
   - `../x` and `-x` → `blocked`.
+  - `cloneExists` → `true` for a real clone dir, `false` for a missing path and for a path that is not a git repo; `FakeRepoSnapshot` exposes it too (TD-1).
   - `listFiles` returns every committed path.
   - `churn` counts on a 3-commit history; a `--depth 1` clone → `commits === 1`.
   - Server unit suite `pnpm exec vitest run --exclude '**/*.it.test.ts'` + `pnpm typecheck` pass after T1/T2 land (checkpoint).
@@ -95,11 +97,12 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Reading path: `score = pagerank × (1 + hotness)`, `hotness = count / max` (0 when max is 0); ties by path asc; cap 8; junk excluded.
   - Critical paths: seeds = top non-junk files; junk dropped anywhere in a chain; plus route files; de-duplicated; ordered by score then path; cap 6.
   - Structure: depth ≤ 2, count desc then path, cap 40, excluding `node_modules|dist|build|coverage|.next|out|vendor|.git`.
+  - TD-4: the always-skipped directory names (`.git`, `node_modules`) live in ONE new shared constant + case-insensitive segment matcher in `server/src/modules/_shared/skipped-dirs.ts` (macOS case-insensitivity, as Project Context's guard); `buildStructure` uses it. Do not add a third literal copy. Re-pointing `project-context/service.ts` at it is out of scope (other lesson's module) — note it in the commit body.
   - Routes: cap 50, ordered by file score then path.
   - Run-locally order: install, env copy, compose up (D4), dev/start. Script **names** only.
   - Computed reason: `imported by N files · rank pNN`.
   - Constants are exported `UPPER_SNAKE_CASE` at the top of `tour-facts.ts`. Outputs use `@devdigest/shared` `TourFacts` piece types.
-- **Owned paths:** `server/src/modules/repo-intel/junk-paths.ts`, `server/src/modules/repo-intel/tour-facts.ts`, `server/test/repo-intel-tour-facts.test.ts`, `server/test/repo-intel-junk-paths.test.ts`
+- **Owned paths:** `server/src/modules/repo-intel/junk-paths.ts`, `server/src/modules/repo-intel/tour-facts.ts`, `server/src/modules/_shared/skipped-dirs.ts`, `server/test/repo-intel-tour-facts.test.ts`, `server/test/repo-intel-junk-paths.test.ts`, `server/test/skipped-dirs.test.ts`
 - **Action:** Write pure functions `detectStack`, `buildStructure`, `buildRoutes`, `buildRunLocally`, `computeHotness`, `rankReadingPath`, `selectCriticalPaths`, `computedReason`. No I/O.
 - **Traps that apply:** never emit a script body (spec edge case: malicious `dev`).
 - **Acceptance:** tests reproduce each AC's Verify hint:
@@ -110,7 +113,8 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - AC-12: the hotness overtake; `test/x.ts` and `src/a.test.ts` excluded; 12 → 8.
   - AC-14: chain fixture, ≤ 6.
   - AC-21: reason format.
-  - `pnpm exec vitest run test/repo-intel-tour-facts.test.ts test/repo-intel-junk-paths.test.ts && pnpm typecheck` pass.
+  - TD-4: `skipped-dirs.test.ts` — `node_modules`, `NODE_MODULES`, `.Git` segments are skipped at any depth; `src/node_modulesx` is not; `grep -rn "node_modules" server/src/modules/repo-intel/tour-facts.ts` finds no string literal (it imports the constant).
+  - `pnpm exec vitest run test/repo-intel-tour-facts.test.ts test/repo-intel-junk-paths.test.ts test/skipped-dirs.test.ts && pnpm typecheck` pass.
 - **Design pointer:** none
 
 ## T6 — Onboarding pure helpers, prompt, output schema, system prompt
@@ -173,6 +177,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Mutation success writes `{status:"ready", tour, index_sha: previous}` and invalidates.
   - 409 `generation_in_progress` → invalidate and surface the error.
   - Types from shared via `import type` only.
+  - TD-3: export only what T11 consumes; no speculative hooks or query-key entries (Project Context left `useContextRoots` / `contextKeys.roots` unused).
 - **Owned paths:** `client/src/lib/api.ts`, `client/src/lib/hooks/onboarding.ts`, `client/src/lib/hooks/onboarding.test.tsx`
 - **Action:** Add `api.getOnboardingTour`, `api.generateOnboardingTour`, `useOnboardingTour`, `useGenerateOnboardingTour`.
 - **Traps that apply:** `client/INSIGHTS.md:125` (barrel value imports); precedent `client/src/lib/hooks/context.test.tsx`.
@@ -181,6 +186,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - Mutation posts to `/repos/r1/onboarding/generate`.
   - 409 → refetch.
   - Polling stops at `ready`.
+  - TD-3: every export of `hooks/onboarding.ts` (and each key in its key factory) is imported by T11's view — checked after T11 with `grep -rn "<name>" client/src` per export; an unused one is removed.
   - `pnpm exec vitest run src/lib/hooks/onboarding.test.tsx && pnpm typecheck` pass.
 - **Design pointer:** none
 
@@ -263,8 +269,9 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
   - `OnboardingTourView` covers the states loading / error+retry / not_cloned / none / generating / ready, with `useRepoNotFound`.
   - Sub-components `TourUsageBadge`, `TourBanners` (skeleton ×3, partial, last-attempt, stale) and `TourToc`.
   - Pure `helpers.ts` + tests.
+  - TD-2: keep `OnboardingTourView.tsx` ≤ 200 lines (Project Context's view reached ~292 and needed an extraction); state/guard logic goes in a `use…` hook file and repeated rows in their own sub-component rather than growing the view.
 - **Traps that apply:** don't import `@devdigest/ui` in `page.tsx` (`client/INSIGHTS.md:56`); `fireEvent` (`client/INSIGHTS.md:85`); run `pnpm build` only with no `next dev` running (`client/INSIGHTS.md:135`).
-- **Acceptance:** view test (hooks mocked at `@/lib/hooks/onboarding`) covers AC-1, 2, 3, 4, 5, 6, 22, 23, 24, 25, 27 ("1 LLM call · 9,119 tok · $0.0012"; null → "—"), 30, 31 ("5000 of 12450"), and 36 (clipboard URL with `#reading-path`, no API call). Full client `pnpm test`, `pnpm typecheck` and `pnpm build` pass (checkpoint).
+- **Acceptance:** view test (hooks mocked at `@/lib/hooks/onboarding`) covers AC-1, 2, 3, 4, 5, 6, 22, 23, 24, 25, 27 ("1 LLM call · 9,119 tok · $0.0012"; null → "—"), 30, 31 ("5000 of 12450"), and 36 (clipboard URL with `#reading-path`, no API call). TD-2: `wc -l` of `OnboardingTourView.tsx` ≤ 200. TD-3: no unused export in `hooks/onboarding.ts` (see T8). Full client `pnpm test`, `pnpm typecheck` and `pnpm build` pass (checkpoint).
 - **Design pointer:** plan → *Design / Client placement*
 
 ## T12 — Onboarding service, routes, registration
@@ -272,7 +279,8 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
 - **Checkpoint:** yes (server)
 - **Covers:** AC-4, AC-6, AC-15, AC-16, AC-17, AC-19, AC-20, AC-23, AC-24, AC-25, AC-26, AC-28, AC-30, AC-37
 - **Fixed decisions:**
-  - Narrow deps: `repo`, `facts`, `classifyPaths`, `indexSha`, `llm`, `resolveModel`, `tokenizer`, `log`. No `Container`, no `modules/repo-intel` import.
+  - Narrow deps: `repo`, `facts`, `classifyPaths`, `indexSha`, `cloneExists`, `llm`, `resolveModel`, `tokenizer`, `log`. No `Container`, no `modules/repo-intel` import.
+  - TD-1: the `not_cloned` check calls the injected `cloneExists` (wired in `routes.ts` from `container.repoSnapshot.cloneExists`, T3). No `node:fs`/`fs` import and no `stat` in `routes.ts` or `service.ts` (do not copy `project-context/routes.ts`'s `cloneExists`).
   - The service is built once per plugin in `routes.ts`, so the in-flight `Map` is shared. Set the inflight entry **before** the first await; delete it in `finally`.
   - Order: 404 → 409 `not_cloned` → 409 `generation_in_progress` → facts → `index_degraded` skeleton (no `resolveModel`/`llm` call) → `ConfigError` → `llm_unavailable` → `prompt.assembled` log → `withTimeout(completeStructured({singleAttempt:true, maxRetries:0, timeoutMs:90_000}), 90_000)` → merge or `llm_failed` (usage from `err.usage` per D1) → persist → one `onboarding: generated` log line.
   - A skeleton with a stored `llm` tour → `setLastAttempt` and return the stored tour. A successful `llm` tour clears `last_attempt`.
@@ -297,7 +305,7 @@ Fixed decisions used by several cards (plan → Open decisions; defaults in forc
     - `clone_path` null → 409 `not_cloned`, and `GET` → `not_cloned`.
     - Every AC-26 field after `llm`, skeleton-by-index and skeleton-by-failure generations.
     - `GET` returns `index_sha`.
-  - Onion grep checklist is clean for `modules/onboarding`.
+  - Onion grep checklist is clean for `modules/onboarding`, including TD-1: `grep -rnE "from ['\"](node:)?fs" server/src/modules/onboarding` → no match; the service test drives `not_cloned` through a fake `cloneExists`, not a temp dir.
   - Full server `pnpm test` + `pnpm typecheck` pass (checkpoint).
 - **Design pointer:** plan → *Design / Generation*, *Design / Placement*
 
