@@ -34,6 +34,7 @@ import type {
 } from '@devdigest/shared';
 import type { TicketFetcher, TicketResult } from './tickets/index.js';
 import type { RepoFileReader, RepoFileResult } from './git/repo-file-reader.js';
+import type { DocStat, ProjectDocReadResult, ProjectDocWriteResult, ProjectDocs } from './project-docs/index.js';
 import type { GitHubHistory, MergedPrsTouchingOptions, PriorPr } from './github/history.js';
 import { parseUnifiedDiff } from './git/diff-parser.js';
 
@@ -378,5 +379,46 @@ export class MockRepoFileReader implements RepoFileReader {
     if (this.blocked.includes(path)) return { status: 'blocked', reason: 'symlink not followed' };
     const text = this.files[path];
     return text === undefined ? { status: 'missing', reason: 'not found' } : { status: 'ok', text };
+  }
+}
+
+/**
+ * Project docs double: canned `path -> text` map. `list` returns the docs whose
+ * path is in the map (roots are ignored); unknown paths read as `not found`,
+ * paths in `blocked` as `outside clone`. Records the paths read.
+ */
+export class MockProjectDocs implements ProjectDocs {
+  readonly reads: string[] = [];
+  constructor(
+    private files: Record<string, string> = {},
+    private blocked: string[] = [],
+    private mtime: Date = new Date('2026-01-01T00:00:00Z'),
+  ) {}
+  async list(_cloneDir: string, _roots: string[]): Promise<DocStat[]> {
+    return Object.entries(this.files).map(([path, text]) => ({
+      path,
+      sizeBytes: Buffer.byteLength(text),
+      mtime: this.mtime,
+      text,
+    }));
+  }
+  readonly writes: Array<{ path: string; content: string }> = [];
+  async exists(_cloneDir: string): Promise<boolean> {
+    return true;
+  }
+  async write(_cloneDir: string, path: string, content: string): Promise<ProjectDocWriteResult> {
+    if (this.blocked.includes(path)) return { status: 'missing', reason: 'outside clone' };
+    if (this.files[path] === undefined) return { status: 'missing', reason: 'not found' };
+    this.files[path] = content;
+    this.writes.push({ path, content });
+    return { status: 'ok', sizeBytes: Buffer.byteLength(content) };
+  }
+  async read(_cloneDir: string, path: string): Promise<ProjectDocReadResult> {
+    this.reads.push(path);
+    if (this.blocked.includes(path)) return { status: 'missing', reason: 'outside clone' };
+    const text = this.files[path];
+    return text === undefined
+      ? { status: 'missing', reason: 'not found' }
+      : { status: 'ok', text, bytes: Buffer.byteLength(text) };
   }
 }

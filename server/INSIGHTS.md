@@ -201,6 +201,16 @@ The persistent index resolves callers through `references` rows that exclude the
 
 ## Tool & Library Notes
 
+### js-tiktoken on one long run of non-space characters is quadratic — a 1 MiB `'a'.repeat()` test fixture hangs at 100% CPU
+
+`server/src/adapters/tokenizer/index.ts` · `server/test/project-context.it.test.ts` (1 MiB write cases) · 2026-10-01
+
+A `PUT /repos/:id/context/file` test sending `'a'.repeat(1_048_576)` never finished: vitest workers sat at ~99% CPU for minutes
+because `tokenizer.count()` runs BPE over a single unbroken run of characters. Real markdown has whitespace and is fine; only
+synthetic size-limit fixtures trip it. Build boundary-size fixtures from `'ab '.repeat(n).slice(0, bytes)`. Also: the app-wide
+`bodyLimit: 1_048_576` (`src/app.ts:53`) makes a ~1 MiB JSON body a 413 before the Zod 422, so routes that must answer 422 for
+an oversize field need a larger per-route `bodyLimit`.
+
 ### Ticket fetcher validates DNS before `fetch`, but cannot pin the connect address (rebinding window remains)
 
 `server/src/adapters/tickets/http.ts:1` · 2026-09-24

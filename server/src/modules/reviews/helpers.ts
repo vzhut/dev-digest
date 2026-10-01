@@ -109,10 +109,10 @@ export function taskLine(pull: PullRow): string {
 export interface AgentSkillLinkRow {
   order: number;
   linkEnabled: boolean;
-  skill: { id: string; name: string; body: string; source: string; enabled: boolean };
+  skill: { id: string; name: string; body: string; source: string; enabled: boolean; contextPaths?: string[] };
 }
 
-export type ResolvedSkill = PromptSkill & { id: string };
+export type ResolvedSkill = PromptSkill & { id: string; contextPaths: string[] };
 
 /** Sources whose body a workspace member authored/reviewed (D4); others are wrapped <untrusted>. */
 const TRUSTED_SKILL_SOURCES = new Set(['manual', 'extracted']);
@@ -130,10 +130,11 @@ export function resolveRunSkills(links: AgentSkillLinkRow[]): ResolvedSkill[] {
       name: l.skill.name,
       body: l.skill.body,
       trusted: TRUSTED_SKILL_SOURCES.has(l.skill.source),
+      contextPaths: l.skill.contextPaths ?? [],
     }));
 }
 
-/** Strip the id so only the PromptSkill shape reaches reviewer-core. */
+/** Strip the id and context paths so only the PromptSkill shape reaches reviewer-core. */
 export function toPromptSkills(skills: ResolvedSkill[]): PromptSkill[] {
   return skills.map(({ name, body, trusted }) => ({ name, body, trusted }));
 }
