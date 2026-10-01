@@ -16,6 +16,7 @@ How to write one: `../docs/writing-flows.md`.
 | [`07-settings`](07-settings.flow.json) | Settings shows API Keys and Feature Models | both sections render | — |
 | [`08-skills`](08-skills.flow.json) | Skills page lists seeded skills, the editor opens, Stats shows the empty state, and the agent Skills tab lists linked skills | `test-coverage-nudge`, `No runs with this skill yet`, `mocking-discipline`, `2 of` | [`../../specs/skills.md`](../../specs/skills.md) |
 | [`10-pr-intent`](10-pr-intent.flow.json) | PR detail shows the seeded intent card and the out-of-scope finding scope badge | summary, list named `2 in-scope items`, `Confidence: Medium`, risk chip, missing context `specs/ratelimit.md`; Agent runs tab → `Out of scope` + `downgraded from WARNING` (never clicks Re-classify) | [`../../specs/intent-layer.md`](../../specs/intent-layer.md) |
+| [`11-pr-blast-radius`](11-pr-blast-radius.flow.json) | PR detail's Overview tab shows the Blast Radius card, deterministically degraded (seeded repo has no index state) | `Blast radius` title, `Index incomplete` marker (reason text not asserted — it differs by `REPO_INTEL_ENABLED`) | [`../../specs/blast-radius.md`](../../specs/blast-radius.md) |
 
 ## Not covered by e2e (and why)
 

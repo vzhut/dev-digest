@@ -193,6 +193,14 @@ The run exposed two real defects in the skill, both recorded above and fixed in 
 enabled the git `pre-push` hook for this clone:
 `git config core.hooksPath .claude/skills/pr-self-review/scripts`.
 
+### pr-self-review knows only four packages, and its R13 check errors on a change with no product code
+
+`.claude/skills/pr-self-review/scripts/gates.sh:69` · `gates.sh:86` · `gates.sh:245-246` · 2026-09-26
+
+Reviewing the new `mcp-server/` package, `gates.sh` passed with no findings although it had **not** typechecked, tested or lock-checked it: the per-package runs (`run_pkg …`, line 69), the lockfile list (line 86) and `route.sh` (every `mcp-server/**` file comes back as `rules-only`) only name `client`, `server`, `reviewer-core` and `e2e`. A clean gate therefore means nothing for a fifth package until it is added there; run that package's own `pnpm typecheck && pnpm test` by hand and read its source against the `security` skill yourself.
+
+Separately, `code_lines=$(grep -cE … "$ADDED" 2>/dev/null || echo 0)` (line 245) yields `0\n0` when nothing matches (`grep -c` prints `0` **and** exits 1, so `|| echo 0` prints a second one), and the next line then fails with `[: 0\n0: integer expression expected`. It is only noise today because the script keeps going, but the R13 spec-drift check is skipped in exactly the case it is meant for (a branch with no `client|server|reviewer-core` src lines). Not fixed here: changing a gate needs `self-test.sh` updated in the same commit.
+
 ## Open Questions
 
 ### Why does a real review store `confidence: 0` on every finding?

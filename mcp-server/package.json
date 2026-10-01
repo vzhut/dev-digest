@@ -1,0 +1,23 @@
+{
+  "name": "@devdigest/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DevDigest local MCP server (stdio). A thin adapter over the DevDigest REST API: list agents, run a review on a PR, read findings and conventions.",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "inspect": "npx @modelcontextprotocol/inspector tsx src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,1 @@
+export { IndexNotice } from "./IndexNotice";

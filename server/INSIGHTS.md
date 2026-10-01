@@ -136,6 +136,16 @@ weight or filter candidates whose only evidence is a config file rather than act
 
 ## Codebase Patterns
 
+### `getBlastRadius` had a global caller cap and a `partial`-index blind spot before T2/T3 (Blast Radius, L04)
+
+`server/src/modules/repo-intel/service.ts:372,386` (pre-T2) · `service.ts:320,389` (pre-T3) · `repo-intel/repository.ts:516-523` · 2026-09-27
+
+Two pre-existing facade gaps, found while building Blast Radius on top of `getBlastRadius`:
+1. The old cap was `callers.slice(0, MAX_CALLERS_PER_SYMBOL)` applied once **after** a rank sort across every symbol's callers combined — a hot symbol with 25 callers could starve a cold symbol's own 3 callers out of the slice entirely. Fixed by [[capCallersPerSymbol]] applying the cap per `viaSymbol`.
+2. The persistent path returned `degraded: false` for `index_status: 'partial'` — a partially-indexed repo read as fully trustworthy. Fixed in the blast mapper's degraded-merge rule: `degraded = result.degraded === true || state.status !== 'full'`.
+
+Still present, not fixed by this feature (out of scope): `getResolvedCallers` inner-joins `file_rank` (`repository.ts:516-523`), so a caller in a file with no rank row is silently dropped from the blast map with no `degraded` flag raised — the map can under-report without saying so.
+
 ### New fields on a jsonb-persisted contract must be `.nullish()`, not `.nullable()`
 
 `server/src/vendor/shared/contracts/trace.ts:69` · `server/src/db/schema/runs.ts:31` · 2026-09-16
@@ -182,6 +192,12 @@ then show `$0.0000` for a PR whose runs all failed instead of `—`.
 Any aggregate over `agent_runs` usage — cost, tokens, averages — must add
 `eq(t.agentRuns.status, 'done')`, not rely on NULLs. Guarded by the "counts only successful runs"
 case in `test/reviews.it.test.ts` and the failed-run assertion in `test/backfill-cost.it.test.ts`.
+
+### Callers inside a symbol's declaring file are impossible only on the persistent path
+
+`server/src/modules/repo-intel/helpers.ts` (`capCallersPerSymbol`) · `server/test/repo-intel-blast.test.ts` · 2026-09-26
+
+The persistent index resolves callers through `references` rows that exclude the declaring file, so a caller in the declaring file cannot occur. The ripgrep fallback matches by name, so when two changed files declare the same name each shows up as a "caller" of the other. `capCallersPerSymbol` therefore drops callers in any declaring file on both paths; the fallback case in `repo-intel-blast.test.ts` guards it. The per-symbol cap (not a global slice) also stops a hot symbol from starving the others.
 
 ## Tool & Library Notes
 
@@ -334,6 +350,26 @@ rejection has no handler. Node 15+ turns an unhandled rejection into a process e
 every other caller of `enqueue`. Until callers attach a handler (or the runner swallows after recording the
 failure), a bad token, a deleted repo or a network blip on any job kind takes the server down. Repro:
 `POST /repos {url: "https://github.com/<owner>/<private-repo-outside-the-token>"}`.
+
+### Flag-off blast returned `no_data`; a "one of" test assertion hid it
+
+`server/src/modules/repo-intel/service.ts:423` · `server/test/repo-intel-facade-degraded.test.ts` · 2026-09-26
+
+With `repoIntelEnabled=false`, `getBlastRadius` reported `reason: 'no_data'` instead of `'flag_off'`, so a UI could not tell "feature disabled" from "not indexed yet". The old facade test only asserted the reason was one of several allowed values, so it stayed green.
+
+Fixed to return `'flag_off'` and the test now uses `toBe('flag_off')`. When a degraded reason drives user-facing wording, assert the exact value, never a set.
+
+### `tryPersistentBlast` now loads every repo edge on each non-empty blast read
+
+`server/src/modules/repo-intel/service.ts` (T10, `repo.getEdges(repoId)`) · 2026-09-27
+
+T10's depth-2 endpoint attribution needs `getEdges` to find each caller's importers, and `getEdges` returns all edges of the repo in one query (capped by `MAX_INDEXED_FILES = 5000`, `repo-intel/constants.ts:42`). The call is skipped when there are no callers, but otherwise every blast read now costs one extra O(edges) query. Acceptable at current scale; worth revisiting if blast reads become hot or `getEdges` grows a filtered variant.
+
+### `AppError` subclasses all report `name: 'AppError'`, not their own class name
+
+`server/test/blast-history.test.ts` · 2026-09-27
+
+`NotFoundError`, `ConfigError`, `ExternalServiceError` etc. extend `AppError`, which sets `this.name = 'AppError'` in its own constructor — subclasses never override it. A test asserting `toMatchObject({name: 'NotFoundError'})` silently fails to distinguish error types; use `toBeInstanceOf(NotFoundError)` instead.
 
 ## Session Notes
 

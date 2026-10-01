@@ -109,6 +109,47 @@ describe('AI contracts parse fixtures', () => {
     ).not.toThrow();
   });
 
+  it('BlastRadius additive fields (L04): old shape parses, new shape parses, bad reason fails', () => {
+    const old = {
+      changed_symbols: [{ name: 'f', file: 'a.ts', kind: 'function' }],
+      downstream: [
+        {
+          symbol: 'f',
+          callers: [{ name: 'g', file: 'b.ts', line: 3 }],
+          endpoints_affected: [],
+          crons_affected: [],
+        },
+      ],
+      summary: 's',
+    };
+    expect(() => BlastRadius.parse(old)).not.toThrow();
+
+    const full = BlastRadius.parse({
+      ...old,
+      downstream: [{ ...old.downstream[0], file: 'a.ts', callers_total: 25 }],
+      degraded: true,
+      reason: 'index_partial',
+      index_status: 'partial',
+      indexed_sha: 'abc123',
+      stats: { symbols_changed: 5, symbols_affected: 1, callers: 25, endpoints: 2, crons: 0 },
+      unattributed_endpoints: ['GET /x'],
+    });
+    expect(full.stats?.symbols_changed).toBe(5);
+    expect(full.downstream[0]?.callers_total).toBe(25);
+
+    // explicit nulls are tolerated too (.nullish)
+    expect(() => BlastRadius.parse({ ...old, degraded: null, reason: null, stats: null })).not.toThrow();
+
+    expect(() => BlastRadius.parse({ ...old, reason: 'bogus' })).toThrow();
+  });
+
+  it('PrHistory additive degraded fields (L04): old shape parses, reason enum enforced', () => {
+    expect(() => PrHistory.parse({ history: [] })).not.toThrow();
+    const h = PrHistory.parse({ history: [], degraded: true, reason: 'no_github_token' });
+    expect(h.reason).toBe('no_github_token');
+    expect(() => PrHistory.parse({ history: [], reason: 'nope' })).toThrow();
+  });
+
   it('SmartDiff (data.jsx DIFF)', () => {
     const d = SmartDiff.parse({
       groups: [
