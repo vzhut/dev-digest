@@ -65,6 +65,14 @@ cd e2e && npm install      # or: cd e2e && npm install && npm run e2e:hermetic
 
 If every flow instead fails with API 500 `No system user found — run \`pnpm db:seed\``, that is the seed entrypoint guard on a path with a space. See the entrypoint-guard entry in `server/INSIGHTS.md`.
 
+### A flow green on the local stack can fail in CI on a role lookup that depends on the Chrome build, or on CSS
+
+`e2e/specs/12-project-context.flow.json` · 2026-10-01
+
+Flow 12 passed 12/12 locally (agent-browser 0.38.1) and failed on the GitHub runner with the page fully rendered (the `e2e-failure` artifact screenshot showed it). Two lookups were the cause: `find role heading --name "Project Context" --exact` (the h1 has `text-transform: uppercase`, so its accessible name is `PROJECT CONTEXT`), and `find role complementary --name "Project Context"` on an `<aside aria-label>` (whether an `aside` inside the page is exposed as `complementary` depends on the Chrome build: local passed, CI's Chrome for Testing did not). The version of agent-browser was identical in both (0.38.1), so it is the browser, not the CLI.
+
+For a new page assert what is plain text in the DOM (`wait --text "specs,docs,insights"`) and use `find role button|list` for controls, which are stable across Chrome builds; avoid landmark roles and headings whose styling changes the name. After any UI change made *after* a flow was last run, re-run `./scripts/e2e.sh`; flow 12 was written before the two-pane restyle and broke without anyone noticing until CI. To reproduce CI without touching your dev server's `client/.next`, run the script from a scratch `git worktree` with `node_modules` symlinked in, and download the screenshot with `gh run download <run-id> -n e2e-failure`.
+
 ## Session Notes
 
 _No entries yet._
