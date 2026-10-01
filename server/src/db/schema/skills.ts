@@ -15,6 +15,8 @@ export const skills = pgTable('skills', {
   }).notNull(),
   body: text('body').notNull(),
   enabled: boolean('enabled').notNull().default(true),
+  // Repo-relative project docs this skill contributes to reviews of agents that use it.
+  contextPaths: jsonb('context_paths').$type<string[]>().notNull().default([]),
   version: integer('version').notNull().default(1),
   evidenceFiles: jsonb('evidence_files').$type<string[]>(),
   // Message of the CURRENT version; copied onto the skill_versions snapshot when superseded.

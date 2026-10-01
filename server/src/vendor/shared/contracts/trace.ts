@@ -74,6 +74,18 @@ export const RunStats = z.object({
 });
 export type RunStats = z.infer<typeof RunStats>;
 
+/**
+ * One project-context doc read for a run. Legacy traces store a bare path
+ * string instead (see `RunTrace.specs_read`). `nullish` on `reason`: jsonb field.
+ */
+export const SpecRead = z.object({
+  path: z.string(),
+  tokens: z.number().int(),
+  status: z.enum(['included', 'missing']),
+  reason: z.string().nullish(),
+});
+export type SpecRead = z.infer<typeof SpecRead>;
+
 /** The single-document trace stored in `run_traces.trace`. */
 export const RunTrace = z.object({
   config: z.object({
@@ -89,7 +101,7 @@ export const RunTrace = z.object({
   tool_calls: z.array(ToolCall),
   raw_output: z.string(),
   memory_pulled: z.array(MemoryPulled),
-  specs_read: z.array(z.string()),
+  specs_read: z.array(z.union([z.string(), SpecRead])),
   log: z.array(RunLogLine),
 });
 export type RunTrace = z.infer<typeof RunTrace>;
