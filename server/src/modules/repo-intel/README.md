@@ -18,7 +18,7 @@ flowchart LR
   CLONE["git clone / fetch"] --> WALK["walk.ts<br/>discover source files"]
   WALK --> AST["ast-grep adapter<br/>symbols + references"]
   AST --> EDGES["import graph<br/>(dependency-cruiser)"]
-  EDGES --> RANK["rank.ts<br/>PageRank + git hotness → file rank"]
+  EDGES --> RANK["rank.ts<br/>PageRank → file rank"]
   RANK --> MAP["repo-map.ts<br/>compact repo skeleton (cached)"]
   AST --> DB[("Postgres<br/>symbols · references · file_edges · file_rank · repo_map_cache")]
   EDGES --> DB
@@ -41,6 +41,10 @@ touch the pipeline internals:
 - `getBlastRadius(repoId, files)` → impacted symbols / callers (used by L04).
 - `getUnresolvedReferences(repoId, …)` → phantom-symbol detection (used by L06).
 - `getConventionSamples(repoId)` → top-ranked files for convention extraction (L02).
+- `collectTourFacts(repoId)` / `classifyPaths(repoId, sha, paths)` → deterministic onboarding-tour
+  facts and path checks, read at one commit (L05). No LLM call. Git churn ("hotness") is computed
+  here at tour time over the 180 days before the committer date of that commit; it is **not**
+  stored — `file_rank.hotness` stays 0 and the stored rank is PageRank only.
 
 In the starter, only `getRepoMap` / `getFileRank` / `getCallerSignatures` are
 wired — into `modules/reviews/run-executor.ts`, which adds the repo map and a

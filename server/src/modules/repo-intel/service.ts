@@ -17,7 +17,7 @@
  * The constructor takes ONLY a Container. No astgrep / depgraph / tokenizer
  * deps are imported here — those land later and plug into this same shell.
  */
-import type { CodeSymbol, RepoRef } from '@devdigest/shared';
+import type { CodeSymbol, RepoRef, TourFacts } from '@devdigest/shared';
 import type { Container } from '../../platform/container.js';
 import { extractEndpoints } from '../../adapters/codeindex/extract.js';
 import {
@@ -37,6 +37,7 @@ import type {
   FileRankRow,
   IndexResult,
   IndexState,
+  PathKind,
   RefRow,
   RepoIntel,
   RepoMapResult,
@@ -53,9 +54,23 @@ import {
   RESYNC_JOB_KIND,
   SUPPORTED_EXT,
 } from './constants.js';
+import { isJunkPath } from './junk-paths.js';
 import { capCallersPerSymbol, declFilesBySymbol, importersWithin } from './helpers.js';
 import { runFullIndex, type IndexPayload } from './pipeline/full.js';
 import { runIncremental } from './pipeline/incremental.js';
+import {
+  buildRoutes,
+  buildRunLocally,
+  buildStructure,
+  detectStack,
+  hasHotnessHistory,
+  hotnessWindowStart,
+  rankReadingPath,
+  scoreCandidates,
+  selectCriticalPaths,
+  type ManifestFile,
+  type RankedFile,
+} from './tour-facts.js';
 
 /**
  * GLOBALS allowlist — common JS/TS builtins + runtime that appear as bare
@@ -746,37 +761,232 @@ export class RepoIntelService implements RepoIntel {
     }
     return paths;
   }
+
+  // -------------------------------------------------------------------------
+  // L05 onboarding tour — deterministic facts. Makes NO LLM call: every input is
+  // the Postgres index plus read-only git blobs at ONE commit (`source_sha`).
+  // -------------------------------------------------------------------------
+
+  /**
+   * Collect the facts the tour is built from. Never throws on a bad index: an unusable
+   * index is reported through `index.usable` / `index.unusable_reason` and the rank-driven
+   * lists stay empty, while clone-derived facts (stack, run-locally, README) are still read.
+   */
+  async collectTourFacts(repoId: string): Promise<TourFacts> {
+    const basics = await this.repo.getRepoBasics(repoId);
+    const cloneDir = basics?.clonePath ?? null;
+    const snapshot = this.container.repoSnapshot;
+    const state = await this.repo.tryGetIndexState(repoId);
+    const lastIndexedSha = state?.lastIndexedSha ? state.lastIndexedSha : null;
+    const flagOn = this.container.config.repoIntelEnabled;
+
+    const head = cloneDir ? await snapshot.headSha(cloneDir) : null;
+    const shaInClone =
+      cloneDir !== null && lastIndexedSha !== null && (await snapshot.commitDate(cloneDir, lastIndexedSha)) !== null;
+    // F7: an index commit that the clone no longer has (force-push, shallow resync) cannot be read;
+    // the tour then describes HEAD and the index counts as unusable.
+    const sourceSha = shaInClone ? lastIndexedSha! : (head ?? '');
+
+    const rankRows = flagOn && state ? await this.repo.getAllRankRows(repoId) : [];
+    const unusableReason = classifyTourIndex({
+      flagOn,
+      status: state?.status ?? null,
+      rankedFiles: rankRows.length,
+      shaInClone,
+    });
+    const usable = unusableReason === null;
+
+    const files =
+      cloneDir && sourceSha ? (await snapshot.listFiles(cloneDir, sourceSha)).files.slice().sort(byPathAsc) : [];
+    const manifests = cloneDir && sourceSha ? await this.readManifests(cloneDir, sourceSha, files) : [];
+    const readme = cloneDir && sourceSha ? await this.readReadme(cloneDir, sourceSha, files) : null;
+
+    const stats = state ? await this.repo.getIndexStats(repoId) : null;
+    // F4: `files_indexed` is the real row count — `stats.filesIndexed` double-counts after an
+    // incremental refresh, and an incremental refresh drops `totalCandidates` / `bounded`.
+    const totalCandidates = typeof stats?.totalCandidates === 'number' ? stats.totalCandidates : null;
+    const bounded = typeof stats?.bounded === 'number' && stats.bounded > 0;
+
+    let churnCounts: ReadonlyMap<string, number> | null = null;
+    if (usable && cloneDir) {
+      // D2: the window is anchored at the committer date of `source_sha`, not "now".
+      const date = await snapshot.commitDate(cloneDir, sourceSha);
+      if (date) {
+        const churn = await snapshot.churn(cloneDir, sourceSha, hotnessWindowStart(date));
+        if (hasHotnessHistory(churn.commits)) churnCounts = churn.counts;
+      }
+    }
+
+    const base = {
+      stack: detectStack(manifests),
+      run_locally: buildRunLocally(manifests),
+      readme,
+    };
+    const index = {
+      status: state?.status ?? 'no_data',
+      reason: state?.reason ?? null,
+      files_indexed: rankRows.length,
+      files_skipped: state?.filesSkipped ?? 0,
+      files_total: totalCandidates,
+      bounded,
+      hotness_available: churnCounts !== null,
+      usable,
+      unusable_reason: unusableReason,
+      last_indexed_sha: lastIndexedSha,
+    };
+
+    if (!usable) {
+      return {
+        source_sha: sourceSha,
+        index,
+        ...base,
+        structure: buildStructure(files),
+        routes: [],
+        critical_paths: [],
+        reading_path: [],
+      };
+    }
+
+    const [inbound, edges, endpointRows] = await Promise.all([
+      this.repo.getInboundCounts(repoId),
+      this.repo.getEdges(repoId),
+      this.repo.getAllEndpointFacts(repoId),
+    ]);
+    const ranked: RankedFile[] = rankRows.map((r) => ({
+      path: r.path,
+      pagerank: r.pagerank,
+      importedBy: inbound.get(r.path) ?? 0,
+      percentile: r.percentile,
+    }));
+    const scored = scoreCandidates(ranked, churnCounts);
+    const scoreByFile = new Map(scored.map((f) => [f.path, f.score]));
+
+    const imports = new Map<string, string[]>();
+    for (const e of edges) {
+      const targets = imports.get(e.fromFile);
+      if (targets) targets.push(e.toFile);
+      else imports.set(e.fromFile, [e.toFile]);
+    }
+    const endpoints = endpointRows
+      .filter((r) => !isJunkPath(r.filePath))
+      .flatMap((r) =>
+        r.endpoints.map((e) => {
+          const space = e.indexOf(' ');
+          return { method: space === -1 ? e : e.slice(0, space), path: space === -1 ? '' : e.slice(space + 1), file: r.filePath };
+        }),
+      );
+
+    return {
+      source_sha: sourceSha,
+      index,
+      ...base,
+      structure: buildStructure(rankRows.map((r) => r.path)),
+      routes: buildRoutes(endpoints, scoreByFile),
+      critical_paths: selectCriticalPaths(scored, imports, [...new Set(endpoints.map((e) => e.file))]),
+      reading_path: rankReadingPath(scored),
+    };
+  }
+
+  /** `file` / `dir` / `missing` for each path at `sha` (AC-17: first-task paths are checked, not trusted). */
+  async classifyPaths(repoId: string, sha: string, paths: string[]): Promise<Record<string, PathKind>> {
+    const out: Record<string, PathKind> = {};
+    const basics = await this.repo.getRepoBasics(repoId);
+    const listing = basics?.clonePath ? await this.container.repoSnapshot.listFiles(basics.clonePath, sha) : null;
+    const fileSet = new Set(listing?.files ?? []);
+    const dirSet = new Set<string>();
+    for (const f of fileSet) {
+      for (let i = f.indexOf('/'); i !== -1; i = f.indexOf('/', i + 1)) dirSet.add(f.slice(0, i));
+    }
+    for (const raw of paths) {
+      const p = raw.replace(/\/+$/, '');
+      out[raw] = fileSet.has(p) ? 'file' : dirSet.has(p) ? 'dir' : 'missing';
+    }
+    return out;
+  }
+
+  /** Manifests at the root or one level below, read as git blobs (presence-only ones are not read). */
+  private async readManifests(cloneDir: string, sha: string, files: readonly string[]): Promise<ManifestFile[]> {
+    const wanted = files.filter((f) => f.split('/').length <= 2 && isManifestName(f.slice(f.lastIndexOf('/') + 1)));
+    // Root entries first so the cap never evicts the root package.json.
+    wanted.sort((a, b) => a.split('/').length - b.split('/').length || byPathAsc(a, b));
+    const picked = wanted.slice(0, MANIFEST_MAX_FILES);
+    const snapshot = this.container.repoSnapshot;
+    return Promise.all(
+      picked.map(async (path): Promise<ManifestFile> => {
+        if (!needsManifestText(path.slice(path.lastIndexOf('/') + 1))) return { path, text: '' };
+        const r = await snapshot.readText(cloneDir, sha, path, MANIFEST_MAX_BYTES);
+        return { path, text: r.status === 'ok' ? r.text : '' };
+      }),
+    );
+  }
+
+  private async readReadme(cloneDir: string, sha: string, files: readonly string[]): Promise<TourFacts['readme']> {
+    const present = new Set(files);
+    for (const path of README_CANDIDATES) {
+      if (!present.has(path)) continue;
+      const r = await this.container.repoSnapshot.readText(cloneDir, sha, path, README_MAX_BYTES);
+      if (r.status === 'ok') return { path, text: r.text.slice(0, README_MAX_CHARS) };
+    }
+    return null;
+  }
+}
+
+/** README names tried at the clone root, in order (AC-7). */
+const README_CANDIDATES = ['README.md', 'readme.md', 'README'] as const;
+const README_MAX_BYTES = 256 * 1024;
+const README_MAX_CHARS = 20_000;
+const MANIFEST_MAX_BYTES = 128 * 1024;
+const MANIFEST_MAX_FILES = 40;
+/** Files whose presence alone is evidence (stack / run-locally); their text is never read. */
+const PRESENCE_MANIFESTS = new Set([
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'package-lock.json',
+  'tsconfig.json',
+  'Dockerfile',
+  'pyproject.toml',
+  'requirements.txt',
+  'go.mod',
+  'Cargo.toml',
+  '.env.example',
+]);
+const COMPOSE_NAME = /^(docker-)?compose[^/]*\.ya?ml$/i;
+
+function isManifestName(name: string): boolean {
+  return PRESENCE_MANIFESTS.has(name) || name === 'package.json' || name === 'Makefile' || COMPOSE_NAME.test(name);
+}
+
+function needsManifestText(name: string): boolean {
+  return name === 'package.json' || name === 'Makefile' || COMPOSE_NAME.test(name);
+}
+
+function byPathAsc(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+type TourUnusableReason = NonNullable<TourFacts['index']['unusable_reason']>;
+
+/**
+ * Why the persisted index cannot drive a tour, or `null` when it can. Same precedence as the
+ * onboarding module's `classifyIndex` (kept local: modules never import each other).
+ */
+function classifyTourIndex(s: {
+  flagOn: boolean;
+  status: string | null;
+  rankedFiles: number;
+  shaInClone: boolean;
+}): TourUnusableReason | null {
+  if (!s.flagOn) return 'flag_off';
+  if (s.status === null) return 'no_data';
+  if (s.status === 'failed') return 'failed';
+  if (s.status === 'degraded') return 'degraded';
+  if (!s.shaInClone) return 'sha_missing';
+  if (s.rankedFiles <= 0) return 'no_ranked_files';
+  return null;
 }
 
 /** How many top-ranked files seed `getCriticalPaths` dependency chains. */
 const CRITICAL_PATH_ROOTS = 5;
-
-/**
- * Path kinds excluded from rank-driven file samples (conventions/onboarding):
- * tests, configs, declaration files, migrations, generated dirs. Substring
- * match on the repo-relative path (kept deliberately simple + deterministic).
- */
-const JUNK_PATH_PATTERNS = [
-  '.test.',
-  '.spec.',
-  '.d.ts',
-  '__tests__/',
-  '__mocks__/',
-  '/test/',
-  '/tests/',
-  '/migrations/',
-  '/__fixtures__/',
-  '.config.',
-  'vitest.',
-  'jest.',
-  'eslint',
-  'prettier',
-] as const;
-
-function isJunkPath(path: string): boolean {
-  const lower = path.toLowerCase();
-  return JUNK_PATH_PATTERNS.some((p) => lower.includes(p));
-}
 
 /** Enclosing top-level (bare-name) symbol for a line, from persistent rows. */
 function enclosingFromRows(rows: FullSymbolRow[], line: number): string | null {
