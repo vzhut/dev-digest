@@ -17,6 +17,8 @@ export {
   wrapUntrusted,
   renderIntentSection,
   INJECTION_GUARD,
+  PROJECT_CONTEXT_GUARD,
+  type ProjectDoc,
   type PromptParts,
   type PromptSkill,
   type PromptSection,

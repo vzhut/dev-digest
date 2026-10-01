@@ -21,7 +21,7 @@ const SECRET = {
 const parts = {
   system: 'AGENT-SYSTEM',
   diff: SECRET.diff,
-  specs: [SECRET.spec],
+  specs: [{ path: 'docs/a.md', text: SECRET.spec }],
   prDescription: SECRET.body,
   skills: [{ name: 's', body: SECRET.skill, trusted: false }],
   memory: [SECRET.memory],
@@ -94,7 +94,7 @@ describe('reviewPullRequest — prompt.assembled events', () => {
       model: 'test-model',
       diff: await new MockGitClient().diff(),
       llm,
-      specs: [SECRET.spec],
+      specs: [{ path: 'docs/a.md', text: SECRET.spec }],
       prDescription: SECRET.body,
       callers: SECRET.callers,
       repoMap: SECRET.repoMap,
