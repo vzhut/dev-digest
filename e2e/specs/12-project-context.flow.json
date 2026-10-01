@@ -1,0 +1,15 @@
+{
+  "name": "Project Context — sidebar entry opens the page; the seeded repo has no clone, so it shows the not-cloned empty state",
+  "description": "The seeded acme/payments-api has clonePath: null (server/src/db/seed.ts), so the listing is status 'not_cloned' and no document rows exist to assert. This flow guarantees the page is reachable from the sidebar (AC-29), the breadcrumb/title render, and the not-cloned state (AC-31) shows with the search-roots editor. Read-only: nothing is saved and no LLM is called.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "lands on the seeded repo's PR list" },
+    { "cmd": ["find", "text", "Project Context", "click"], "label": "open the Project Context nav item" },
+    { "cmd": ["wait", "--url", "/context"], "label": "context route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
+    { "cmd": ["find", "role", "heading", "text", "--name", "Project Context", "--exact"], "label": "page heading renders" },
+    { "cmd": ["wait", "--text", "acme/payments-api"], "label": "breadcrumb names the repo" },
+    { "cmd": ["wait", "--text", "Repository not cloned yet"], "label": "not-cloned empty state (seed repo has no clone)" },
+    { "cmd": ["wait", "--text", "Search roots"], "label": "search-roots editor is offered in the footer" }
+  ]
+}
