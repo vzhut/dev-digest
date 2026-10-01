@@ -14,4 +14,5 @@ export type AgentVersionRow = typeof t.agentVersions.$inferSelect;
 export type FindingRow = typeof t.findings.$inferSelect;
 export type PrIntentRow = typeof t.prIntent.$inferSelect;
 export type PullRow = typeof t.pullRequests.$inferSelect;
+/** One row of `agent_runs` — a single review run of one agent against one PR. */
 export type AgentRunRow = typeof t.agentRuns.$inferSelect;
