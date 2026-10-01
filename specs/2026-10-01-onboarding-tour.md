@@ -1,6 +1,6 @@
 # Spec: Onboarding Tour (per-repo onboarding generator)
 Date: 2026-10-01
-Status: draft
+Status: approved
 Supersedes: none
 
 > Lesson scope: **L05 — Onboarding generator** (`README.md` lesson roadmap, row L05). Project Context (the other L05
