@@ -9,7 +9,7 @@
     { "cmd": ["wait", "--load", "networkidle"], "label": "context fetch settles" },
     { "cmd": ["wait", "--text", "Repository not cloned yet"], "label": "not-cloned empty state (seed repo has no clone)" },
     { "cmd": ["wait", "--text", "acme/payments-api"], "label": "breadcrumb names the repo" },
-    { "cmd": ["find", "role", "complementary", "text", "--name", "Project Context", "--exact"], "label": "left pane landmark is named Project Context (not the upper-cased h1: CSS changes the heading's accessible name)" },
+    { "cmd": ["wait", "--text", "specs,docs,insights"], "label": "left pane shows the default search roots (AC-2)" },
     { "cmd": ["find", "role", "button", "click", "--name", "Edit search roots", "--exact"], "label": "open the search-roots editor from the left toolbar (it is collapsed by default)" },
     { "cmd": ["wait", "--text", "One glob per line"], "label": "search-roots editor hint renders" },
     { "cmd": ["wait", "--text", "Save roots"], "label": "search-roots editor offers Save (nothing is saved)" }
