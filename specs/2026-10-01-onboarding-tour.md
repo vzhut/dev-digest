@@ -521,6 +521,24 @@ stateDiagram-v2
 | US-7 | AC-4, AC-15, AC-24, AC-26, AC-27, AC-28, AC-29, AC-32 | unknown price; two tabs regenerate |
 | US-8 | AC-1, AC-23, AC-24, AC-25, AC-30, AC-34, AC-36, AC-37 | resync makes tour stale; two tabs regenerate |
 
+## Tech debt carried from Project Context
+
+Not requirements of this feature and not covered by any AC. Recorded so the debt is visible next to the work that
+touches the same area (shared client hooks, `repo-intel` clone access, the repo-scoped sidebar). Source: the Project
+Context plan's Delivery log (`specs/2026-10-01-project-context.plan.md`, deferred items) and its spec.
+
+| # | Debt | Where | Why it matters here |
+|---|---|---|---|
+| TD-1 | `routes.ts` does its own `node:fs` stat (`cloneExists`) instead of a `ProjectDocs.exists()` port method (MEDIUM, architecture-reviewer) | `server/src/modules/project-context/routes.ts` | The onboarding module also needs a clone check (AC-6, `not_cloned`); it must use a port, not copy this fs call into a route |
+| TD-2 | `ProjectContextView.tsx` is ~292 lines; extract `useDocEditGuard`, `DocRow`, `ViewTabs` (MEDIUM) | `client/src/app/repos/[repoId]/context/_components/ProjectContextView/` | Sets the size baseline the new onboarding page must stay under |
+| TD-3 | Unused `useContextRoots` / `contextKeys.roots` (LOW) | `client/src/lib/hooks/context.ts` | Dead code in the hooks file the onboarding hooks sit beside |
+| TD-4 | Duplicated skipped-directories literal (`.git`, `node_modules`) (LOW) | `server/src/modules/project-context/service.ts` (+ the adapter's case-insensitive guard) | The onboarding file listing needs the same exclusion; share one constant instead of a third copy |
+| TD-5 | A document edit is local-only and is lost when a clone sync overwrites it (known limitation by design; durable edit = commit/push/PR is a separate feature) | `specs/2026-10-01-project-context.md` (Non-goals, AC-32) | A resync (`/resync`) also invalidates the tour's index commit (stale notice, AC-30) — the same overwrite mechanism |
+| TD-6 | Project Context's CI/GitHub runner path is out of scope; only studio (`source: 'local'`) runs are covered | `specs/2026-10-01-project-context.md` | Same gap applies to the tour: it is studio-only |
+
+Disposition: TD-1 and TD-4 are to be avoided (not repeated) by the onboarding tasks; TD-2, TD-3, TD-5 and TD-6 are not
+fixed by this feature.
+
 ## Open questions
 
 None open: every clarification was resolved with a recorded default below. Items marked **(needs owner approval)**
