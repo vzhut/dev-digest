@@ -11,7 +11,6 @@ import {
   PrHistory,
   SmartDiff,
   Conformance,
-  Onboarding,
   EvalRun,
   MemoryItem,
   RunTrace,
@@ -166,18 +165,13 @@ describe('AI contracts parse fixtures', () => {
     expect(d.groups[0]!.role).toBe('core');
   });
 
-  it('Conformance / Onboarding / EvalRun / MemoryItem', () => {
+  it('Conformance / EvalRun / MemoryItem', () => {
     expect(() =>
       Conformance.parse({
         spec_id: 's1',
         spec_title: 'Spec',
         items: [{ requirement: 'r', status: 'implemented' }],
         completeness_pct: 80,
-      }),
-    ).not.toThrow();
-    expect(() =>
-      Onboarding.parse({
-        sections: [{ kind: 'architecture', title: 'T', body: 'b', links: [] }],
       }),
     ).not.toThrow();
     expect(() =>
