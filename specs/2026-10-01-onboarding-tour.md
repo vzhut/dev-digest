@@ -574,3 +574,7 @@ are product decisions the owner should confirm when approving this spec; changin
    no confirmation since one call costs well under a cent (AC-25); a failed regeneration keeps the previous full tour
    and records the failed attempt (AC-23) **(needs owner approval)**; stale tours get a notice, not an automatic
    refresh (AC-30); *Open* goes to GitHub at the tour's commit (AC-34); English only.
+
+## Delivery log
+
+Full per-phase log with commits, review results and the AC-29 demo evidence: `specs/2026-10-01-onboarding-tour.plan.md` → *Delivery log*. Summary: spec approved `9d0572b`; plan ready `60042b6`; T1–T13 implemented in `6c33e3b`…`548cd27`; architecture review 0 CRITICAL/0 HIGH; plan-verifier PASS 62 / PARTIAL 4 / MISSING 0 / UNVERIFIED 3; AC-29 demo on `burnjohn/quick-blog`: `llm_calls=1`, `cost=$0.000383`, 21.4 s.
