@@ -47,7 +47,12 @@ _No entries yet._
 
 ## Tool & Library Notes
 
-_No entries yet._
+
+### `scripts/e2e.sh` does not isolate secrets, so a flow can trigger a paid call
+
+`scripts/e2e.sh` · `server/src/platform/config.ts:84,91` · 2026-10-02
+
+The "hermetic" stack still reads secrets from `~/.devdigest/secrets.json` and falls back to `process.env`, and clones from `~/.devdigest/workspace`. On a machine with an LLM key, a flow that clicks an LLM-backed action (Generate) makes a real, paid, nondeterministic call, and which seeded repo has a clone depends on the developer's home directory. Flow 13 therefore never clicks Generate and asserts only navigation and the `not_cloned` state of the `clonePath: null` seed. Isolating HOME and the clone dir in `e2e.sh` would be a separate change.
 
 ## Recurring Errors & Fixes
 

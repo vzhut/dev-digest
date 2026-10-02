@@ -343,6 +343,29 @@ confused-deputy shape remains for Jira/Linear keys on an allowlisted host (any k
 operator-owned `INTENT_TICKET_HOSTS` bounds. In the same review the scope downgrade stopped applying to `bug` findings, because
 the `out_of_scope` claim is derived from author-written text.
 
+
+### Incremental re-index drops `totalCandidates`/`bounded` and double-counts `filesIndexed`
+
+`server/src/modules/repo-intel/pipeline/incremental.ts:245-262` · 2026-10-02
+
+After a resync, `repo_index_state.stats` has no `totalCandidates` or `bounded`, and `filesIndexed` is set to prior + slice, so a changed file is counted twice. Only `runFullIndex` writes the two missing keys (`walk.stats` spread, `pipeline/full.ts:254-255`; counters in `pipeline/walk.ts:57`). `tryGetIndexState` also discards `stats` entirely.
+
+Anything that shows "N of M files" must take N from the real `file_rank` row count and treat M as unknown when `totalCandidates` is absent; a guessed `filesIndexed + skipped` becomes wrong after the first resync. The onboarding tour does this via `RepoIntelRepository.getIndexStats` (`server/src/modules/repo-intel/repository.ts`) and shows "coverage unknown since the last refresh". The pipeline itself is not fixed.
+
+### OpenAI and Anthropic SDKs retry twice by themselves — a stubbed client hides it
+
+`server/src/adapters/llm/openai.ts:52,111`, `server/src/adapters/llm/anthropic.ts:46` · 2026-10-02
+
+`new OpenAI({ apiKey })` and `new Anthropic({ apiKey })` keep the SDK default of 2 internal retries on 429/5xx and a 10-minute timeout, on top of this repo's own `withRetry` and the re-prompt loop. "Exactly one call" (the onboarding tour's contract) therefore needs `singleAttempt` plus a per-request `{ maxRetries: 0, timeout }` option, not just skipping `withRetry`. A test with a stubbed client passes either way because it bypasses the SDK.
+
+Prove it with an injected `fetch` that returns 500 (and 429) and assert exactly one fetch call per provider (`server/test/llm-single-attempt.test.ts`, `reviewer-core/test/openrouter.test.ts`). Both server providers now accept `{ fetch }` for this.
+
+### Removing a shared schema breaks vitest, not `pnpm typecheck`
+
+`server/test/contracts.test.ts:14` · 2026-10-02
+
+The server `tsconfig.json` only includes `src/**`, so a test file that still imports a deleted `@devdigest/shared` export typechecks fine and fails only at runtime in the unit suite. Deleting the unused `Onboarding*` schemas surfaced this at the first checkpoint. After removing or renaming a shared export, grep `server/test` too, not just `server/src`.
+
 ## Recurring Errors & Fixes
 
 
@@ -380,6 +403,13 @@ T10's depth-2 endpoint attribution needs `getEdges` to find each caller's import
 `server/test/blast-history.test.ts` · 2026-09-27
 
 `NotFoundError`, `ConfigError`, `ExternalServiceError` etc. extend `AppError`, which sets `this.name = 'AppError'` in its own constructor — subclasses never override it. A test asserting `toMatchObject({name: 'NotFoundError'})` silently fails to distinguish error types; use `toBeInstanceOf(NotFoundError)` instead.
+
+
+### A `PinoLike.info(obj, msg)` mock must receive the human line as `msg`
+
+`server/test/onboarding-service.test.ts` · 2026-10-02
+
+A test double that records `info(obj, msg)` calls and an assertion reading `msg` sees nothing if the code under test passes the sentence as the first argument. Log the structured fields as `obj` and the sentence as `msg`, the same shape Fastify's pino uses, or the log-line assertions (AC-28) fail with an empty message.
 
 ## Session Notes
 
