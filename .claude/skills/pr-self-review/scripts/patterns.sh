@@ -19,6 +19,17 @@
 # but matching both costs nothing and removes a whole class of silent miss.
 P_ONION_DB="from ['\"]drizzle-orm['\"]|db/schema|container\.db"
 
+# The sanctioned wiring: a route file builds its repository from the container
+# (`new BlastRepository(container.db)`, onion-architecture §5). It matches P_ONION_DB via
+# `container.db` but is not a layering violation, so R7 subtracts it.
+P_ONION_REPO_WIRING="new [A-Za-z]+Repository\\((app\\.)?container\\.db\\)"
+
+# R14: a VALUE import from the @devdigest/shared barrel in client code. Type imports are erased
+# before webpack sees them; a value import pulls the vendor barrel, whose `./contracts/x.js`
+# specifiers vitest and tsc resolve but webpack does not (next dev 500s, every unit test green).
+P_CLIENT_SHARED_RUNTIME="import \\{[^}]*\\} from ['\"]@devdigest/shared['\"]"
+P_CLIENT_SHARED_TYPE_ONLY="import \\{ type [^,}]*\\} from ['\"]@devdigest/shared['\"]"
+
 # The module list is read off disk rather than hard-coded: a lesson that adds a module would
 # otherwise be exempt from the cross-module rule without anyone noticing. Both `../<mod>/` and
 # `../../modules/<mod>/` are real forms in this tree.

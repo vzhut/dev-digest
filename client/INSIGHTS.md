@@ -122,6 +122,24 @@ to write `multipart/form-data; boundary=…` itself; a hand-set JSON header over
 multipart bytes as JSON. Fixed by skipping the header for `FormData` (`api.test.ts` pins it). Reproduce without a
 browser: `curl -H 'content-type: application/json' --data-binary @x.zip $API/skills/import/preview`.
 
+### A runtime import from the `@devdigest/shared` barrel passes vitest and `tsc` but 500s every page under webpack
+
+`client/src/lib/context-docs.ts:31` · 2026-10-01
+
+`import { ContextPath } from "@devdigest/shared"` (a value import of a Zod schema) type-checked and every vitest file was green, yet `next dev` answered `GET / 500` and `GET /skills/<id> 500`, and e2e flows 08–12 failed with `Module not found: Can't resolve './contracts/findings.js'` (import trace: `context-docs.ts` → `ProjectContextSection.tsx`).
+
+The client vendor barrel (`client/src/vendor/shared/index.ts`) re-exports sibling contracts with server-style `./contracts/x.js` specifiers. Vitest and `tsc` resolve those `.js` specifiers to the `.ts` files; webpack does not. Every other client import of `@devdigest/shared` is type-only, so it is erased before webpack sees it — that is the working precedent.
+
+Don't import runtime values from the barrel in client code. Use `import type`, or mirror the few rules locally (`isAttachable` in `client/src/lib/context-docs.ts`, kept in step with the `ContextPath` schema in `contracts/project-context.ts`). Only a webpack run catches the mistake: `cd client && pnpm build`, or `./scripts/e2e.sh`.
+
+### `pnpm build` while `next dev` is running corrupts the dev server (`Cannot read properties of undefined (reading 'call')`)
+
+`client/.next` · 2026-10-01
+
+After an agent ran `cd client && pnpm build` as a webpack check while the user's `next dev -p 3000` was up, every page showed the Next error overlay `Runtime TypeError: Cannot read properties of undefined (reading 'call')` (15 ignore-listed frames), even though vitest, `tsc` and `pnpm build` itself were green. `.next/` then holds production artifacts (`BUILD_ID`, `required-server-files.json`) next to the dev server's own cache, and the running dev compiler loads mismatched webpack chunks.
+
+`next build` and `next dev` share `client/.next`. Don't run `pnpm build` against the default dir while a dev server is running. Fix the broken state by stopping the dev server, `rm -rf client/.next`, and restarting `pnpm dev`. For a webpack-only check without touching the dev cache, stop `next dev` first, or build in a separate checkout.
+
 ## Session Notes
 
 ### 2026-09-20 — client improvement plan finished

@@ -1,0 +1,17 @@
+{
+  "name": "Onboarding Tour — /onboarding is unchanged; the sidebar entry opens the tour page, which shows the not-cloned state for the seeded repo",
+  "description": "The seeded acme/payments-api has clonePath: null (server/src/db/seed.ts), so the tour page renders the not-cloned empty state. This flow guarantees /onboarding still shows the add-repository screen, the sidebar 'Onboarding Tour' item is reachable for a seeded repo, and the breadcrumb and not-cloned state render. It NEVER clicks Generate (a paid, nondeterministic LLM call; the e2e stack does not guarantee the absence of an LLM key). Read-only.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/onboarding"], "label": "load the onboarding route" },
+    { "cmd": ["wait", "--url", "/onboarding"], "label": "onboarding route reached" },
+    { "cmd": ["wait", "--text", "Add a repository"], "label": "/onboarding still shows the add-repository screen" },
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "lands on the seeded repo's PR list" },
+    { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR list has loaded" },
+    { "cmd": ["find", "text", "Onboarding Tour", "click"], "label": "open the Onboarding Tour nav item" },
+    { "cmd": ["wait", "--url", "/onboarding"], "label": "tour route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "tour fetch settles" },
+    { "cmd": ["wait", "--text", "Repository not cloned yet"], "label": "not-cloned empty state (seed repo has no clone)" },
+    { "cmd": ["wait", "--text", "acme/payments-api"], "label": "breadcrumb names the repo" }
+  ]
+}

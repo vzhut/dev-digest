@@ -39,3 +39,10 @@ export class ConfigError extends AppError {
     super('config_error', message, 500, details);
   }
 }
+
+/** 409 with a stable machine code (e.g. `not_cloned`, `generation_in_progress`). */
+export class ConflictError extends AppError {
+  constructor(code: string, message: string, details?: unknown) {
+    super(code, message, 409, details);
+  }
+}

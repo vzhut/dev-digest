@@ -50,6 +50,12 @@ describe("A2 Agent Editor (smoke)", () => {
     expect(screen.getByText("Save agent")).toBeInTheDocument();
   });
 
+  it("offers a Context tab after Skills", () => {
+    renderWithIntl(<AgentEditor agent={AGENT} tab="config" onTab={() => {}} />);
+    const labels = screen.getAllByRole("button").map((el) => el.textContent?.trim());
+    expect(labels.indexOf("Context")).toBe(labels.indexOf("Skills") + 1);
+  });
+
   it("resets the form when switching to another agent", () => {
     const view = renderWithIntl(<AgentEditor agent={AGENT} tab="config" onTab={() => {}} />);
     fireEvent.change(screen.getByDisplayValue("Security Reviewer"), { target: { value: "Edited name" } });

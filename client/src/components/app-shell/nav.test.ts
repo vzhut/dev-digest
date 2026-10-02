@@ -7,7 +7,7 @@ describe("sidebar NAV", () => {
   it("puts Skills, Agents and Conventions in SKILLS LAB, not WORKSPACE", () => {
     expect(keysOf("SKILLS LAB")).toEqual(["skills", "agents", "conventions"]);
     expect(keysOf("WORKSPACE")).not.toContain("agents");
-    expect(keysOf("WORKSPACE")).toContain("pulls");
+    expect(keysOf("WORKSPACE")).toEqual(["pulls", "onboarding-tour", "context"]);
   });
 
   it("keeps item keys and g-shortcuts unique", () => {

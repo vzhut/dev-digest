@@ -47,7 +47,12 @@ _No entries yet._
 
 ## Tool & Library Notes
 
-_No entries yet._
+
+### `scripts/e2e.sh` does not isolate secrets, so a flow can trigger a paid call
+
+`scripts/e2e.sh` · `server/src/platform/config.ts:84,91` · 2026-10-02
+
+The "hermetic" stack still reads secrets from `~/.devdigest/secrets.json` and falls back to `process.env`, and clones from `~/.devdigest/workspace`. On a machine with an LLM key, a flow that clicks an LLM-backed action (Generate) makes a real, paid, nondeterministic call, and which seeded repo has a clone depends on the developer's home directory. Flow 13 therefore never clicks Generate and asserts only navigation and the `not_cloned` state of the `clonePath: null` seed. Isolating HOME and the clone dir in `e2e.sh` would be a separate change.
 
 ## Recurring Errors & Fixes
 
@@ -64,6 +69,14 @@ cd e2e && npm install      # or: cd e2e && npm install && npm run e2e:hermetic
 ```
 
 If every flow instead fails with API 500 `No system user found — run \`pnpm db:seed\``, that is the seed entrypoint guard on a path with a space. See the entrypoint-guard entry in `server/INSIGHTS.md`.
+
+### A flow green on the local stack can fail in CI on a role lookup that depends on the Chrome build, or on CSS
+
+`e2e/specs/12-project-context.flow.json` · 2026-10-01
+
+Flow 12 passed 12/12 locally (agent-browser 0.38.1) and failed on the GitHub runner with the page fully rendered (the `e2e-failure` artifact screenshot showed it). Two lookups were the cause: `find role heading --name "Project Context" --exact` (the h1 has `text-transform: uppercase`, so its accessible name is `PROJECT CONTEXT`), and `find role complementary --name "Project Context"` on an `<aside aria-label>` (whether an `aside` inside the page is exposed as `complementary` depends on the Chrome build: local passed, CI's Chrome for Testing did not). The version of agent-browser was identical in both (0.38.1), so it is the browser, not the CLI.
+
+For a new page assert what is plain text in the DOM (`wait --text "specs,docs,insights"`) and use `find role button|list` for controls, which are stable across Chrome builds; avoid landmark roles and headings whose styling changes the name. After any UI change made *after* a flow was last run, re-run `./scripts/e2e.sh`; flow 12 was written before the two-pane restyle and broke without anyone noticing until CI. To reproduce CI without touching your dev server's `client/.next`, run the script from a scratch `git worktree` with `node_modules` symlinked in, and download the screenshot with `gh run download <run-id> -n e2e-failure`.
 
 ## Session Notes
 

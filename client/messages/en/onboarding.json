@@ -1,17 +1,108 @@
 {
-  "title": "Onboarding Tour",
-  "sections": "Sections",
-  "sectionCount": "{count} sections",
-  "regenerate": "Regenerate",
-  "regenerating": "Regenerating…",
-  "unknownError": "Unknown error",
-  "generate": {
-    "title": "Generate onboarding tour",
-    "body": "DevDigest indexes the repo and specs, then writes a 5-section guided tour: overview, architecture, key modules, getting started, and conventions & gotchas.",
-    "cta": "Generate onboarding tour",
-    "generating": "Generating…"
+  "page": {
+    "title": "Onboarding Tour",
+    "heading": "Onboarding for",
+    "subtitle": "Generated from index of {files} · {when}",
+    "files": {
+      "plain": "{count, plural, one {# file} other {# files}}",
+      "ofTotal": "{n} of {m} files"
+    },
+    "generatedAgo": "generated {ago}",
+    "coverage": {
+      "bounded": "This tour covers only the indexed files ({n} of {m}).",
+      "unknown": "Coverage unknown since the last refresh. This tour covers only the indexed files."
+    },
+    "time": {
+      "ago": "{ago} ago",
+      "justNow": "just now"
+    },
+    "usage": {
+      "calls": "{count, plural, one {# LLM call} other {# LLM calls}}",
+      "none": "0 LLM calls",
+      "noneTooltip": "No LLM call was made",
+      "model": "Model: {model}",
+      "modelUnknown": "Model unknown"
+    },
+    "actions": {
+      "generate": "Generate tour",
+      "regenerate": "Regenerate",
+      "share": "Share link",
+      "callTooltip": "Makes one LLM call",
+      "shareCopied": "Link copied. It opens for people with access to this DevDigest instance.",
+      "shareFailed": "Couldn't copy the link",
+      "generateFailed": "Couldn't generate the tour"
+    },
+    "loading": "Loading the onboarding tour",
+    "error": {
+      "title": "Couldn't load the onboarding tour"
+    },
+    "notCloned": {
+      "title": "Repository not cloned yet",
+      "body": "The tour is built from the local clone. Wait for the clone to finish, then generate the tour."
+    },
+    "none": {
+      "title": "No tour yet",
+      "body": "Generating the tour makes one LLM call. Opening this page never generates it."
+    },
+    "generating": "Generating the tour. This makes one LLM call and can take up to 90 seconds.",
+    "toc": {
+      "label": "On this page"
+    },
+    "banners": {
+      "skeleton": {
+        "index_degraded": "The index isn't usable (status: {status}), so this tour only lists what could be read without an LLM.",
+        "llm_unavailable": "No LLM is configured, so this tour only lists what could be read without an LLM.",
+        "llm_failed": "The LLM call failed ({detail}), so this tour only lists what could be read without an LLM."
+      },
+      "unknownReason": "unknown reason",
+      "reason": {
+        "index_degraded": "the index wasn't usable",
+        "llm_unavailable": "no LLM is configured",
+        "llm_failed": "the LLM call failed"
+      },
+      "partial": "The index is partial: {count, plural, one {# file was} other {# files were}} skipped.",
+      "lastAttempt": "The last regeneration failed {ago}: {reason}. Showing the previous tour.",
+      "stale": "The code has changed since this tour was generated."
+    }
   },
-  "loadError": {
-    "title": "Couldn’t load the onboarding tour"
+  "sections": {
+    "toggle": "Toggle {title}",
+    "open": "Open",
+    "openAria": "Open {path} on GitHub",
+    "architecture": {
+      "title": "Architecture",
+      "diagramFallback": "The architecture diagram could not be rendered.",
+      "stack": "Stack",
+      "structure": "Structure",
+      "routes": "Routes",
+      "fileCount": "{count, plural, one {# file} other {# files}}"
+    },
+    "critical-paths": {
+      "title": "Critical paths",
+      "empty": "No critical paths were found."
+    },
+    "run-locally": {
+      "title": "Run locally",
+      "notice": "These commands come from the repo's own files. Review them before running anything; DevDigest never runs them for you.",
+      "empty": "No run instructions found in the repo's files",
+      "copyAria": "Copy command: {command}",
+      "copied": "Command copied",
+      "copyFailed": "Couldn't copy the command",
+      "from": "from {path}"
+    },
+    "reading-path": {
+      "title": "Reading path",
+      "hotnessNote": "Recent-change history isn't available in this clone, so the order uses import rank only.",
+      "empty": "No reading path was found."
+    },
+    "first-tasks": {
+      "title": "First tasks",
+      "needsLlm": "First tasks need the LLM step, which didn't produce any for this tour.",
+      "complexity": {
+        "low": "Low complexity",
+        "medium": "Medium complexity",
+        "high": "High complexity"
+      }
+    }
   }
 }

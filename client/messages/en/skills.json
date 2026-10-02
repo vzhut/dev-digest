@@ -218,5 +218,19 @@
     "deleteConfirm": "Delete",
     "version": "v{version}",
     "agents": "{count, plural, one {# agent} other {# agents}}"
+  },
+  "projectContext": {
+    "title": "Project context to use",
+    "inheritNote": "Every agent that uses this skill inherits these documents.",
+    "noRepo": "Select a repository to choose project documents.",
+    "save": "Save context",
+    "saving": "Saving…",
+    "saved": "Skill context saved",
+    "noVersion": "Saving does not create a new skill version.",
+    "serializes": {
+      "title": "SERIALIZES AS",
+      "line": "document: {path}",
+      "note": "Each document’s full text is read at run time and sent as untrusted project context."
+    }
   }
 }

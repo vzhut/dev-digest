@@ -1,0 +1,62 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for ContextChecklist + ContextRow. */
+export const s = {
+  wrap: { display: "flex", flexDirection: "column", gap: 10 } satisfies CSSProperties,
+  summary: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: 12,
+    fontSize: 13,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  list: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 } satisfies CSSProperties,
+  row: (muted: boolean): CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 10px",
+    borderRadius: 7,
+    border: "1px solid var(--border)",
+    background: "var(--bg-elevated)",
+    opacity: muted ? 0.7 : 1,
+  }),
+  path: {
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontSize: 13,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  tag: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    padding: "1px 6px",
+    borderRadius: 4,
+    border: "1px solid var(--border)",
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  missing: {
+    fontSize: 11,
+    padding: "1px 6px",
+    borderRadius: 4,
+    background: "var(--crit-bg)",
+    color: "var(--crit)",
+  } satisfies CSSProperties,
+  meta: { fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" } satisfies CSSProperties,
+  link: {
+    background: "none",
+    border: "none",
+    padding: 0,
+    font: "inherit",
+    fontSize: 12,
+    color: "var(--accent-text)",
+    textDecoration: "underline",
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  note: { fontSize: 13, color: "var(--text-secondary)", margin: 0 } satisfies CSSProperties,
+};

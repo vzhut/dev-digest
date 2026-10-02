@@ -21,6 +21,9 @@
  * This keeps signatures natural (no `{ degraded, data }` wrappers at call sites)
  * while still guaranteeing every consumer can fall back without throwing.
  */
+import type { TourFacts } from '@devdigest/shared';
+
+export type PathKind = 'file' | 'dir' | 'missing';
 
 export type IndexStatus = 'full' | 'partial' | 'degraded' | 'failed';
 
@@ -181,4 +184,10 @@ export interface RepoIntel {
     opts?: { exclude?: string[] },
   ): Promise<string[]>;
   getCriticalPaths(repoId: string): Promise<string[][]>;
+
+  // --- L05: onboarding tour ------------------------------------------------
+  /** Deterministic tour facts read at one commit; never calls an LLM, never throws on a bad index. */
+  collectTourFacts(repoId: string): Promise<TourFacts>;
+  /** Whether each path is a file, a directory or absent in the clone at `sha`. */
+  classifyPaths(repoId: string, sha: string, paths: string[]): Promise<Record<string, PathKind>>;
 }

@@ -34,6 +34,8 @@ import type {
 } from '@devdigest/shared';
 import type { TicketFetcher, TicketResult } from './tickets/index.js';
 import type { RepoFileReader, RepoFileResult } from './git/repo-file-reader.js';
+import type { RepoSnapshot, SnapshotChurn, SnapshotFileResult } from './git/repo-snapshot.js';
+import type { DocStat, ProjectDocReadResult, ProjectDocWriteResult, ProjectDocs } from './project-docs/index.js';
 import type { GitHubHistory, MergedPrsTouchingOptions, PriorPr } from './github/history.js';
 import { parseUnifiedDiff } from './git/diff-parser.js';
 
@@ -378,5 +380,83 @@ export class MockRepoFileReader implements RepoFileReader {
     if (this.blocked.includes(path)) return { status: 'blocked', reason: 'symlink not followed' };
     const text = this.files[path];
     return text === undefined ? { status: 'missing', reason: 'not found' } : { status: 'ok', text };
+  }
+}
+
+/**
+ * Project docs double: canned `path -> text` map. `list` returns the docs whose
+ * path is in the map (roots are ignored); unknown paths read as `not found`,
+ * paths in `blocked` as `outside clone`. Records the paths read.
+ */
+export class MockProjectDocs implements ProjectDocs {
+  readonly reads: string[] = [];
+  constructor(
+    private files: Record<string, string> = {},
+    private blocked: string[] = [],
+    private mtime: Date = new Date('2026-01-01T00:00:00Z'),
+  ) {}
+  async list(_cloneDir: string, _roots: string[]): Promise<DocStat[]> {
+    return Object.entries(this.files).map(([path, text]) => ({
+      path,
+      sizeBytes: Buffer.byteLength(text),
+      mtime: this.mtime,
+      text,
+    }));
+  }
+  readonly writes: Array<{ path: string; content: string }> = [];
+  async exists(_cloneDir: string): Promise<boolean> {
+    return true;
+  }
+  async write(_cloneDir: string, path: string, content: string): Promise<ProjectDocWriteResult> {
+    if (this.blocked.includes(path)) return { status: 'missing', reason: 'outside clone' };
+    if (this.files[path] === undefined) return { status: 'missing', reason: 'not found' };
+    this.files[path] = content;
+    this.writes.push({ path, content });
+    return { status: 'ok', sizeBytes: Buffer.byteLength(content) };
+  }
+  async read(_cloneDir: string, path: string): Promise<ProjectDocReadResult> {
+    this.reads.push(path);
+    if (this.blocked.includes(path)) return { status: 'missing', reason: 'outside clone' };
+    const text = this.files[path];
+    return text === undefined
+      ? { status: 'missing', reason: 'not found' }
+      : { status: 'ok', text, bytes: Buffer.byteLength(text) };
+  }
+}
+
+/**
+ * Repo snapshot double: canned head sha / commit date / file list / text files / churn.
+ * A path in `blocked` is `blocked`; any other unknown path is `missing`.
+ */
+export class FakeRepoSnapshot implements RepoSnapshot {
+  readonly reads: string[] = [];
+  constructor(
+    private opts: {
+      head?: string | null;
+      date?: Date | null;
+      files?: string[];
+      truncated?: boolean;
+      texts?: Record<string, string>;
+      blocked?: string[];
+      churn?: SnapshotChurn;
+    } = {},
+  ) {}
+  async headSha(_cloneDir: string): Promise<string | null> {
+    return this.opts.head === undefined ? 'a'.repeat(40) : this.opts.head;
+  }
+  async commitDate(_cloneDir: string, _sha: string): Promise<Date | null> {
+    return this.opts.date === undefined ? new Date('2026-01-01T00:00:00Z') : this.opts.date;
+  }
+  async listFiles(_cloneDir: string, _sha: string): Promise<{ files: string[]; truncated: boolean }> {
+    return { files: this.opts.files ?? [], truncated: this.opts.truncated ?? false };
+  }
+  async readText(_cloneDir: string, _sha: string, path: string, _maxBytes: number): Promise<SnapshotFileResult> {
+    this.reads.push(path);
+    if (this.opts.blocked?.includes(path)) return { status: 'blocked', reason: 'symlink not followed' };
+    const text = this.opts.texts?.[path];
+    return text === undefined ? { status: 'missing', reason: 'not found' } : { status: 'ok', text };
+  }
+  async churn(_cloneDir: string, _sha: string, _since: Date): Promise<SnapshotChurn> {
+    return this.opts.churn ?? { commits: 0, counts: new Map() };
   }
 }

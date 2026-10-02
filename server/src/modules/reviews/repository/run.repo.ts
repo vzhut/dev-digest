@@ -221,6 +221,7 @@ export async function agentSkillLinks(db: Db, agentId: string) {
         body: t.skills.body,
         source: t.skills.source,
         enabled: t.skills.enabled,
+        contextPaths: t.skills.contextPaths,
       },
     })
     .from(t.agentSkills)

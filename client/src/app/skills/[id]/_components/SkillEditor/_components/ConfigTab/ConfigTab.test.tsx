@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import type { Skill } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/skills.json";
 import common from "../../../../../../../../messages/en/common.json";
+import context from "../../../../../../../../messages/en/context.json";
 import { ToastProvider } from "@/lib/toast";
 
 const mutate = vi.fn();
@@ -12,6 +13,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/hooks/skills", () => ({
   useUpdateSkill: () => ({ mutate, isPending: false, isSuccess: false, data: undefined }),
   useDeleteSkill: () => ({ mutate: deleteMutate, isPending: false }),
+}));
+
+vi.mock("@/lib/repo-context", () => ({ useActiveRepo: () => ({ repoId: "r1" }) }));
+vi.mock("@/lib/hooks/context", () => ({
+  useContextDocs: () => ({ data: { roots: [], status: "ok", files: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
+  useSkillContext: () => ({ data: { paths: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
+  useSaveSkillContext: () => ({ mutate: vi.fn(), isPending: false }),
+  useContextDoc: () => ({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() }),
 }));
 
 import { ConfigTab } from "./ConfigTab";
@@ -35,7 +44,7 @@ const SKILL: Skill = {
 
 const wrap = (ui: React.ReactElement) =>
   render(
-    <NextIntlClientProvider locale="en" messages={{ skills: messages, common }}>
+    <NextIntlClientProvider locale="en" messages={{ skills: messages, common, context }}>
       <ToastProvider>{ui}</ToastProvider>
     </NextIntlClientProvider>,
   );
@@ -44,6 +53,11 @@ describe("Skill ConfigTab", () => {
   it("shows the directive-description help text", () => {
     wrap(<ConfigTab skill={SKILL} />);
     expect(screen.getByText(/when does this skill apply/i)).toBeInTheDocument();
+  });
+
+  it("renders the Project context section inside the Config tab", () => {
+    wrap(<ConfigTab skill={SKILL} />);
+    expect(screen.getByRole("heading", { name: "Project context to use" })).toBeInTheDocument();
   });
 
   it("hides the version message until something changes, and Save is disabled", () => {

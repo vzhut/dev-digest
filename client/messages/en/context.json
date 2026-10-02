@@ -1,24 +1,88 @@
 {
-  "title": "Project Context",
-  "chunks": "{count} chunks",
-  "reindex": "Re-index",
-  "indexing": "Indexing…",
-  "resync": "Resync",
-  "resyncing": "Resyncing…",
-  "indexStatus": "Index status: {status}",
-  "loadError": "Couldn’t load specs",
-  "kb": "{kb}kb",
-  "empty": {
-    "title": "No spec files yet",
-    "body": "Drop your PRDs, tech specs, and acceptance criteria under .devdigest/specs/. Every agent and the PR brief read them as grounding context."
+  "checklist": {
+    "filterPlaceholder": "Filter documents by path",
+    "listLabel": "Project context documents",
+    "attachedCount": "{attached} of {total} attached",
+    "estimate": "Estimated context: {tokens, number} tokens",
+    "tokens": "{tokens, number} tokens",
+    "preview": "Preview",
+    "previewLabel": "Preview {path}",
+    "moveUp": "Move {path} up",
+    "moveDown": "Move {path} down",
+    "attachLabel": "Attach {path}",
+    "missing": "Missing",
+    "missingHint": "This file is no longer in the repository listing. Untick it to detach.",
+    "notAttachable": "This path cannot be attached",
+    "inheritedVia": "via {skill}",
+    "noMatch": "No documents match the filter",
+    "loading": "Loading documents",
+    "loadError": "Couldn’t load documents",
+    "empty": {
+      "title": "No Markdown documents found",
+      "body": "Nothing matches the search roots: {roots}"
+    },
+    "type": {
+      "specs": "specs",
+      "docs": "docs",
+      "insights": "insights",
+      "other": "other"
+    }
   },
-  "mode": {
-    "preview": "preview",
-    "edit": "edit"
+  "preview": {
+    "title": "Preview of {path}",
+    "loading": "Loading document",
+    "loadError": "Couldn’t load document",
+    "empty": "This document is empty"
   },
-  "editor": {
-    "loadError": "Couldn’t load spec",
-    "save": "Save",
-    "saving": "Saving…"
+  "page": {
+    "title": "Project Context",
+    "footer": "{files, number} files · {tokens, number} tokens total · scanned {ago}",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "usedBy": "{count, plural, one {Used by # agent} other {Used by # agents}}",
+    "selectPrompt": "Select a document to preview it",
+    "notCloned": {
+      "title": "Repository not cloned yet",
+      "body": "Project documents are read from the local clone. Clone the repository to list them."
+    },
+    "empty": {
+      "title": "No Markdown documents found",
+      "body": "Nothing matches the search roots: {roots}"
+    },
+    "error": {
+      "title": "Couldn’t load project context"
+    },
+    "roots": {
+      "title": "Search roots",
+      "hint": "One glob per line, relative to the repository root (at most 20). Leave empty to use the default.",
+      "label": "Search roots",
+      "placeholder": "docs/**\nspecs/**",
+      "current": "Searching: {roots}",
+      "save": "Save roots",
+      "saving": "Saving…",
+      "reset": "Reset to default",
+      "saved": "Search roots saved",
+      "error": "Search roots were rejected: use at most 20 relative globs, without “..” or a leading “/”.",
+      "toggle": "Edit search roots"
+    },
+    "preview": "Preview",
+    "viewTabs": "Document view",
+    "edit": {
+      "tab": "Edit",
+      "label": "Document text",
+      "notice": "Saving changes this repository’s local clone only. The change is not committed or pushed to GitHub and may be overwritten by the next sync.",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "saved": "Document saved to the local clone",
+      "tooLarge": "The document is larger than 1 MiB and cannot be saved.",
+      "saveError": "Couldn’t save the document",
+      "discard": {
+        "title": "Discard unsaved changes?",
+        "body": "Your edits to this document have not been saved and will be lost.",
+        "keep": "Keep editing",
+        "discard": "Discard changes"
+      }
+    }
   }
 }

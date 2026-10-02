@@ -3,6 +3,24 @@
 All notable changes to this skill. Versioning per `SKILL.md` → *Versioning*:
 MAJOR — a change that flips a verdict · MINOR — a new rule or routing row · PATCH — wording.
 
+## 1.3.0 — 2026-10-01
+
+### New rule R14 — value import from the `@devdigest/shared` barrel in client code
+
+`import { ContextPath } from "@devdigest/shared"` type-checked and passed every vitest file, but
+webpack could not resolve the vendor barrel's `./contracts/x.js` specifiers, so `next dev` answered 500
+on `/` and every flow that reached those routes failed. It was found three waves late, by e2e
+(Project Context run, `client/INSIGHTS.md`). R14 flags added lines in `client/src/` (outside
+`client/src/vendor/`) that import values from the barrel; `import type` and `import { type X }` are exempt.
+HIGH, because there is a documented local workaround. `self-test.sh` pins both directions and checks that
+the pattern still sees the 123 type imports in the real tree.
+
+### R7 stopped flagging the sanctioned repository wiring
+
+`new XRepository(container.db)` in a route file (onion-architecture §5, same as `blast/routes.ts`) matched
+`container.db` and got a HIGH on every new module. `P_ONION_REPO_WIRING` is now subtracted; a raw
+`app.container.db.select()` in a handler still fires.
+
 ## 1.2.2 — 2026-09-24
 
 ### R8 flagged `.env.example` as a committed secret file

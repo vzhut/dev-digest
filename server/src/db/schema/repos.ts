@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { now } from './_shared';
 import { workspaces, users } from './core';
 
@@ -14,6 +14,8 @@ export const repos = pgTable(
     fullName: text('full_name').notNull(),
     defaultBranch: text('default_branch').notNull().default('main'),
     clonePath: text('clone_path'),
+    // Project-context search globs; NULL = the default glob.
+    contextRoots: jsonb('context_roots').$type<string[]>(),
     lastPolledAt: timestamp('last_polled_at', { withTimezone: true }),
     createdBy: uuid('created_by').references(() => users.id),
     createdAt: now(),

@@ -58,7 +58,7 @@ Order of work (project rule: curated docs first, then code):
 
 ### Report format — Repository
 
-Keep it short: a report over ~120 lines means you are dumping, not answering. The **exists / missing table is the main artifact**; include only findings the question needs, and mark each finding's confidence (the planner skips re-checking `high` ones that carry a `path:line`).
+Keep it short: a report over ~120 lines means you are dumping, not answering. The **exists / missing table is the main artifact**; include only findings the question needs, and mark each finding's confidence (the implementation-planner skips re-checking `high` ones that carry a `path:line`).
 
 ```
 ## Research question
