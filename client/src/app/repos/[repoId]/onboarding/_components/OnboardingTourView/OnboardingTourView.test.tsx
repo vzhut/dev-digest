@@ -134,6 +134,19 @@ describe("OnboardingTourView", () => {
     expect(generateMutate).not.toHaveBeenCalled();
   });
 
+  it("reports a failed Share instead of throwing when the clipboard API is unavailable", async () => {
+    setData(ready(makeTour()));
+    wrap();
+    const original = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Share link" }));
+      expect(await screen.findByText("Couldn't copy the link")).toBeInTheDocument();
+    } finally {
+      if (original) Object.defineProperty(navigator, "clipboard", original);
+    }
+  });
+
   it("shows the stale notice only when the index commit differs, plus the bounded coverage note", () => {
     setData(ready(makeTour({ index: { status: "ready", reason: null, files_indexed: 5000, files_skipped: 0, files_total: 12450, bounded: true, hotness_available: true } }), "fffffff"));
     const { unmount } = wrap();

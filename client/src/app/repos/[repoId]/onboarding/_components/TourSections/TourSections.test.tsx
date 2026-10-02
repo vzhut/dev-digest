@@ -5,6 +5,7 @@ import type { Tour } from "@devdigest/shared";
 import messages from "../../../../../../../messages/en/onboarding.json";
 import { ToastProvider } from "@/lib/toast";
 import { TourSections } from "./TourSections";
+import { buildOpenUrl } from "./helpers";
 
 vi.mock("@/components/mermaid-diagram", () => ({
   MermaidDiagram: ({ fallback }: { fallback?: React.ReactNode }) => <div>{fallback}</div>,
@@ -70,6 +71,8 @@ describe("TourSections", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByText("Fastify")).not.toBeVisible();
+    // an inline `display: flex` would override the `hidden` attribute in a real browser
+    expect(document.getElementById(toggle.getAttribute("aria-controls") as string)).toHaveStyle({ display: "none" });
     expect(screen.getByText("The architecture diagram could not be rendered.")).not.toBeVisible();
 
     const file = screen.getAllByRole("link", { name: "Open src/a.ts on GitHub" })[0]!;
@@ -118,3 +121,14 @@ describe("TourSections", () => {
     expect(within(first).queryAllByRole("listitem")).toHaveLength(0);
   });
 });
+
+describe("buildOpenUrl", () => {
+  const sha = "a".repeat(40);
+  it("refuses `.`/`..` segments that the browser would normalise to another page", () => {
+    expect(buildOpenUrl("acme/app", sha, "../../x", "file")).toBeNull();
+    expect(buildOpenUrl("acme/app", sha, "src/./a.ts", "file")).toBeNull();
+    expect(buildOpenUrl("../..", sha, "a.ts", "file")).toBeNull();
+    expect(buildOpenUrl("acme/app", sha, "src/a.ts", "file")).toContain("/blob/");
+  });
+});
+

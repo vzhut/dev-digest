@@ -10,6 +10,7 @@ import {
   type PathKinds,
 } from '../src/modules/onboarding/helpers.js';
 import type { OnboardingLlmOutput } from '../src/modules/onboarding/output-schema.js';
+import { MAX_SUMMARY_CHARS } from '../src/modules/onboarding/constants.js';
 import { redactSecrets } from '../src/modules/_shared/redact.js';
 import { redactSecrets as intentRedact } from '../src/modules/intent/helpers.js';
 
@@ -113,6 +114,16 @@ describe('mergeModelOutput', () => {
     expect(m.first_tasks).toHaveLength(5);
     expect(m.dropped_items).toBe(2);
     expect(m.architecture.diagram).toBe('flowchart LR\n A-->B');
+  });
+
+  it('caps the summary and drops an over-long diagram instead of storing it', () => {
+    const m = mergeModelOutput(
+      facts,
+      output({ architecture_summary_md: 'x'.repeat(50_000), architecture_diagram: 'a'.repeat(50_000) }),
+      kinds,
+    );
+    expect(m.architecture.summary_md).toHaveLength(MAX_SUMMARY_CHARS);
+    expect(m.architecture.diagram).toBeNull();
   });
 });
 

@@ -5,7 +5,14 @@
  */
 import type { SkeletonReason, Tour, TourFacts, TourMode, TourUsage } from '@devdigest/shared';
 import { redactSecrets } from '../_shared/redact.js';
-import { FIRST_TASKS_MAX, MAX_DETAIL_CHARS, MAX_NOTE_CHARS, MAX_TASK_TITLE_CHARS } from './constants.js';
+import {
+  FIRST_TASKS_MAX,
+  MAX_DETAIL_CHARS,
+  MAX_DIAGRAM_CHARS,
+  MAX_NOTE_CHARS,
+  MAX_SUMMARY_CHARS,
+  MAX_TASK_TITLE_CHARS,
+} from './constants.js';
 import type { OnboardingLlmOutput } from './output-schema.js';
 
 /** Everything of a `Tour` that generation decides; the service adds identity, timing and usage. */
@@ -54,7 +61,8 @@ const cleanText = (s: string, max: number): string | null => {
 function cleanDiagram(d: string | null): string | null {
   if (d === null) return null;
   const t = d.replace(/^\s*```(?:mermaid)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
-  return t.length > 0 ? t : null;
+  // An over-long diagram is dropped, not truncated: a cut Mermaid source never renders.
+  return t.length > 0 && t.length <= MAX_DIAGRAM_CHARS ? t : null;
 }
 
 /**
@@ -106,7 +114,7 @@ export function mergeModelOutput(facts: TourFacts, output: OnboardingLlmOutput, 
 
   return {
     architecture: {
-      summary_md: cleanText(output.architecture_summary_md, Number.MAX_SAFE_INTEGER),
+      summary_md: cleanText(output.architecture_summary_md, MAX_SUMMARY_CHARS),
       diagram: cleanDiagram(output.architecture_diagram),
       stack: facts.stack,
       structure: facts.structure,

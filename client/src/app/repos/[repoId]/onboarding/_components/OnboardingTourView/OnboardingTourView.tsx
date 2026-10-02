@@ -30,12 +30,17 @@ export function OnboardingTourView() {
   const repoName = activeRepo?.full_name ?? repoId;
   const crumb = [{ label: repoName, mono: true }, { label: t("title") }];
 
-  const progress = generating && (
-    <div style={s.progress} role="status" aria-live="polite">
-      <span style={s.spin}>
-        <Icon.RefreshCw size={15} />
-      </span>
-      {t("generating")}
+  // The live region stays mounted so screen readers announce the text when it appears.
+  const progress = (
+    <div role="status" aria-live="polite">
+      {generating && (
+        <div style={s.progress}>
+          <span style={s.spin}>
+            <Icon.RefreshCw size={15} />
+          </span>
+          {t("generating")}
+        </div>
+      )}
     </div>
   );
 

@@ -12,7 +12,7 @@ import type { Tokenizer } from '../../adapters/tokenizer/index.js';
 import type { PinoLike } from '../../platform/run-logger.js';
 import { AppError, ConflictError, NotFoundError } from '../../platform/errors.js';
 import type { OnboardingRepository } from './repository.js';
-import { LLM_TIMEOUT_MS, ONBOARDING_CALL_NAME, ONBOARDING_SCHEMA_NAME } from './constants.js';
+import { LLM_MAX_OUTPUT_TOKENS, LLM_TIMEOUT_MS, ONBOARDING_CALL_NAME, ONBOARDING_SCHEMA_NAME } from './constants.js';
 import { OnboardingLlmOutput } from './output-schema.js';
 import { buildOnboardingPrompt } from './prompt.js';
 import { buildSkeleton, formatGeneratedLog, mergeModelOutput, redactDetail, toLastAttempt } from './helpers.js';
@@ -238,6 +238,7 @@ export class OnboardingService {
           messages: prompt.messages,
           singleAttempt: true,
           maxRetries: 0,
+          maxTokens: LLM_MAX_OUTPUT_TOKENS,
           timeoutMs,
           requireParameters: true,
           sessionId: `${repo.owner}/${repo.name}:onboarding`,

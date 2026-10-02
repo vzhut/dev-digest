@@ -29,11 +29,14 @@ export function useTourPage(repoId: string) {
   const generate = () =>
     mutation.mutate(undefined, { onError: (e) => toast.error(apiErrorMessage(e, t("generateFailed"))) });
 
-  const share = () => {
-    navigator.clipboard
-      .writeText(shareUrl(window.location))
-      .then(() => toast.success(t("shareCopied")))
-      .catch(() => toast.error(t("shareFailed")));
+  // navigator.clipboard is undefined outside secure contexts, so the call itself can throw.
+  const share = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl(window.location));
+      toast.success(t("shareCopied"));
+    } catch {
+      toast.error(t("shareFailed"));
+    }
   };
 
   const select = (id: string) => {

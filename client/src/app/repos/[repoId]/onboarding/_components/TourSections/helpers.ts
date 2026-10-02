@@ -15,6 +15,8 @@ export function buildOpenUrl(
   kind: "file" | "dir",
 ): string | null {
   if (!FULL_NAME_RE.test(repoFullName) || !SHA_RE.test(sha) || !path) return null;
+  // `.`/`..` segments would be normalised by the browser to a different github.com page.
+  if ([...repoFullName.split("/"), ...path.split("/")].some((seg) => seg === "." || seg === "..")) return null;
   return kind === "dir"
     ? githubTreeUrl(repoFullName, sha, path)
     : githubBlobUrl(repoFullName, sha, path);

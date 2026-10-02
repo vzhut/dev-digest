@@ -20,6 +20,13 @@ export const FIRST_TASKS_MAX = 5;
 export const MAX_NOTE_CHARS = 400;
 export const MAX_TASK_TITLE_CHARS = 140;
 
+/** Caps on the model-written architecture text and diagram (persisted and served on every GET). */
+export const MAX_SUMMARY_CHARS = 6_000;
+export const MAX_DIAGRAM_CHARS = 3_000;
+
+/** Output-token ceiling for the one structured call. */
+export const LLM_MAX_OUTPUT_TOKENS = 6_000;
+
 /** Per-line cap for repo-derived lines in the prompt (a path/command can be attacker-long). */
 export const MAX_PROMPT_LINE_CHARS = 400;
 

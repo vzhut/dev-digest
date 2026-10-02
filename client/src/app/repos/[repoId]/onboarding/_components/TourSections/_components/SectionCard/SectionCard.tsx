@@ -36,7 +36,7 @@ export function SectionCard({
           {title}
         </h2>
       </div>
-      <div id={bodyId} hidden={!open} style={s.body}>
+      <div id={bodyId} hidden={!open} style={open ? s.body : { ...s.body, display: "none" }}>
         {children}
       </div>
     </section>

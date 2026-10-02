@@ -148,7 +148,7 @@ describe('OnboardingService.generate', () => {
     const tour = await service.generate(WS, REPO, { correlationId: 'req-1' });
 
     expect(llm.calls).toHaveLength(1);
-    expect(llm.calls[0]).toMatchObject({ singleAttempt: true, maxRetries: 0, timeoutMs: 90_000, schemaName: 'OnboardingTour' });
+    expect(llm.calls[0]).toMatchObject({ singleAttempt: true, maxRetries: 0, timeoutMs: 90_000, maxTokens: 6_000, schemaName: 'OnboardingTour' });
     expect(tour.mode).toBe('llm');
     expect(tour.usage).toMatchObject({ llm_calls: 1, tokens_in: 1000, tokens_out: 200, cost_usd: 0.0123, model: 'openrouter/m-1', dropped_items: 1 });
     expect(tour.critical_paths[0]).toMatchObject({ path: 'src/a.ts', reason: 'Entry point.' });
