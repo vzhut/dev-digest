@@ -34,6 +34,8 @@ env:
   DATABASE_URL: postgres://devdigest:devdigest@localhost:5432/devdigest
   NEXT_PUBLIC_API_BASE: http://localhost:3001
   E2E_BASE_URL: http://localhost:3000
+  # The flows run back to back from one address; the API's default 120 req/min trips on the last ones.
+  RATE_LIMIT_MAX: '100000'
 
 jobs:
   e2e:
