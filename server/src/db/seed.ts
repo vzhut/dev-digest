@@ -4,6 +4,7 @@ import { createDb, type Db } from './client.js';
 import * as t from './schema.js';
 import { eq, and } from 'drizzle-orm';
 import { inputHash } from '../modules/intent/helpers.js';
+import { PrBrief } from '@devdigest/shared';
 import {
   GENERAL_REVIEWER_PROMPT,
   SECURITY_REVIEWER_PROMPT,
@@ -155,6 +156,56 @@ the old name, or version the route.`,
   },
 ];
 
+/**
+ * Minimal, secret-free patches for PR #482 (new files, so one `@@ -0,0 +1,N @@` hunk each).
+ * Paths and +/- counts on the pr_files rows stay as seeded; the brief's review-focus
+ * lines point into these hunks.
+ */
+const SEED_PATCHES: Record<string, string> = {
+  'src/middleware/ratelimit.ts': [
+    '@@ -0,0 +1,12 @@',
+    "+import type { Request, Response, NextFunction } from 'express';",
+    "+import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from '../config.js';",
+    '+',
+    '+const buckets = new Map<string, { count: number; resetAt: number }>();',
+    '+',
+    '+export function rateLimit(req: Request, res: Response, next: NextFunction) {',
+    '+  const now = Date.now();',
+    '+  const bucket = buckets.get(req.ip) ?? { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };',
+    '+  bucket.count += 1;',
+    '+  buckets.set(req.ip, bucket);',
+    '+  if (bucket.count > RATE_LIMIT_MAX) return res.status(429).end();',
+    '+  next();',
+  ].join('\n'),
+  'src/api/public/webhooks.ts': [
+    '@@ -0,0 +1,6 @@',
+    "+import { rateLimit } from '../../middleware/ratelimit.js';",
+    '+',
+    '+export function registerWebhooks(app: { post: (path: string, ...h: unknown[]) => void }) {',
+    "+  app.post('/webhooks/stripe', rateLimit, stripeWebhookHandler);",
+    '+}',
+    '+',
+  ].join('\n'),
+  'src/config.ts': [
+    '@@ -0,0 +1,4 @@',
+    '+export const RATE_LIMIT_MAX = 100;',
+    '+export const RATE_LIMIT_WINDOW_MS = 60_000;',
+    '+export const RATE_LIMIT_BURST = 20;',
+    '+export const RATE_LIMIT_ENABLED = true;',
+  ].join('\n'),
+};
+
+/** Throws unless `line` falls inside the `+c,d` range of the file's single seeded hunk. */
+function assertLineInHunk(path: string, line: number): void {
+  const m = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(SEED_PATCHES[path] ?? '');
+  if (!m) throw new Error(`seed: no hunk for ${path}`);
+  const start = Number(m[1]);
+  const end = start + Number(m[2] ?? 1) - 1;
+  if (line < start || line > end) {
+    throw new Error(`seed: review-focus line ${path}:${line} is outside hunk +${start},${end - start + 1}`);
+  }
+}
+
 export const DEFAULT_WORKSPACE_NAME = 'default';
 export const SYSTEM_USER_EMAIL = 'you@local';
 
@@ -252,7 +303,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       { prId: pr!.id, path: 'src/api/public/webhooks.ts', additions: 31, deletions: 6 },
       { prId: pr!.id, path: 'src/config.ts', additions: 4, deletions: 0 },
       { prId: pr!.id, path: 'src/api/users.ts', additions: 7, deletions: 2 },
-    ];
+    ].map((f) => ({ ...f, patch: SEED_PATCHES[f.path] ?? null }));
     await db.insert(t.prFiles).values(seedFiles);
 
     // PR intent (L03): input_hash is computed with the server's own inputHash() so the
@@ -329,6 +380,74 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       },
     ]);
   }
+
+  // ---- PR #482 patches + brief (re-seed safe: a DB seeded before patches existed gets them now) ----
+  for (const [path, patch] of Object.entries(SEED_PATCHES)) {
+    await db
+      .update(t.prFiles)
+      .set({ patch })
+      .where(and(eq(t.prFiles.prId, pr!.id), eq(t.prFiles.path, path)));
+  }
+  const seededFiles = await db.select().from(t.prFiles).where(eq(t.prFiles.prId, pr!.id));
+  // Staleness hash of the intent, computed from the patched rows as stored.
+  await db
+    .update(t.prIntent)
+    .set({
+      inputHash: inputHash({ title: pr!.title, body: pr!.body, files: seededFiles, headSha: pr!.headSha }),
+    })
+    .where(eq(t.prIntent.prId, pr!.id));
+
+  const seedBrief: PrBrief = {
+    intent: null,
+    blast: null,
+    history: null,
+    risks: {
+      risks: [
+        {
+          kind: 'configuration',
+          title: 'Rate-limit values are hardcoded',
+          explanation:
+            'The limit and window are literals in src/config.ts, so changing them needs a deploy and they cannot differ per environment.',
+          severity: 'medium',
+          file_refs: ['src/config.ts'],
+        },
+        {
+          kind: 'correctness',
+          title: 'In-memory buckets are per process',
+          explanation:
+            'The limiter keeps counters in a process-local Map: limits reset on restart and are not shared across instances.',
+          severity: 'low',
+          file_refs: ['src/middleware/ratelimit.ts'],
+        },
+      ],
+    },
+    summary:
+      'Adds a token-bucket rate limiter to the public API endpoints. Check how the limiter counts requests and where its limits are configured.',
+    review_focus: [
+      {
+        file: 'src/middleware/ratelimit.ts',
+        line: 9,
+        reason: 'The counter is incremented before the limit check, so confirm the boundary request is handled as intended.',
+      },
+      {
+        file: 'src/config.ts',
+        line: 1,
+        reason: 'The limit is a hardcoded constant, so confirm it is acceptable for every environment.',
+      },
+    ],
+    head_sha: pr!.headSha,
+    generated_at: '2026-10-02T09:00:00.000Z',
+    model: 'openai/gpt-4.1',
+    usage: { llm_calls: 1, tokens_in: 8200, tokens_out: 1300, cost_usd: 0.014, duration_ms: 9000 },
+    inputs: { missing: [], truncated: [], skipped: [], input_tokens: 8200 },
+    dropped_items: 0,
+  };
+  for (const item of seedBrief.review_focus) assertLineInHunk(item.file, item.line);
+  const briefJson = PrBrief.parse(seedBrief);
+  await db
+    .insert(t.prBrief)
+    .values({ prId: pr!.id, json: briefJson })
+    .onConflictDoUpdate({ target: t.prBrief.prId, set: { json: briefJson } });
 
   // ---- built-in agents (the three starter presets) ----
   // Prompt bodies live in ./seed-prompts.ts (mirrored in docs/agent-prompts/*.md).
