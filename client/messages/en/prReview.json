@@ -180,7 +180,6 @@
     "inScopeList": "{count, plural, one {# in-scope item} other {# in-scope items}}",
     "outOfScopeList": "{count, plural, one {# out-of-scope item} other {# out-of-scope items}}",
     "none": "Nothing listed",
-    "riskAreas": "Risk areas",
     "confidenceLabel": "Confidence: {level}",
     "confidence": {
       "high": "High",

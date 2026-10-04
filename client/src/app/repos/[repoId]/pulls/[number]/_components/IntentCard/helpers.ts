@@ -28,8 +28,3 @@ export function formatIntentMeta(intent: Pick<PrIntentRecord, "model" | "cost_us
     cost: formatCostUsd(intent.cost_usd),
   };
 }
-
-/** The classifier's risk areas (blank and repeated entries dropped), or an empty list when the model omitted them. */
-export function riskAreasOf(intent: Pick<PrIntentRecord, "risk_areas">): string[] {
-  return [...new Set((intent.risk_areas ?? []).map((r) => r.trim()).filter((r) => r.length > 0))];
-}
