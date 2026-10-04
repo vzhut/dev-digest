@@ -366,6 +366,12 @@ Prove it with an injected `fetch` that returns 500 (and 429) and assert exactly 
 
 The server `tsconfig.json` only includes `src/**`, so a test file that still imports a deleted `@devdigest/shared` export typechecks fine and fails only at runtime in the unit suite. Deleting the unused `Onboarding*` schemas surfaced this at the first checkpoint. After removing or renaming a shared export, grep `server/test` too, not just `server/src`.
 
+### `wrapUntrusted` escapes quotes in the label but not `</untrusted>` — a hostile file path reads as a closing tag
+
+`reviewer-core/src/prompt.ts:50` · `server/src/modules/brief/prompt.ts` (`labelOf`) · 2026-10-02
+
+The body has `</untrusted>` neutralised, but the label (a spec document's repo-relative path) only gets `"` and newlines handled, so a file named `a</untrusted>.md` puts a literal closing tag inside the opening tag's `source="…"` attribute. A balance check (`</untrusted>` count equals `<untrusted source=` count) caught it. Callers that pass attacker-influenced paths as labels must escape `<`/`>` first; the brief prompt does (`&lt;`/`&gt;`).
+
 ## Recurring Errors & Fixes
 
 
