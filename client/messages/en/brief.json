@@ -15,5 +15,71 @@
     "blame": "blame",
     "noHistory": "No history available for this line.",
     "noCommits": "No commits found for this line."
-  }
+  },
+  "card": {
+    "title": "PR brief",
+    "loadErrorTitle": "Could not load the brief",
+    "loadErrorBody": "The brief could not be loaded.",
+    "retry": "Retry"
+  },
+  "empty": {
+    "title": "No brief yet",
+    "body": "A brief explains what this PR does and why, which risks it carries and where to read first.",
+    "llmNote": "Generating a brief makes one LLM call.",
+    "noChanges": "This PR has no changed files, so there is nothing to brief.",
+    "generate": "Generate brief"
+  },
+  "generating": {
+    "label": "Generating the brief…"
+  },
+  "refresh": {
+    "label": "Refresh brief",
+    "tooltip": "Regenerates the brief — one LLM call"
+  },
+  "usage": {
+    "label": "Brief usage",
+    "modelTooltip": "Model: {model}",
+    "unknownModel": "unknown"
+  },
+  "stale": {
+    "notice": "New commits arrived since this brief was generated.",
+    "refresh": "Refresh brief"
+  },
+  "missing": {
+    "prefix": "Generated without:",
+    "intent": "Intent",
+    "blast": "Blast radius",
+    "linked_issue": "Linked issue",
+    "description": "PR description",
+    "specs": "Specs"
+  },
+  "error": {
+    "title": "Could not generate the brief",
+    "fallback": "Brief generation failed.",
+    "regenerationFailed": "Regeneration failed: {reason}",
+    "previousBrief": "Showing the previous brief, generated {when} for commit {sha}.",
+    "settingsHint": "Check the model configuration in",
+    "settingsLink": "Settings",
+    "noChanges": "This PR has no changed files, so there is nothing to brief.",
+    "inProgress": "A brief is already being generated for this PR."
+  },
+  "risks": {
+    "title": "Risk areas",
+    "expand": "Show explanation for {title}",
+    "severity": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    }
+  },
+  "focus": {
+    "title": "Review focus — read these first",
+    "count": "{count, plural, one {# item} other {# items}}",
+    "empty": "Nothing specific to read first."
+  },
+  "ref": {
+    "open": "Open {target} in Files changed",
+    "notInDiff": "File not in this PR's diff"
+  },
+  "droppedNote": "{count, plural, one {# item} other {# items}} dropped because their file references did not match the diff."
 }
