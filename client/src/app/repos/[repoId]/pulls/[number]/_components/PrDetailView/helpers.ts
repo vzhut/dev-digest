@@ -30,3 +30,15 @@ export function latestReviewSummary(reviews: ReviewRecord[]): PrBriefLatestRevie
     agentName: r.agent_name ?? null,
   };
 }
+
+/**
+ * The nearest ancestor that scrolls vertically. In this app that is the shell's `<main>`
+ * (`overflow: auto`), not the window, so `window.scrollTo` does nothing for the page content.
+ */
+export function scrollParentOf(el: HTMLElement | null): HTMLElement | null {
+  for (let p = el?.parentElement ?? null; p; p = p.parentElement) {
+    const overflowY = getComputedStyle(p).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return p;
+  }
+  return null;
+}

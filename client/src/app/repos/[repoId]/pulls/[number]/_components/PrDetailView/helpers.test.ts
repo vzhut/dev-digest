@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ReviewRecord } from "@devdigest/shared";
-import { diffDeepLinkQuery, latestReviewSummary, parseDiffTarget } from "./helpers";
+import { diffDeepLinkQuery, latestReviewSummary, parseDiffTarget, scrollParentOf } from "./helpers";
 
 const finding = (severity: string, dismissed_at: string | null = null) => ({ severity, dismissed_at });
 const review = (over: Record<string, unknown>) =>
@@ -41,5 +41,27 @@ describe("latestReviewSummary", () => {
       review({ verdict: "approve" }),
     ]);
     expect(r).toEqual({ verdict: "request_changes", score: 70, findingsCount: 3, blockers: 1, agentName: "Bug hunter" });
+  });
+});
+
+describe("scrollParentOf", () => {
+  it("finds the nearest ancestor that scrolls vertically, skipping non-scrolling ones", () => {
+    const main = document.createElement("main");
+    main.style.overflowY = "auto";
+    const wrapper = document.createElement("div");
+    const body = document.createElement("div");
+    main.appendChild(wrapper);
+    wrapper.appendChild(body);
+    document.body.appendChild(main);
+    expect(scrollParentOf(body)).toBe(main);
+    main.remove();
+  });
+
+  it("returns null when nothing above scrolls, or there is no element", () => {
+    const lone = document.createElement("div");
+    document.body.appendChild(lone);
+    expect(scrollParentOf(lone)).toBeNull();
+    expect(scrollParentOf(null)).toBeNull();
+    lone.remove();
   });
 });
