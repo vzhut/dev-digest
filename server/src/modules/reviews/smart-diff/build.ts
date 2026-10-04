@@ -2,8 +2,7 @@
  * Smart Diff assembly. Pure: plain inputs in, `SmartDiff` out (no rows, no DB).
  */
 import type { SmartDiff, SmartDiffFile, SmartDiffRole } from '@devdigest/shared';
-import { classifyFile } from './classify.js';
-import { SMART_DIFF_ROLE_ORDER } from './constants.js';
+import { classifyFile, SMART_DIFF_ROLE_ORDER } from '../../_shared/smart-diff-role.js';
 
 export interface SmartDiffFileInput {
   path: string;
