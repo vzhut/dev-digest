@@ -20,6 +20,8 @@ export function CodeLine({
   commenting,
   findings = [],
   findingApi,
+  highlighted = false,
+  rowRef,
 }: {
   ln: Line;
   path: string;
@@ -28,6 +30,9 @@ export function CodeLine({
   /** Findings anchored to this line. */
   findings?: FindingRecord[];
   findingApi?: DiffFindingApi;
+  /** Deep-link target row: outlined and marked aria-current. */
+  highlighted?: boolean;
+  rowRef?: React.Ref<HTMLDivElement>;
 }) {
   const t = useTranslations("shell");
   const tr = useTranslations("prReview");
@@ -52,7 +57,9 @@ export function CodeLine({
 
   return (
     <div
-      style={cs.rowWrap}
+      ref={rowRef}
+      aria-current={highlighted ? "location" : undefined}
+      style={highlighted ? { ...cs.rowWrap, ...fs.targetRow } : cs.rowWrap}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >

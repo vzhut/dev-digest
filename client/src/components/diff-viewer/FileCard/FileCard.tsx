@@ -8,7 +8,7 @@ import { Icon, SEV } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
-import { parsePatch, type Line } from "../helpers";
+import { findTargetLine, parsePatch, type DiffTarget, type Line } from "../helpers";
 import {
   buildThreads,
   keysForLine,
@@ -42,17 +42,42 @@ export function FileCard({
   file,
   commenting,
   findings,
+  target,
 }: {
   file: PrFile;
   commenting?: DiffCommentApi;
   findings?: DiffFindingApi;
+  /** Deep-link target; acts only when `target.file` is this file. */
+  target?: DiffTarget | null;
 }) {
   const t = useTranslations("shell");
   const tr = useTranslations("prReview");
+  const targeted = target?.file === file.path ? target : null;
   const [open, setOpen] = React.useState(
-    (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
+    (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES || !!targeted
   );
+  // A target arriving after mount (deep link resolved late) opens the card.
+  // Compared by value: the parent may rebuild an equal target object on every render,
+  // which must not re-open a card the user collapsed.
+  const targetKey = targeted ? `${targeted.file}:${targeted.line}` : null;
+  const [prevTargetKey, setPrevTargetKey] = React.useState(targetKey);
+  if (targetKey !== prevTargetKey) {
+    setPrevTargetKey(targetKey);
+    if (targeted) setOpen(true);
+  }
   const lines = React.useMemo(() => parsePatch(file.patch), [file.patch]);
+  const targetIdx = targeted ? findTargetLine(lines, targeted.line) : null;
+  const outsideHunks = !!targeted && targetIdx === null;
+
+  // Scroll the row itself when the line is in a hunk, otherwise the card.
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const rowRef = React.useRef<HTMLDivElement>(null);
+  const targetFile = targeted?.file;
+  const targetLine = targeted?.line;
+  React.useEffect(() => {
+    if (targetFile === undefined) return;
+    (rowRef.current ?? cardRef.current)?.scrollIntoView?.({ block: "center" });
+  }, [targetFile, targetLine, targetIdx, open]);
 
   // Group this file's comments into threads, then split into ones we can anchor
   // to a rendered line vs. "outdated" (GitHub dropped the line / it's not here).
@@ -81,7 +106,7 @@ export function FileCard({
     : 0;
 
   return (
-    <div style={s.fileCard}>
+    <div ref={cardRef} style={s.fileCard}>
       <div onClick={() => setOpen((o) => !o)} style={s.fileHeader}>
         <Icon.ChevronRight size={13} style={chevronFor(open)} />
         <Icon.FileText size={14} style={s.fileIcon} />
@@ -110,6 +135,11 @@ export function FileCard({
       </div>
       {open && (
         <div style={s.fileBody}>
+          {outsideHunks && targeted && (
+            <div role="status" style={fs.targetNote}>
+              {t("diffViewer.targetOutsideHunks", { line: targeted.line })}
+            </div>
+          )}
           {lines.length === 0 ? (
             <div style={s.noDiff}>{t("diffViewer.noDiffText")}</div>
           ) : (
@@ -122,6 +152,8 @@ export function FileCard({
                 commenting={commenting}
                 findings={findingsForLine(ln, matchedFindings)}
                 findingApi={findings}
+                highlighted={i === targetIdx}
+                rowRef={i === targetIdx ? rowRef : undefined}
               />
             ))
           )}

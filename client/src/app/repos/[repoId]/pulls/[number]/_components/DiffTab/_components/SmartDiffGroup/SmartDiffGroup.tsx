@@ -18,6 +18,8 @@ interface SmartDiffGroupProps {
   findingFilesCount?: number;
   /** Highest finding severity in the group; colours the dot. */
   topSeverity?: string;
+  /** Opens the group (e.g. a deep-link target lives inside); the user can still collapse it. */
+  forceOpen?: boolean;
   children: React.ReactNode;
 }
 
@@ -30,10 +32,16 @@ export function SmartDiffGroup({
   defaultCollapsed = false,
   findingFilesCount = 0,
   topSeverity,
+  forceOpen = false,
   children,
 }: SmartDiffGroupProps) {
   const t = useTranslations("prReview");
-  const [open, setOpen] = React.useState(!defaultCollapsed);
+  const [open, setOpen] = React.useState(!defaultCollapsed || forceOpen);
+  const [prevForce, setPrevForce] = React.useState(forceOpen);
+  if (forceOpen !== prevForce) {
+    setPrevForce(forceOpen);
+    if (forceOpen) setOpen(true);
+  }
 
   const dotColor = SEV[topSeverity as keyof typeof SEV]?.c ?? "var(--accent)";
 

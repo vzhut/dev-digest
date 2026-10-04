@@ -5,6 +5,7 @@ import type { FindingRecord, PrFile, ReviewRecord, SmartDiff } from "@devdigest/
 import prReview from "../../../../../../../../messages/en/prReview.json";
 import shell from "../../../../../../../../messages/en/shell.json";
 import { DiffTab } from "./DiffTab";
+import type { DiffTarget } from "@/components/diff-viewer";
 
 const state: { smart: SmartDiff | undefined; reviews: ReviewRecord[] } = { smart: undefined, reviews: [] };
 const mutate = vi.fn();
@@ -188,5 +189,76 @@ describe("DiffTab inline findings", () => {
     state.reviews = [];
     renderTab();
     expect(screen.getByText(/No review has run on this PR yet/)).toBeInTheDocument();
+  });
+});
+
+describe("DiffTab deep-link target", () => {
+  const scrollIntoView = vi.fn();
+  beforeEach(() => {
+    scrollIntoView.mockClear();
+    Element.prototype.scrollIntoView = scrollIntoView;
+  });
+
+  function renderTarget(target: DiffTarget, files: PrFile[]) {
+    return render(
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+        <DiffTab prId="p1" filesCount={files.length} files={files} target={target} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("opens a collapsed group, scrolls to and highlights the target row", () => {
+    // README.md lives in the collapsed "docs" group.
+    renderTarget({ file: "README.md", line: 2 }, [patched("README.md"), patched("src/a.ts")]);
+    // The docs group is collapsed by default; the target forces it open.
+    expect(screen.getByText("README.md")).toBeInTheDocument();
+    const rows = document.querySelectorAll('[aria-current="location"]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("const beta = 2;");
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("shows a status note when the line is outside the changed hunks or the file has no patch", () => {
+    const { unmount } = renderTarget({ file: "src/a.ts", line: 40 }, [patched("src/a.ts")]);
+    expect(screen.getByRole("status")).toHaveTextContent("Line 40 is outside the changed hunks.");
+    expect(document.querySelector('[aria-current="location"]')).toBeNull();
+    expect(scrollIntoView).toHaveBeenCalled();
+    unmount();
+
+    renderTarget({ file: "src/a.ts", line: 3 }, [file("src/a.ts")]);
+    expect(screen.getByRole("status")).toHaveTextContent("Line 3 is outside the changed hunks.");
+  });
+
+  it("does not re-open a card the user collapsed when the parent re-renders an equal target", () => {
+    const files = [patched("src/a.ts")];
+    const ui = (target: DiffTarget) => (
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+        <DiffTab prId="p1" filesCount={files.length} files={files} target={target} />
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(ui({ file: "src/a.ts", line: 2 }));
+    expect(document.querySelector('[aria-current="location"]')).not.toBeNull();
+
+    // Collapse the card by its header.
+    fireEvent.click(screen.getByText("src/a.ts"));
+    expect(document.querySelector('[aria-current="location"]')).toBeNull();
+
+    // A new object with the same file and line, as a re-rendering parent builds it.
+    rerender(ui({ file: "src/a.ts", line: 2 }));
+    expect(document.querySelector('[aria-current="location"]')).toBeNull();
+  });
+
+  it("still opens and highlights the target in original order", () => {
+    const { rerender } = renderTarget({ file: "README.md", line: 1 }, [patched("README.md"), patched("src/a.ts")]);
+    fireEvent.click(screen.getByRole("button", { name: "Original order" }));
+    expect(screen.queryByRole("button", { name: /1 file/ })).not.toBeInTheDocument();
+    expect(document.querySelector('[aria-current="location"]')).toHaveTextContent("const alpha = 1;");
+    rerender(
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+        <DiffTab prId="p1" filesCount={2} files={[patched("README.md"), patched("src/a.ts")]} target={{ file: "README.md", line: 1 }} />
+      </NextIntlClientProvider>,
+    );
+    expect(document.querySelectorAll('[aria-current="location"]')).toHaveLength(1);
   });
 });
