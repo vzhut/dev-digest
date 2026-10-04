@@ -208,6 +208,60 @@ export function extractReferences(text: string | null | undefined, repo: RepoCoo
   return out;
 }
 
+export interface OrderedIssueRef extends IssueRef {
+  /** False for `owner/repo#N` / URLs of another repository (never fetched). */
+  sameRepo: boolean;
+}
+
+const blank = (s: string) => ' '.repeat(s.length);
+
+/**
+ * Issue references in TEXT order (earliest occurrence wins on duplicates). Same
+ * regexes and scan cap as `extractReferences`, but that function runs its URL pass
+ * first, so its output order is not the order the author wrote them. Matches are
+ * blanked with same-length spaces so every `index` points into the original text.
+ */
+export function issueRefsInTextOrder(text: string | null | undefined, repo: RepoCoordinates): OrderedIssueRef[] {
+  const scan = (text ?? '').slice(0, MAX_SCAN_CHARS);
+  if (scan.length === 0) return [];
+  const found: Array<OrderedIssueRef & { index: number }> = [];
+  const add = (index: number, o: string, n: string, num: number) => {
+    const same = sameRepo({ owner: o, name: n }, repo);
+    found.push({ owner: o, name: n, number: num, ref: same ? `#${num}` : `${o}/${n}#${num}`, sameRepo: same, index });
+  };
+
+  for (const m of scan.matchAll(URL_RE)) {
+    let url: URL;
+    try {
+      url = new URL(trimUrlTail(m[0]).slice(0, MAX_URL_CHARS));
+    } catch {
+      continue;
+    }
+    const host = url.hostname.toLowerCase();
+    if (host !== 'github.com' && host !== 'www.github.com') continue;
+    const [o, r, kind, a, ...rest] = url.pathname.split('/').filter(Boolean);
+    if (o && r && kind === 'issues' && a && /^\d{1,7}$/.test(a) && rest.length === 0) add(m.index ?? 0, o, r, Number(a));
+  }
+
+  let rest = scan.replace(URL_RE, blank);
+  rest = rest.replace(CROSS_REPO_ISSUE_RE, (all: string, o: string, n: string, num: string, offset: number) => {
+    add(offset, o, n, Number(num));
+    return blank(all);
+  });
+  for (const m of rest.matchAll(SAME_REPO_ISSUE_RE)) add(m.index ?? 0, repo.owner, repo.name, Number(m[1]));
+
+  const seen = new Set<string>();
+  return found
+    .sort((a, b) => a.index - b.index)
+    .filter((f) => {
+      const key = `${f.owner.toLowerCase()}/${f.name.toLowerCase()}#${f.number}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(({ index: _index, ...ref }) => ref);
+}
+
 // ---- diff / text helpers ---------------------------------------------------
 
 const HUNK_HEADER_RE = /^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/;
