@@ -167,3 +167,46 @@ Mode: default · Agents: 21 spawns (20 completed, 1 died) · Total tokens: ~2.61
 - **Tell implementers not to leave background processes.** Evidence: T6 took 2,048,986 ms against 30–310 s for its peers and its notification said "stopped with background work of its own still running". Next run, add to every implementer prompt: "run tests in the foreground and finish with none left running"; compare durations.
 - **Parent runs suites once per wave; verifier trusts it.** Evidence: server full suite ≥ 6 runs and the verifier's Testcontainers timeouts. Next run, pass the verifier "parent ran full suites at <sha>: server 517/517, client 344/344 — re-run only typecheck and targeted tests for rows you cannot confirm".
 - **Put an output-bound line on the security checklist for LLM features.** Evidence: `Number.MAX_SAFE_INTEGER` at `helpers.ts:109` survived planning, implementation and two reviewers. Next run, add to the planner's task-card template for any task that persists model output: "every model-derived string has a character cap and the call has `maxTokens`", with a test.
+
+### PR Brief (`specs/2026-10-02-pr-brief.plan.md`, `/run-plan` + follow-ups) — 2026-10-04
+
+Mode: default · Agents: 19 spawns (13 plan run, 2 fix round, 1 user-requested rework, 3 `pr-self-review` reviewers) · Total tokens: ~1.93M (T8's first attempt reported no usage) · Sum of agent durations: ~36 min (wall clock not measured; waves overlapped and one rate-limit pause is in the middle) · Fix-loop rounds: 1
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | implementer T1 contracts | sonnet | 96.9k | 11 | 1m08s | done |
+| 2 | implementer T2 classifier move | sonnet | 87.1k | 7 | 0m48s | done |
+| 3 | implementer T3 intent seams | sonnet | 125.0k | 17 | 2m49s | done |
+| 4 | implementer T4 diff deep link | sonnet | 112.5k | 14 | 2m41s | done |
+| 5 | implementer T5 prompt core | sonnet | 149.7k | 20 | 4m56s | done |
+| 6 | implementer T6 seed | sonnet | 104.4k | 9 | 0m58s | done |
+| 7 | implementer T7 PrBriefCard | sonnet | 151.0k | 23 | 4m35s | done |
+| 8 | implementer T8 (first attempt) | sonnet | n/a | n/a | n/a | failed (HTTP 429 session limit, died at "Write the repository") |
+| 9 | implementer T9 overview wiring | sonnet | 103.4k | 10 | 1m28s | done |
+| 10 | implementer T8 (finish) | sonnet | 149.4k | 24 | 3m23s | done |
+| 11 | implementer T10 e2e flow | sonnet | 100.9k | 9 | 0m33s | done |
+| 12 | architecture-reviewer | sonnet | 93.0k | 18 | 2m56s | done, 0 findings |
+| 13 | plan-verifier | sonnet | 90.9k | 15 | ~3m54s | done, PASS 41 / PARTIAL 3 / UNVERIFIED 7 |
+| 14 | implementer fix AC-22 tests | sonnet | 93.0k | 8 | 0m59s | partial (found the production bug, did not fix it) |
+| 15 | implementer fix AC-22 slots | sonnet | 96.3k | 10 | 0m59s | done |
+| 16 | implementer Risk areas into Intent card (user request) | sonnet | 110.6k | 9 | 1m15s | done |
+| 17 | review ui (`pr-self-review`) | sonnet | 102.5k | 11 | 1m02s | done, 1 HIGH + 4 MEDIUM |
+| 18 | review backend | sonnet | 84.7k | 12 | 0m58s | done, 1 MEDIUM + 2 LOW |
+| 19 | review security | sonnet | 82.0k | 15 | 0m56s | done, 0 findings |
+
+**Went easily:** T1, T2, T4, T6, T9 and T10 were `Status: done` first pass with no fix round touching their files. The architecture review found nothing (`brief/routes.ts:111` reaches blast only through `container.prBlast(app.log)`; both `contracts/brief.ts` copies identical). The T5 caps invariant (system message 507 of 1,000 tokens) held without touching the spec's caps.
+
+**Had difficulty:** (1) T8 was the biggest task (repository, service, routes, registration, two test files) and its first agent was killed by a 429 session limit at "Write the repository"; the replacement had to re-read three unreviewed files (149k tokens). (2) The first flow 14 failed on `wait --text Review focus` because the section title is `text-transform: uppercase` and `innerText` comes back uppercase. That quirk is already at `e2e/INSIGHTS.md:25`; T10's report lists other INSIGHTS lines but not this one. (3) e2e was flaky across six runs: steps `wait --url /pulls` failed in flows 10–13 in two runs and flow 09 failed twice with `skills_workspace_name_uq`, none in code this change touched. (4) The user hit a 65 s timeout on a real generation; a later live run took 56,945 ms against the 60 s limit.
+
+**Duplicated:** The server suite was run at least 7 times (parent baselines ×3, T3/T5/T8 checkpoints, the plan-verifier's own run including the 110 `.it` tests) and the client suite at least 8 times. The architecture-reviewer and the plan-verifier both re-checked that the two vendor copies are identical and ran the onion greps that `gates.sh` runs again in `pr-self-review`. The `pr-self-review` reviewers re-read the same added lines the architecture-reviewer had just cleared.
+
+**Missed / caught late:** The `plan-verifier` rated AC-22 PARTIAL as a test gap, but the real defect was in production code: `PrBriefCard` dropped the Intent and Blast slots in the loading and error states (found by fix agent #14, fixed by #15). The `pr-self-review` ui reviewer found a HIGH no earlier agent saw: `FileCard` compared the deep-link target by object identity, so any parent re-render re-opened a card the user had collapsed (fixed, regression test added). Three layout overflows (a `nowrap` Badge in IntentBody, long paths in SymbolList caller and symbol rows, long paths in risk cards) passed every automated check because jsdom has no layout; the user found them from screenshots. The duplicated "Risk areas" (Intent's own chips plus the brief's risks) was also noticed by the user, not by any agent. Two `gates.sh` HIGHs were false positives (R6 fires on any `db/seed` change; R7 fires on `new XRepository(container.db)` in routes, a pattern already in blast, onboarding and project-context).
+
+**Proposals:**
+- **Add a real-browser overflow check to Validation.** Evidence: three overflow bugs reached the user after typecheck, 387 client tests, 14/14 e2e and two reviewers were green. Next run, give the e2e task one `wait --fn` that fails when any descendant of the brief card has `scrollWidth > clientWidth`, run at 1280 and 1400 px on the seeded PR.
+- **Record one real LLM call with timing in the plan's acceptance.** Evidence: duration 56,945 ms vs the 60,000 ms limit, plus an earlier 65,000 ms timeout on the same model. Next run, T11 must record one live generation and fail if `duration_ms` exceeds 70% of the timeout, so a tight NFR is caught before the user finds it.
+- **Split tasks that touch more than ~4 files plus tests.** Evidence: T8 (149k tokens even as a finish, 24 tool uses) died with nothing reviewable on disk. Next run, split T8 into repository + service + hermetic test, then routes + registration + `.it` test, so an interrupted agent leaves a complete unit.
+- **Paste the matching INSIGHTS lines into each task prompt, not just a path.** Evidence: the uppercase `innerText` quirk at `e2e/INSIGHTS.md:25` was missed by T10; T9 and two fix agents reported not reading `client/INSIGHTS.md` in full. Next run, `run-plan` greps each task's package INSIGHTS for the card's keywords and appends the hits.
+- **Make the plan-verifier trust the parent's last green run.** Evidence: the verifier re-ran 458 + 110 + 380 tests the parent had just run; the previous retro (same ledger, onboarding tour) already proposed this and it was not adopted. Next run, pass "parent ran full suites at <sha>, output saved at <file>" and let the verifier re-run only a named subset.
+- **Classify a fix agent's "the code cannot satisfy the AC" as a production fix at once.** Evidence: round 1 spent agent #14 on tests and agent #15 on the code. Next run, tell fix agents they may change production code when the AC requires it, so one agent closes both.
+- **Tighten two `gates.sh` rules.** Evidence: `gate-findings.tsv` listed R6 and R7 on this change and both were false positives. Next run, make R6 fire only when added seed lines touch `system_prompt`, and let R7 allow `new <Name>Repository(container.db` inside `routes.ts` (blast, onboarding, project-context do the same).
