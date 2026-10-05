@@ -6,6 +6,7 @@ import type {
   CompletionResult,
   StructuredRequest,
   StructuredResult,
+  StructuredCallUsage,
 } from '@devdigest/shared';
 import { toJsonSchema, parseWithRepair } from './structured.js';
 
@@ -61,7 +62,8 @@ export class OpenRouterProvider implements LLMProvider {
 
   async completeStructured<T>(req: StructuredRequest<T>): Promise<StructuredResult<T>> {
     const jsonSchema = toJsonSchema(req.schema, req.schemaName);
-    const maxRetries = req.maxRetries ?? 2;
+    const single = req.singleAttempt === true;
+    const maxRetries = single ? 0 : (req.maxRetries ?? 2);
     const messages = [...req.messages];
     let tokensIn = 0;
     let tokensOut = 0;
@@ -69,7 +71,8 @@ export class OpenRouterProvider implements LLMProvider {
     let lastRaw = '';
 
     for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
-      const res = await this.client.chat.completions.create({
+      const res = await this.client.chat.completions.create(
+        {
         model: req.model,
         messages,
         temperature: req.temperature ?? 0,
@@ -89,7 +92,10 @@ export class OpenRouterProvider implements LLMProvider {
         // OpenRouter usage accounting — ask it to return the REAL generation
         // cost (USD) in `usage.cost`, instead of estimating from a price book.
         ...(this.id === 'openrouter' ? { usage: { include: true } } : {}),
-      });
+        },
+        // Single-attempt: the SDK would otherwise retry 5xx/429/timeouts itself.
+        single ? { maxRetries: 0, timeout: req.timeoutMs ?? 90_000 } : undefined,
+      );
 
       // OpenRouter can return HTTP 200 with no `choices` (an upstream provider
       // error / moderation / free-tier limit in the body) — surface it.
@@ -120,7 +126,16 @@ export class OpenRouterProvider implements LLMProvider {
       messages.push({ role: 'assistant', content: lastRaw });
       messages.push({ role: 'user', content: parsed.repromptMessage });
     }
-    throw new Error(`OpenRouter structured output failed schema validation for ${req.schemaName}`);
+    const err = new Error(`OpenRouter structured output failed schema validation for ${req.schemaName}`);
+    if (single) {
+      const usage: StructuredCallUsage = {
+        tokensIn,
+        tokensOut,
+        costUsd: costFromApi ?? this.estimateCost?.(req.model, tokensIn, tokensOut) ?? null,
+      };
+      Object.assign(err, { usage });
+    }
+    throw err;
   }
 
   /**

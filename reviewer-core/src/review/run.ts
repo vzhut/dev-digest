@@ -7,7 +7,12 @@ import type {
   UnifiedDiff,
 } from '@devdigest/shared';
 import { Review as ReviewSchema } from '@devdigest/shared';
-import { assemblePrompt, type AssembledPrompt, type PromptSkill } from '../prompt.js';
+import {
+  assemblePrompt,
+  type AssembledPrompt,
+  type ProjectDoc,
+  type PromptSkill,
+} from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
 import { annotateDiff } from '../diff-annotate.js';
 import { applyIntentScope, type ScopedFinding, type ScopeStats } from '../intent/scope.js';
@@ -59,8 +64,8 @@ export interface ReviewInput {
   skills?: PromptSkill[];
   /** Curated memory items. */
   memory?: string[];
-  /** Project-context spec chunks (untrusted; delimiter-wrapped downstream). */
-  specs?: string[];
+  /** Project documents (untrusted; one path-labelled block each, downstream). */
+  specs?: ProjectDoc[];
   /**
    * Optional callers-of-changed-symbols digest (T1.3). Untrusted; rendered
    * before the diff section. Empty/undefined → section omitted.

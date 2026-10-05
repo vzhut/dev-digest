@@ -73,6 +73,20 @@ export interface StructuredRequest<T> {
    * ignored by other providers. Server copy only, like `sessionId`.
    */
   requireParameters?: boolean;
+  /**
+   * Exactly one request: no SDK/transport retry, no schema re-prompt, and the
+   * per-request SDK timeout is `timeoutMs`. A schema-invalid response throws an
+   * error carrying `usage` (StructuredCallUsage). Server copy only, like
+   * `sessionId`; without the flag behaviour is unchanged.
+   */
+  singleAttempt?: boolean;
+}
+
+/** Token/cost usage attached (as `err.usage`) to a single-attempt schema failure. */
+export interface StructuredCallUsage {
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number | null;
 }
 
 export interface StructuredResult<T> {

@@ -11,7 +11,6 @@ import {
   PrHistory,
   SmartDiff,
   Conformance,
-  Onboarding,
   EvalRun,
   MemoryItem,
   RunTrace,
@@ -20,6 +19,9 @@ import {
   PrDetail,
   PrMeta,
   RunSummary,
+  ContextPathList,
+  SearchRoots,
+  SetContextPathsBody,
 } from '@devdigest/shared';
 
 /**
@@ -163,18 +165,13 @@ describe('AI contracts parse fixtures', () => {
     expect(d.groups[0]!.role).toBe('core');
   });
 
-  it('Conformance / Onboarding / EvalRun / MemoryItem', () => {
+  it('Conformance / EvalRun / MemoryItem', () => {
     expect(() =>
       Conformance.parse({
         spec_id: 's1',
         spec_title: 'Spec',
         items: [{ requirement: 'r', status: 'implemented' }],
         completeness_pct: 80,
-      }),
-    ).not.toThrow();
-    expect(() =>
-      Onboarding.parse({
-        sections: [{ kind: 'architecture', title: 'T', body: 'b', links: [] }],
       }),
     ).not.toThrow();
     expect(() =>
@@ -414,5 +411,60 @@ describe('platform DTOs', () => {
     expect(() =>
       RunSummary.parse({ ...run, findings: [{ ...preview, summary: undefined, rationale: 'x' }] }),
     ).toThrow();
+  });
+});
+
+describe('project context contracts', () => {
+  const baseTrace = {
+    config: { agent: 'a', model: 'm' },
+    stats: { duration_ms: 1, tokens_in: 1, tokens_out: 1, findings: 0, grounding: '0/0' },
+    prompt_assembly: { system: 's', user: 'u' },
+    tool_calls: [],
+    raw_output: '',
+    memory_pulled: [],
+    log: [],
+  };
+
+  it('RunTrace.specs_read accepts legacy strings and object entries', () => {
+    const legacy = RunTrace.parse({ ...baseTrace, specs_read: ['specs/a.md'] });
+    expect(legacy.specs_read).toEqual(['specs/a.md']);
+    const mixed = RunTrace.parse({
+      ...baseTrace,
+      specs_read: [
+        'specs/a.md',
+        { path: 'docs/b.md', tokens: 12, status: 'included' },
+        { path: 'docs/c.md', tokens: 0, status: 'missing', reason: 'not found' },
+      ],
+    });
+    expect(mixed.specs_read).toHaveLength(3);
+    expect(() =>
+      RunTrace.parse({ ...baseTrace, specs_read: [{ path: 'x.md', tokens: 1, status: 'truncated' }] }),
+    ).toThrow();
+  });
+
+  it('ContextPathList accepts clean paths and rejects unsafe ones', () => {
+    expect(ContextPathList.parse(['specs/a.md', 'docs/x/b.md'])).toHaveLength(2);
+    const bad = [
+      ['../../etc/passwd.md'],
+      ['/abs.md'],
+      ['a.txt'],
+      ['docs/a".md'],
+      ['docs\\a.md'],
+      ['docs/a\n.md'],
+      ['docs/./a.md'],
+      ['docs//a.md'],
+      ['a.md', 'a.md'],
+    ];
+    for (const paths of bad) expect(ContextPathList.safeParse(paths).success).toBe(false);
+    expect(SetContextPathsBody.safeParse({ paths: ['../x.md'] }).success).toBe(false);
+  });
+
+  it('SearchRoots caps at 20 and rejects absolute / traversal globs', () => {
+    expect(SearchRoots.parse([])).toEqual([]);
+    expect(SearchRoots.safeParse(Array.from({ length: 20 }, (_, i) => `d${i}/**/*.md`)).success).toBe(true);
+    expect(SearchRoots.safeParse(Array.from({ length: 21 }, (_, i) => `d${i}/**/*.md`)).success).toBe(false);
+    expect(SearchRoots.safeParse(['/etc/*.md']).success).toBe(false);
+    expect(SearchRoots.safeParse(['../x/*.md']).success).toBe(false);
+    expect(SearchRoots.safeParse(['']).success).toBe(false);
   });
 });

@@ -20,6 +20,8 @@ Reusable AI skills that provide specialized knowledge and workflows. Canonical l
 | [mermaid-diagram](mermaid-diagram/SKILL.md) | Shared | Mermaid diagrams in markdown (flowcharts, sequence, ERD, …) |
 | [engineering-insights](engineering-insights/SKILL.md) | Shared | Capture non-obvious findings into the right package's INSIGHTS.md |
 | [pr-self-review](pr-self-review/SKILL.md) | Shared | Local gate before push/PR: routes the diff to the skills above, runs deterministic gates, PASS/BLOCK. Two tiers — gates only (~12s) opens `git push`, the full review is required for `gh pr create`/`merge` |
+| [run-plan](run-plan/SKILL.md) | Shared | Runs an already-approved Development Plan through implementer waves → architecture-reviewer + plan-verifier → bounded fix loop → docs. Assumes spec-creator/implementation-planner already ran by hand; skips test-writer |
+| [workflow-retro](workflow-retro/SKILL.md) | Shared | **Manual-only**, never auto-triggers. Retrospective over a multi-agent run just finished in this conversation: per-agent tokens/duration/order, what was easy/hard/duplicated/missed, plus concrete proposals. Posts to chat + appends to `docs/retro/ledger.md`. `deep` mode mines git log/Delivery log/INSIGHTS.md diffs, never raw subagent transcripts |
 
 ## What Are Skills?
 

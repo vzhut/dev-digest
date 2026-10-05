@@ -1,6 +1,6 @@
 import type { Container } from '../../platform/container.js';
-import type { Provider, Review, RunTrace, UnifiedDiff } from '@devdigest/shared';
-import { reviewPullRequest, countBlockers, type ReviewIntent } from '@devdigest/reviewer-core';
+import type { Provider, Review, RunTrace, SpecRead, UnifiedDiff } from '@devdigest/shared';
+import { reviewPullRequest, countBlockers, type ProjectDoc, type ReviewIntent } from '@devdigest/reviewer-core';
 import { RunLogger } from '../../platform/run-logger.js';
 import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
@@ -8,6 +8,7 @@ import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './reposit
 import { REVIEW_STRATEGY } from './constants.js';
 import { taskLine, resolveRunSkills, toPromptSkills, type ResolvedSkill } from './helpers.js';
 import { loadDiff } from './diff-loader.js';
+import { resolveRunDocSet } from '../_shared/project-context.js';
 
 /** Result of the shared intent pre-work (derived through the container, not `modules/intent`). */
 type IntentEnsureResult = Awaited<ReturnType<Container['prIntent']['ensureForReview']>>;
@@ -196,6 +197,12 @@ export class ReviewRunExecutor {
       skills = [];
     }
 
+    // Project docs attached to this run (agent paths, then skills'); read inside
+    // `try` so a read failure still lands in the failure trace. `specsRead` is
+    // kept outside so failure/cancel traces name what was attempted (AC-25).
+    const docSet = resolveRunDocSet(agent.contextPaths ?? [], skills);
+    let specsRead: SpecRead[] = [];
+
     try {
       // Resolve the agent's LLM provider. (container.llm throws if the provider
       // key is missing — caught below and persisted as a failed run.)
@@ -238,6 +245,11 @@ export class ReviewRunExecutor {
         runLog.info(`intent: not injected (${intent.origin === 'failed' ? 'derivation failed' : 'none available'})`);
       }
 
+      // Project context: read each attached doc (full text, no truncation). A
+      // missing/unreadable doc never fails the run — it is skipped and traced.
+      const projectContext = await this.loadProjectContext(repo.clonePath, docSet, runLog);
+      specsRead = projectContext.specsRead;
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -257,6 +269,8 @@ export class ReviewRunExecutor {
         ...(repoMap ? { repoMap } : {}),
         // §5.4 — linked skills; omitted when empty so the prompt is byte-identical.
         ...(skills.length > 0 ? { skills: toPromptSkills(skills) } : {}),
+        // Attached project docs; omitted when none so the prompt is byte-identical.
+        ...(projectContext.docs.length > 0 ? { specs: projectContext.docs } : {}),
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
@@ -356,7 +370,7 @@ export class ReviewRunExecutor {
         ],
         raw_output: outcome.raw,
         memory_pulled: [],
-        specs_read: [],
+        specs_read: specsRead,
         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
         // diff load + intent), not just events recorded inside this method.
         log: runLog.logFor(runId),
@@ -388,7 +402,7 @@ export class ReviewRunExecutor {
         })
         .catch(() => undefined);
       await this.repo
-        .saveRunTrace(runId, this.traceFromBuffer(runId, pull, agent, '0/0 passed', Date.now() - start, skills))
+        .saveRunTrace(runId, this.traceFromBuffer(runId, pull, agent, '0/0 passed', Date.now() - start, skills, specsRead))
         .catch(() => undefined);
       this.container.runBus.complete(runId);
       throw err;
@@ -483,6 +497,44 @@ export class ReviewRunExecutor {
   }
 
   /**
+   * Read the run's attached project docs through the `ProjectDocs` port.
+   * `docs` feeds the prompt (non-blank text only, set order); `specsRead` is the
+   * trace record for every attached path (tokens from the server tokenizer).
+   */
+  private async loadProjectContext(
+    clonePath: string | null,
+    docSet: string[],
+    runLog: RunLogger,
+  ): Promise<{ docs: ProjectDoc[]; specsRead: SpecRead[] }> {
+    const docs: ProjectDoc[] = [];
+    const specsRead: SpecRead[] = [];
+    if (docSet.length === 0) return { docs, specsRead };
+    let included = 0;
+    let totalTokens = 0;
+    const skipped: string[] = [];
+    for (const path of docSet) {
+      const res = clonePath
+        ? await this.container.projectDocs.read(clonePath, path)
+        : ({ status: 'missing', reason: 'not found' } as const);
+      if (res.status === 'missing') {
+        specsRead.push({ path, tokens: 0, status: 'missing', reason: res.reason });
+        skipped.push(`project context: skipped ${path} (${res.reason})`);
+        continue;
+      }
+      const tokens = res.text.trim().length > 0 ? this.container.tokenizer.count(res.text) : 0;
+      if (res.text.trim().length > 0) docs.push({ path, text: res.text });
+      specsRead.push({ path, tokens, status: 'included' });
+      included++;
+      totalTokens += tokens;
+    }
+    runLog.info(
+      `project context: ${docSet.length} attached, ${included} included, ${skipped.length} missing, ${totalTokens} tokens`,
+    );
+    for (const line of skipped) runLog.info(line);
+    return { docs, specsRead };
+  }
+
+  /**
    * A minimal RunTrace whose `log` is the run's full SSE buffer — persisted on
    * failure/cancel (and pre-work failures) so the events (and WHY it failed)
    * survive a reload, not just the in-memory stream.
@@ -494,6 +546,7 @@ export class ReviewRunExecutor {
     grounding: string,
     durationMs = 0,
     skills: ResolvedSkill[] = [],
+    specsRead: SpecRead[] = [],
   ): RunTrace {
     return {
       config: {
@@ -516,7 +569,7 @@ export class ReviewRunExecutor {
       tool_calls: [],
       raw_output: '',
       memory_pulled: [],
-      specs_read: [],
+      specs_read: specsRead,
       log: this.container.runBus.buffer(runId).map((e) => ({ t: e.t, kind: e.kind, msg: e.msg })),
     };
   }

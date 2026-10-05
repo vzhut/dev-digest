@@ -15,7 +15,6 @@ import {
   MAX_HUNK_HEADERS,
   MAX_HUNK_HEADER_CHARS,
   MAX_ISSUE_REFS,
-  MAX_LOG_ERROR_CHARS,
   MAX_REPO_PATH_CHARS,
   MAX_SCAN_CHARS,
   MAX_TICKET_REFS,
@@ -280,25 +279,8 @@ export function isStale(
 
 // ---- logging / errors ------------------------------------------------------
 
-/**
- * Mask credentials before an error text reaches a log or an API response: git
- * errors can print the clone URL with the token embedded (server/INSIGHTS.md),
- * provider errors can echo an Authorization header. Also drops URL query
- * strings and userinfo. Output is length-capped.
- */
-export function redactSecrets(msg: string): string {
-  return msg
-    .replace(/x-access-token:[^@\s/]+@/gi, 'x-access-token:***@')
-    .replace(/(https?:\/\/)[^\s/@:]+:[^\s/@]+@/gi, '$1***@')
-    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer ***')
-    .replace(/\bBasic\s+[A-Za-z0-9+/]{12,}={0,2}/g, 'Basic ***') // Jira: base64(email:token)
-    .replace(/\blin_api_[A-Za-z0-9]{10,}/g, 'lin_api_***') // Linear personal API key
-    .replace(/\bgithub_pat_[A-Za-z0-9_]{10,}/g, 'github_pat_***')
-    .replace(/\bgh[pousr]_[A-Za-z0-9]{10,}/g, 'gh*_***')
-    .replace(/\bsk-[A-Za-z0-9_-]{10,}/g, 'sk-***')
-    .replace(/(https?:\/\/[^\s?#"'`]+)\?[^\s"'`]*/gi, '$1?…')
-    .slice(0, MAX_LOG_ERROR_CHARS);
-}
+// Moved to modules/_shared/redact.ts (also used by modules/onboarding); re-exported so intent callers are unchanged.
+export { redactSecrets } from '../_shared/redact.js';
 
 /** Short, safe reason for a failed source read (never the raw error text). */
 export function unavailableReason(err: unknown): string {

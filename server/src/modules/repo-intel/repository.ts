@@ -102,6 +102,13 @@ export interface IndexerFileFactsRow {
   crons: string[];
 }
 
+/** `file_rank` columns the tour facts need. */
+export interface TourRankRow {
+  path: string;
+  pagerank: number;
+  percentile: number;
+}
+
 /** Candidate row for the repo-map renderer (symbols × file_rank). */
 export interface RepoMapCandidateRow {
   path: string;
@@ -456,6 +463,56 @@ export class RepoIntelRepository {
       .where(eq(t.fileRank.repoId, repoId))
       .orderBy(desc(t.fileRank.rank))
       .limit(limit);
+  }
+
+  /** Every `file_rank` row (onboarding tour facts); ordered by path so callers are deterministic. */
+  async getAllRankRows(repoId: string): Promise<TourRankRow[]> {
+    return this.db
+      .select({
+        path: t.fileRank.filePath,
+        pagerank: t.fileRank.pagerank,
+        percentile: t.fileRank.percentile,
+      })
+      .from(t.fileRank)
+      .where(eq(t.fileRank.repoId, repoId))
+      .orderBy(asc(t.fileRank.filePath));
+  }
+
+  /** Distinct importer count per imported file (`file_edges.to_file`). */
+  async getInboundCounts(repoId: string): Promise<Map<string, number>> {
+    const rows = await this.db
+      .select({
+        path: t.fileEdges.toFile,
+        n: sql<number>`count(distinct ${t.fileEdges.fromFile})::int`,
+      })
+      .from(t.fileEdges)
+      .where(eq(t.fileEdges.repoId, repoId))
+      .groupBy(t.fileEdges.toFile);
+    return new Map(rows.map((r) => [r.path, Number(r.n)]));
+  }
+
+  /** Every `file_facts` row that declares at least one endpoint (route list). */
+  async getAllEndpointFacts(repoId: string): Promise<Array<{ filePath: string; endpoints: string[] }>> {
+    const rows = await this.db
+      .select({ filePath: t.fileFacts.filePath, endpoints: t.fileFacts.endpoints })
+      .from(t.fileFacts)
+      .where(eq(t.fileFacts.repoId, repoId))
+      .orderBy(asc(t.fileFacts.filePath));
+    return rows
+      .map((r) => ({ filePath: r.filePath, endpoints: ((r.endpoints as string[] | null) ?? []).filter((e) => typeof e === 'string') }))
+      .filter((r) => r.endpoints.length > 0);
+  }
+
+  /**
+   * Raw `repo_index_state.stats` jsonb (or null without a row). Unlike `tryGetIndexState` this
+   * keeps `totalCandidates` / `bounded`, which an incremental refresh does not write.
+   */
+  async getIndexStats(repoId: string): Promise<Record<string, unknown> | null> {
+    const [row] = await this.db
+      .select({ stats: t.repoIndexState.stats })
+      .from(t.repoIndexState)
+      .where(eq(t.repoIndexState.repoId, repoId));
+    return row ? ((row.stats ?? {}) as Record<string, unknown>) : null;
   }
 
   /** Repo-map candidates: symbols with a signature, joined to rank, ordered. */

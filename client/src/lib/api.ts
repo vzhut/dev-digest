@@ -2,6 +2,8 @@
    All hooks build on `apiFetch`. Errors are normalized to ApiError so the
    error-UX taxonomy (toast/inline/full-screen) can branch on status. */
 
+import type { OnboardingTourResponse, Tour } from "@devdigest/shared";
+
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
 
@@ -80,4 +82,9 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     apiFetch<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => apiFetch<T>(path, { method: "DELETE" }),
+  getOnboardingTour: (repoId: string) =>
+    apiFetch<OnboardingTourResponse>(`/repos/${repoId}/onboarding`),
+  /** One LLM call; resolves with the freshly stored tour (full or skeleton). */
+  generateOnboardingTour: (repoId: string) =>
+    apiFetch<Tour>(`/repos/${repoId}/onboarding/generate`, { method: "POST" }),
 };

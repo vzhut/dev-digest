@@ -20,7 +20,10 @@ default.
 Exactly two messages:
 
 - **system** = the agent's `system_prompt` + `INJECTION_GUARD` (`prompt.ts:18`),
-  appended verbatim on every run.
+  appended verbatim on every run. When at least one non-blank project document
+  is passed, `PROJECT_CONTEXT_GUARD` (`prompt.ts:36`) is appended after it on a
+  new line; with no documents the system message is byte-identical to before.
+  `INJECTION_GUARD` itself is unchanged.
 - **user** = task line, then optional sections, each omitted when empty:
   PR description (untrusted, cut to `MAX_PR_DESCRIPTION_CHARS` = 4000),
   **PR intent**, skills, memory, repo skeleton, project context, callers of
@@ -30,6 +33,19 @@ Everything repo- or author-derived goes through `wrapUntrusted(label, content)`
 (`prompt.ts:32`) → `<untrusted source="…">…</untrusted>`. The guard tells the
 model that fenced content is data, never instructions. **Do not** replace this
 with keyword or denylist scanning (see `../AGENTS.md`).
+
+**Project context.** `ReviewInput`'s `specs` (`ProjectDoc[]`: repo-relative `path` +
+`text`) render as a `## Project context` section after the repo skeleton and before
+the callers. Documents with blank text are dropped; if none remain the section and
+the guard are omitted. The section is one trusted citation line
+(`PROJECT_CONTEXT_CITATION`, `prompt.ts:41`: a finding that relies on a document
+must name its repo-relative path in the rationale) followed by **one untrusted
+block per document**, in the given order, each labelled with its path:
+`wrapUntrusted(d.path, d.text)` → `<untrusted source="docs/x.md">…</untrusted>`.
+Paths are attacker-influenced, so `wrapUntrusted` escapes `"` and strips newlines in
+the label, and neutralises any `</untrusted>` inside the text. The section is
+logged as `specs` (source `project-specs`, `untrusted: true`). Which documents are
+attached, and their budget, is decided by the server, not by this package.
 
 **Intent in the prompt.** When `ReviewInput.intent` is set, `assemblePrompt` adds
 a `## PR intent` section right after `## PR description` (`prompt.ts:151-152`,

@@ -39,6 +39,29 @@ function renderWithIntl(ui: React.ReactElement) {
   );
 }
 
+describe("Specs read", () => {
+  it("renders legacy strings, included and missing entries, and the relabelled specs block", () => {
+    const saved = { s: TRACE.specs_read, p: TRACE.prompt_assembly.specs };
+    TRACE.specs_read = [
+      "specs/legacy.md",
+      { path: "docs/a.md", tokens: 1240, status: "included" },
+      { path: "docs/gone.md", tokens: 0, status: "missing", reason: "file not found" },
+    ];
+    TRACE.prompt_assembly.specs = "## Project context";
+    try {
+      renderWithIntl(<RunTraceDrawer runId="r1" agentName="Security" prNumber={482} onClose={() => {}} />);
+      expect(screen.getByText("specs/legacy.md")).toBeInTheDocument();
+      expect(screen.getByText(/docs\/a\.md · 1,240 tokens/)).toBeInTheDocument();
+      expect(screen.getByText(/docs\/gone\.md/)).toHaveTextContent("[missing: file not found]");
+      fireEvent.click(screen.getByText(/^Prompt assembly/i));
+      expect(screen.getByText("Project context — attached docs (untrusted)")).toBeInTheDocument();
+    } finally {
+      TRACE.specs_read = saved.s;
+      TRACE.prompt_assembly.specs = saved.p;
+    }
+  });
+});
+
 describe("A5 Run Trace drawer (smoke)", () => {
   it("renders the trace tabs and stats", () => {
     renderWithIntl(<RunTraceDrawer runId="r1" agentName="Security" prNumber={482} onClose={() => {}} />);

@@ -77,6 +77,7 @@ flowchart TB
   end
   subgraph Intel["Repo intelligence"]
     repoIntel["repo-intel<br/>/repos/:id/index-state · /resync"]
+    projectContext["project-context<br/>/repos/:id/context(/file|/roots)<br/>/agents/:id/context · /skills/:id/context"]
   end
   subgraph Platform["Platform"]
     settings["settings<br/>/settings · /providers"]
@@ -84,6 +85,25 @@ flowchart TB
   end
   HEALTH["/health (liveness) · /health/ready (DB ping → 200/503)"]
 ```
+
+### project-context endpoints
+
+Repo docs (specs / docs / insights) that agents and skills attach to reviews
+(`modules/project-context/routes.ts`). All are workspace-scoped.
+
+| Method · path | Notes |
+|---|---|
+| `GET /repos/:id/context` | `ContextListing`; a fresh scan of the clone on every request |
+| `GET /repos/:id/context/file?path=` | `ContextDocContent`; `path` is a repo-relative `.md` file (validated by `ContextPath`) |
+| `GET /repos/:id/context/roots` | `{ roots: string[] }`, the search globs |
+| `PUT /repos/:id/context/roots` | body `{ roots }`; returns `{ roots }`; `[]` resets to the default |
+| `GET /agents/:id/context` | `AgentContext`: the agent's own paths plus those inherited from its skills |
+| `PUT /agents/:id/context` | body `{ paths }`; returns `AgentContext` |
+| `GET /skills/:id/context` | `SkillContext` |
+| `PUT /skills/:id/context` | body `{ paths }`; returns `SkillContext` |
+
+Saving paths writes only the jsonb column; it never creates an agent or skill
+version.
 
 ## Environment
 

@@ -39,6 +39,18 @@ reach() {
 fires()  { if printf '%s\n' "$3" | grep -qE "$2"; then ok "fires  $1"; else bad "fires  $1 — pattern did not match: $3"; fi; }
 silent() { if printf '%s\n' "$3" | grep -qE "$2"; then bad "silent $1 — pattern matched but should not: $3"; else ok "silent $1"; fi; }
 
+echo "== R14 client shared barrel =="
+fires  "R14 value import"        "$P_CLIENT_SHARED_RUNTIME" 'import { ContextPath } from "@devdigest/shared";'
+fires  "R14 value import single" "$P_CLIENT_SHARED_RUNTIME" "import { A, B } from '@devdigest/shared';"
+silent "R14 import type"         "$P_CLIENT_SHARED_RUNTIME" 'import type { ContextPath } from "@devdigest/shared";'
+fires  "R14 inline type matches the exemption" "$P_CLIENT_SHARED_TYPE_ONLY" 'import { type ContextPath } from "@devdigest/shared";'
+reach "R14 type imports exist (pattern sees the barrel)" 1 "from ['\"]@devdigest/shared['\"]" client/src
+
+echo "== R7 repository wiring =="
+fires  "R7 wiring matches"       "$P_ONION_REPO_WIRING" "const repo = new BlastRepository(container.db);"
+fires  "R7 wiring in object"     "$P_ONION_REPO_WIRING" "    repo: new ProjectContextRepository(container.db),"
+silent "R7 raw container.db use" "$P_ONION_REPO_WIRING" "const rows = await app.container.db.select()"
+
 echo "== R7 onion =="
 reach "R7 db-in-module"   20 "$P_ONION_DB"          server/src/modules
 reach "R7 cross-module"    1 "$(onion_cross_module_re)" server/src
