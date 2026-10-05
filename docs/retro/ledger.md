@@ -125,3 +125,88 @@ Mode: default · Agents: 28 spawns · Total tokens: ~3.29M (last `task-notificat
 - **Planner "ripple" check for type changes.** Evidence: T3's `specs` type change broke 5 server tests the card said would stay green. Next run: for each task changing an exported type, the card lists the grep'd consumers (tests included) in `Owned paths`; test: wave-1 checkpoint has 0 unexpected failures.
 - **Incremental re-review after round 1.** Evidence: four architecture reviews at 95–168k tokens over a ~95%-identical diff. Next run: pass only `git diff` of the fix commits plus the previous finding list; test: re-review tokens drop below ~50k with the same findings caught.
 - **Design sign-off with real images before implementing UI.** Evidence: spec built from a text description of screenshots; restyle + Edit cost ~7 T10 continuations and one spec revision. Next run: attach the image files to `spec-creator` (or ask the user for them) and add a visual check (`agent-browser screenshot`) to the first UI task's acceptance; test: no layout-only fix round after the user's first look.
+
+### Onboarding Tour — spec → plan → cross-model review → run-plan (T1–T13) → pr-self-review — 2026-10-02
+
+Mode: default · Agents: 21 spawns (20 completed, 1 died) · Total tokens: ~2.61M (excludes the dead verifier run, no figure reported) · Wall time: not measurable — the run spanned two days with a usage-limit pause and a laptop sleep; sum of agent durations ≈ 2.4 h, of which ≈ 1.2 h is two sleep/background outliers (rows 12, 19) · Fix-loop rounds: 0 from `run-plan` (nothing qualified); 1 from `pr-self-review` (commit `59fcd87`)
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | spec-creator (+3 researchers it spawned, not visible here) | session default | 182k | 25 | 7m42s | done, 0 open questions |
+| 2 | implementation-planner | session default | 234k | 32 | 12m17s | done, status `needs decisions` |
+| 3 | cross-model reviewer (general-purpose) | opus | 182k | 47 | 5m30s | done, APPROVE WITH CHANGES, F1–F20 |
+| 4 | implementer T4 | session default | 88k | 6 | 0m30s | done |
+| 5 | implementer T2 | session default | 103k | 7 | 1m02s | done |
+| 6 | implementer T1 | session default | 105k | 8 | 1m05s | done |
+| 7 | implementer T3 | session default | 110k | 12 | 1m42s | done + 1 question |
+| 8 | implementer T8 | session default | 101k | 7 | 0m52s | done |
+| 9 | implementer T7 | session default | 102k | 11 | 1m21s | done |
+| 10 | implementer T5 | session default | 111k | 8 | 2m10s | done |
+| 11 | implementer T9 | session default | 124k | 16 | 2m43s | done |
+| 12 | implementer T6 | session default | 149k | 22 | 34m09s | done (outlier, see below) |
+| 13 | implementer T10 | session default | 168k | 26 | 5m07s | done |
+| 14 | implementer T11 | session default | 156k | 20 | 4m41s | done |
+| 15 | implementer T12 | session default | 165k | 21 | 4m21s | done |
+| 16 | implementer T13 | session default | 94k | 6 | 0m32s | done |
+| 17 | architecture-reviewer | sonnet | 133k | 31 | 2m26s | done, 0/0/2/2 |
+| 18 | plan-verifier (run 1) | sonnet | n/a | n/a | n/a | failed — laptop slept mid-response |
+| 19 | plan-verifier (run 2) | sonnet | 143k | 25 | 42m47s (sleep-inflated) | done, PASS 62 / PARTIAL 4 / MISSING 0 / UNVERIFIED 3 |
+| 20 | pr-self-review reviewer: backend | sonnet | 85k | 12 | 1m01s | done, 1 MEDIUM |
+| 21 | pr-self-review reviewer: ui | sonnet | 73k | 7 | 1m03s | done, 1 HIGH + 3 MEDIUM + 2 LOW |
+
+**Went easily:** Waves 1–5: every implementer returned `Status: done` on the first pass, 12 of 13 with no question and no later fix-loop touch of its files (T4/T2/T1/T8/T7/T5/T9/T10/T11/T12/T13; T3 asked one). Disjoint `Owned paths` held: `git status` after each wave showed nothing outside them. The cross-model review earned its cost before any code existed: F1 (SDKs retry twice by themselves, so T2's "one call" was false for OpenAI/Anthropic), F2 (`contracts.test.ts` would have failed at the first checkpoint) and F3 (e2e could make a paid call) were all fixed in the cards, and none of them resurfaced in the code reviews.
+**Had difficulty:** T3 blocked on a contradiction I introduced: the card said a depth-1 `churn` gives `commits === 1`, amendment F5 (appended as a separate plan section instead of edited into the card) said boundary commits are excluded, so 0. The agent asked; the parent had to arbitrate. The first `plan-verifier` died on a laptop sleep and the whole 69-item verification was redone (~143k tokens). The second verifier's full `pnpm test` hit Testcontainers "Hook timed out in 120000ms" in 7 unrelated `.it` files (parallel load) and had to re-run four of them by hand. The parent's amendment script failed once on a backtick pattern, which cost a retry.
+**Duplicated:** The same ~7k-line diff was read by the architecture-reviewer (133k), the plan-verifier (143k) and two `pr-self-review` reviewers (85k + 73k) — ≈ 430k tokens, and three of the four independently re-ran or re-derived suite results the parent had already produced (server full suite ≥ 6 times: wave 1, wave 2, T10, T12, parent re-run, verifier). The classifyIndex/classifyTourIndex duplication was disclosed by T10 in its report ("duplicates ~10 lines… sync risk is yours to weigh") and then re-found as MEDIUM #1 by the architecture-reviewer.
+**Missed / caught late:** The HIGH `SectionCard` bug (inline `display: flex` overrides `hidden`, so a collapsed card stays visible) passed T9's acceptance, T11's checkpoint, the architecture-reviewer, and a plan-verifier PASS on AC-3 — its test asserted `toBeVisible()`, which jest-dom answers from the `hidden` attribute and not from real CSS (`TourSections.test.tsx:62-71`). It was caught only by the `pr-self-review` ui reviewer. Likewise `summary_md` capped with `Number.MAX_SAFE_INTEGER` (`onboarding/helpers.ts:109`) passed AC-32 (which bounds the prompt, not the output) and was found only by the `pr-self-review` backend reviewer. The planner's TD-1 handling was stale (Project Context had already fixed it); only the cross-model reviewer noticed.
+
+**Proposals:**
+- **Make "PASS" prove the test can fail.** Evidence: AC-3 was PASS on a test blind to the bug (row 19 vs row 21). Next run, add to the `plan-verifier` prompt: for each AC marked PASS from a UI test, state which assertion would fail if the behaviour broke and flag assertions that only read attributes jsdom treats specially (`hidden`, `disabled`, `aria-*`); expect the verifier to surface this class before `pr-self-review`.
+- **Run all reviewers in one parallel message.** Evidence: Phase B (rows 17, 19) finished before the `pr-self-review` reviewers (rows 20–21) were even started; the latter found the only HIGH. Next run, launch architecture-reviewer, plan-verifier and the ui/backend/security `pr-self-review` reviewers in a single message and measure wall time and findings overlap.
+- **Share one diff read.** Evidence: ≈ 430k tokens spent by four agents on the same diff. Next run, give `pr-self-review` reviewers the architecture-reviewer's findings list with "skip placement/layering, look for runtime bugs, unbounded inputs, a11y" so their reading is not a rehash.
+- **Write review amendments into the cards, not beside them.** Evidence: T3's Question (card said `commits === 1`, F5 said 0). Next run, after a cross-model review, regenerate or edit the affected `Fixed decisions` lines (via `SendMessage` to the planner) instead of appending an "amendments" section; expect zero card-vs-amendment Questions.
+- **Tell implementers not to leave background processes.** Evidence: T6 took 2,048,986 ms against 30–310 s for its peers and its notification said "stopped with background work of its own still running". Next run, add to every implementer prompt: "run tests in the foreground and finish with none left running"; compare durations.
+- **Parent runs suites once per wave; verifier trusts it.** Evidence: server full suite ≥ 6 runs and the verifier's Testcontainers timeouts. Next run, pass the verifier "parent ran full suites at <sha>: server 517/517, client 344/344 — re-run only typecheck and targeted tests for rows you cannot confirm".
+- **Put an output-bound line on the security checklist for LLM features.** Evidence: `Number.MAX_SAFE_INTEGER` at `helpers.ts:109` survived planning, implementation and two reviewers. Next run, add to the planner's task-card template for any task that persists model output: "every model-derived string has a character cap and the call has `maxTokens`", with a test.
+
+### PR Brief (`specs/2026-10-02-pr-brief.plan.md`, `/run-plan` + follow-ups) — 2026-10-04
+
+Mode: default · Agents: 19 spawns (13 plan run, 2 fix round, 1 user-requested rework, 3 `pr-self-review` reviewers) · Total tokens: ~1.93M (T8's first attempt reported no usage) · Sum of agent durations: ~36 min (wall clock not measured; waves overlapped and one rate-limit pause is in the middle) · Fix-loop rounds: 1
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | implementer T1 contracts | sonnet | 96.9k | 11 | 1m08s | done |
+| 2 | implementer T2 classifier move | sonnet | 87.1k | 7 | 0m48s | done |
+| 3 | implementer T3 intent seams | sonnet | 125.0k | 17 | 2m49s | done |
+| 4 | implementer T4 diff deep link | sonnet | 112.5k | 14 | 2m41s | done |
+| 5 | implementer T5 prompt core | sonnet | 149.7k | 20 | 4m56s | done |
+| 6 | implementer T6 seed | sonnet | 104.4k | 9 | 0m58s | done |
+| 7 | implementer T7 PrBriefCard | sonnet | 151.0k | 23 | 4m35s | done |
+| 8 | implementer T8 (first attempt) | sonnet | n/a | n/a | n/a | failed (HTTP 429 session limit, died at "Write the repository") |
+| 9 | implementer T9 overview wiring | sonnet | 103.4k | 10 | 1m28s | done |
+| 10 | implementer T8 (finish) | sonnet | 149.4k | 24 | 3m23s | done |
+| 11 | implementer T10 e2e flow | sonnet | 100.9k | 9 | 0m33s | done |
+| 12 | architecture-reviewer | sonnet | 93.0k | 18 | 2m56s | done, 0 findings |
+| 13 | plan-verifier | sonnet | 90.9k | 15 | ~3m54s | done, PASS 41 / PARTIAL 3 / UNVERIFIED 7 |
+| 14 | implementer fix AC-22 tests | sonnet | 93.0k | 8 | 0m59s | partial (found the production bug, did not fix it) |
+| 15 | implementer fix AC-22 slots | sonnet | 96.3k | 10 | 0m59s | done |
+| 16 | implementer Risk areas into Intent card (user request) | sonnet | 110.6k | 9 | 1m15s | done |
+| 17 | review ui (`pr-self-review`) | sonnet | 102.5k | 11 | 1m02s | done, 1 HIGH + 4 MEDIUM |
+| 18 | review backend | sonnet | 84.7k | 12 | 0m58s | done, 1 MEDIUM + 2 LOW |
+| 19 | review security | sonnet | 82.0k | 15 | 0m56s | done, 0 findings |
+
+**Went easily:** T1, T2, T4, T6, T9 and T10 were `Status: done` first pass with no fix round touching their files. The architecture review found nothing (`brief/routes.ts:111` reaches blast only through `container.prBlast(app.log)`; both `contracts/brief.ts` copies identical). The T5 caps invariant (system message 507 of 1,000 tokens) held without touching the spec's caps.
+
+**Had difficulty:** (1) T8 was the biggest task (repository, service, routes, registration, two test files) and its first agent was killed by a 429 session limit at "Write the repository"; the replacement had to re-read three unreviewed files (149k tokens). (2) The first flow 14 failed on `wait --text Review focus` because the section title is `text-transform: uppercase` and `innerText` comes back uppercase. That quirk is already at `e2e/INSIGHTS.md:25`; T10's report lists other INSIGHTS lines but not this one. (3) e2e was flaky across six runs: steps `wait --url /pulls` failed in flows 10–13 in two runs and flow 09 failed twice with `skills_workspace_name_uq`, none in code this change touched. (4) The user hit a 65 s timeout on a real generation; a later live run took 56,945 ms against the 60 s limit.
+
+**Duplicated:** The server suite was run at least 7 times (parent baselines ×3, T3/T5/T8 checkpoints, the plan-verifier's own run including the 110 `.it` tests) and the client suite at least 8 times. The architecture-reviewer and the plan-verifier both re-checked that the two vendor copies are identical and ran the onion greps that `gates.sh` runs again in `pr-self-review`. The `pr-self-review` reviewers re-read the same added lines the architecture-reviewer had just cleared.
+
+**Missed / caught late:** The `plan-verifier` rated AC-22 PARTIAL as a test gap, but the real defect was in production code: `PrBriefCard` dropped the Intent and Blast slots in the loading and error states (found by fix agent #14, fixed by #15). The `pr-self-review` ui reviewer found a HIGH no earlier agent saw: `FileCard` compared the deep-link target by object identity, so any parent re-render re-opened a card the user had collapsed (fixed, regression test added). Three layout overflows (a `nowrap` Badge in IntentBody, long paths in SymbolList caller and symbol rows, long paths in risk cards) passed every automated check because jsdom has no layout; the user found them from screenshots. The duplicated "Risk areas" (Intent's own chips plus the brief's risks) was also noticed by the user, not by any agent. Two `gates.sh` HIGHs were false positives (R6 fires on any `db/seed` change; R7 fires on `new XRepository(container.db)` in routes, a pattern already in blast, onboarding and project-context).
+
+**Proposals:**
+- **Add a real-browser overflow check to Validation.** Evidence: three overflow bugs reached the user after typecheck, 387 client tests, 14/14 e2e and two reviewers were green. Next run, give the e2e task one `wait --fn` that fails when any descendant of the brief card has `scrollWidth > clientWidth`, run at 1280 and 1400 px on the seeded PR.
+- **Record one real LLM call with timing in the plan's acceptance.** Evidence: duration 56,945 ms vs the 60,000 ms limit, plus an earlier 65,000 ms timeout on the same model. Next run, T11 must record one live generation and fail if `duration_ms` exceeds 70% of the timeout, so a tight NFR is caught before the user finds it.
+- **Split tasks that touch more than ~4 files plus tests.** Evidence: T8 (149k tokens even as a finish, 24 tool uses) died with nothing reviewable on disk. Next run, split T8 into repository + service + hermetic test, then routes + registration + `.it` test, so an interrupted agent leaves a complete unit.
+- **Paste the matching INSIGHTS lines into each task prompt, not just a path.** Evidence: the uppercase `innerText` quirk at `e2e/INSIGHTS.md:25` was missed by T10; T9 and two fix agents reported not reading `client/INSIGHTS.md` in full. Next run, `run-plan` greps each task's package INSIGHTS for the card's keywords and appends the hits.
+- **Make the plan-verifier trust the parent's last green run.** Evidence: the verifier re-ran 458 + 110 + 380 tests the parent had just run; the previous retro (same ledger, onboarding tour) already proposed this and it was not adopted. Next run, pass "parent ran full suites at <sha>, output saved at <file>" and let the verifier re-run only a named subset.
+- **Classify a fix agent's "the code cannot satisfy the AC" as a production fix at once.** Evidence: round 1 spent agent #14 on tests and agent #15 on the code. Next run, tell fix agents they may change production code when the AC requires it, so one agent closes both.
+- **Tighten two `gates.sh` rules.** Evidence: `gate-findings.tsv` listed R6 and R7 on this change and both were false positives. Next run, make R6 fire only when added seed lines touch `system_prompt`, and let R7 allow `new <Name>Repository(container.db` inside `routes.ts` (blast, onboarding, project-context do the same).

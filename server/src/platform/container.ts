@@ -41,6 +41,8 @@ import type { TicketFetcher } from '../adapters/tickets/index.js';
 import { HttpTicketFetcher } from '../adapters/tickets/http.js';
 import { IntentRepository } from '../modules/intent/repository.js';
 import { IntentService } from '../modules/intent/service.js';
+import { BlastRepository } from '../modules/blast/repository.js';
+import { BlastService, type BlastServiceDeps } from '../modules/blast/service.js';
 
 /**
  * DI container. One per app instance. Holds config, db, the JobRunner,
@@ -213,6 +215,14 @@ export class Container {
       resolveModel: (workspaceId, id) => this.resolveFeatureModel(workspaceId, id),
       tokenizer: this.tokenizer,
     }));
+  }
+
+  /**
+   * Blast radius service for other modules (the PR brief) so they never import
+   * `modules/blast/*`. `log` is required: the container has no logger of its own.
+   */
+  prBlast(log: BlastServiceDeps['log']): BlastService {
+    return new BlastService({ repo: new BlastRepository(this.db), repoIntel: this.repoIntel, log });
   }
 
   /**

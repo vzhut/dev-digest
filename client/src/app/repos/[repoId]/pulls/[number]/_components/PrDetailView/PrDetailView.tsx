@@ -5,7 +5,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Skeleton, ErrorState } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
 import { AppShell } from "@/components/app-shell";
@@ -28,6 +28,7 @@ import { OverviewTab } from "../OverviewTab";
 import { FindingsTab } from "../FindingsTab";
 import { DiffTab } from "../DiffTab";
 import { RunTraceDrawer } from "../RunTraceDrawer";
+import { diffDeepLinkQuery, latestReviewSummary, parseDiffTarget, scrollParentOf } from "./helpers";
 import { s } from "./styles";
 
 export function PrDetailView() {
@@ -35,6 +36,8 @@ export function PrDetailView() {
   const params = useParams<{ repoId: string; number: string }>();
   const search = useSearchParams();
   const setParam = useSetSearchParam();
+  const pathname = usePathname();
+  const router = useRouter();
   const { repoId, number } = params;
   const { activeRepo } = useActiveRepo();
   const repoNotFound = useRepoNotFound(repoId);
@@ -61,7 +64,32 @@ export function PrDetailView() {
 
   const tab = search.get("tab") ?? "overview";
   const traceRunId = search.get("trace");
-  const setTab = (t: string) => setParam("tab", t);
+  // Leaving Overview (a tab click or a link into Files changed) must not lose the reader's place:
+  // the shell's <main> keeps its scrollTop, so coming back landed at the end of the page.
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  const overviewScroll = React.useRef<number | null>(null);
+  const rememberOverviewScroll = () => {
+    if (tab === "overview") overviewScroll.current = scrollParentOf(bodyRef.current)?.scrollTop ?? null;
+  };
+  React.useLayoutEffect(() => {
+    if (tab !== "overview") return;
+    const container = scrollParentOf(bodyRef.current);
+    if (container) container.scrollTop = overviewScroll.current ?? 0;
+    overviewScroll.current = null;
+  }, [tab]);
+  const setTab = (t: string) => {
+    if (t !== tab) rememberOverviewScroll();
+    setParam("tab", t);
+  };
+  const targetFile = search.get("file");
+  const targetLine = search.get("line");
+  const diffTarget = React.useMemo(() => parseDiffTarget(targetFile, targetLine), [targetFile, targetLine]);
+  // One router.replace for tab + file + line — three setParam calls would each
+  // start from the same stale query and keep only the last key.
+  const openInDiff = (file: string, line: number) => {
+    rememberOverviewScroll();
+    router.replace(`${pathname}?${diffDeepLinkQuery(search.toString(), file, line)}`);
+  };
 
   // Reviews come newest-first; each is its own run (grouped into accordions).
   const runs = reviews ?? [];
@@ -69,6 +97,9 @@ export function PrDetailView() {
     () => runs.flatMap((r) => r.findings),
     [reviews],
   );
+  const latestReview = React.useMemo(() => latestReviewSummary(runs), [reviews]);
+  const prFiles = pr?.files;
+  const diffPaths = React.useMemo(() => (prFiles ?? []).map((f) => f.path), [prFiles]);
   const lethalTrifecta = allFindings.filter((f) => f.kind === "lethal_trifecta");
   const findingsCount = allFindings.length;
 
@@ -129,7 +160,7 @@ export function PrDetailView() {
         onRunsStarted={() => invalidateRuns.activeRuns()}
       />
 
-      <div style={s.body}>
+      <div ref={bodyRef} style={s.body}>
         {tab === "overview" && (
           <OverviewTab
             prId={prId}
@@ -137,6 +168,10 @@ export function PrDetailView() {
             repoId={repoId}
             repoFullName={repoFullName}
             baseRef={pr.base}
+            diffPaths={diffPaths}
+            filesCount={pr.files_count}
+            latestReview={latestReview}
+            onOpenInDiff={openInDiff}
           />
         )}
 
@@ -171,6 +206,7 @@ export function PrDetailView() {
             filesCount={pr.files_count}
             files={pr.files}
             canComment={pr.status === "open"}
+            target={diffTarget}
           />
         )}
       </div>

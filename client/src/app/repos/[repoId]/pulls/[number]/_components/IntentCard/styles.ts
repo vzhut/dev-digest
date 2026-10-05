@@ -67,7 +67,6 @@ export const s = {
   itemIn: { color: "var(--ok)", flexShrink: 0, marginTop: 3 } satisfies CSSProperties,
   itemOut: { color: "var(--text-muted)", flexShrink: 0, marginTop: 3 } satisfies CSSProperties,
   none: { fontSize: 13, color: "var(--text-muted)" } satisfies CSSProperties,
-  chips: { display: "flex", flexWrap: "wrap", gap: 8 } satisfies CSSProperties,
   sourcesRow: {
     fontSize: 12.5,
     color: "var(--text-muted)",

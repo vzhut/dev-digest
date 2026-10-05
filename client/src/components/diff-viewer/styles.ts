@@ -93,6 +93,22 @@ export function lineSignFor(kind: Line["kind"]): CSSProperties {
 
 /** Inline-finding styles (rail, dots, labels). */
 export const fs = {
+  /** Deep-link target row: outline only, so the add/del tint underneath stays readable. */
+  targetRow: {
+    outlineWidth: 2,
+    outlineStyle: "solid",
+    outlineColor: "var(--accent)",
+    outlineOffset: -2,
+  } satisfies CSSProperties,
+  /** "Line N is outside the changed hunks" note. */
+  targetNote: {
+    margin: "0 14px 8px",
+    padding: "6px 10px",
+    fontSize: 12,
+    color: "var(--accent-text)",
+    background: "var(--accent-bg)",
+    borderRadius: 4,
+  } satisfies CSSProperties,
   /** Same indented rail as comment threads. */
   rail: { margin: "6px 14px 8px 58px", display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
   fileDot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0 } satisfies CSSProperties,

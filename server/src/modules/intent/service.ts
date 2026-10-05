@@ -3,6 +3,7 @@ import type {
   FeatureModelId,
   GitHubClient,
   IntentSource,
+  IssueMeta,
   LLMProvider,
   PrIntentRecord,
   Provider,
@@ -42,6 +43,7 @@ import {
   inputHash,
   isSafeRepoPath,
   isStale,
+  issueRefsInTextOrder,
   redactSecrets,
   stripHtmlComments,
   summarizeSources,
@@ -102,6 +104,9 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
 }
 
+/** Outcome of the brief's linked-issue lookup (no LLM call). */
+export type LinkedIssueResult = { status: 'ok'; issue: IssueMeta } | { status: 'missing'; reason: string };
+
 const short = (sha: string) => sha.slice(0, 7);
 
 /**
@@ -122,6 +127,27 @@ export class IntentService {
     if (!row) return null;
     const files = await this.deps.repo.getPrFiles(prId);
     return toPrIntentDto(row, isStale(row, pull, inputHash({ ...pull, files })));
+  }
+
+  /**
+   * The first same-repo issue referenced in the PR description, in text order
+   * (brief D2). Workspace-scoped; description only; a timeout-bounded GitHub read,
+   * never an LLM call. Another repository's issue is never fetched.
+   */
+  async firstLinkedIssue(workspaceId: string, prId: string): Promise<LinkedIssueResult> {
+    const pull = await this.requirePull(workspaceId, prId);
+    const repo = await this.requireRepo(pull);
+    const refs = issueRefsInTextOrder(stripHtmlComments(pull.body ?? ''), { owner: repo.owner, name: repo.name });
+    if (refs.length === 0) return { status: 'missing', reason: 'no issue referenced' };
+    const first = refs.find((r) => r.sameRepo);
+    if (!first) return { status: 'missing', reason: 'issue in another repository' };
+    try {
+      const gh = await this.deps.github();
+      const issue = await withTimeout(gh.getIssue({ owner: first.owner, name: first.name }, first.number), SOURCE_TIMEOUT_MS);
+      return { status: 'ok', issue };
+    } catch (err) {
+      return { status: 'missing', reason: redactSecrets(unavailableReason(err)) };
+    }
   }
 
   /** POST: force a (re-)derivation. Errors surface (502 LLM failure, 400 missing key). */

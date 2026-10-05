@@ -1,0 +1,24 @@
+{
+  "name": "PR Overview shows the seeded brief (survives a reload) and a review-focus item deep-links into Files changed",
+  "description": "Opens PR #482 and checks the seeded pr_brief cache row (server/src/db/seed.ts): the brief summary on the Overview tab, then a full page reload to prove it is read from the cache, not regenerated. Then clicks the in-hunk review-focus item for src/middleware/ratelimit.ts line 9 and checks the deep link (?tab=diff&file=<encoded>&line=9), the file card and the highlighted row (CodeLine marks the target aria-current=location). Read-only seeded data: never clicks Generate / Refresh brief (that calls the LLM, see e2e/INSIGHTS.md). Waits for the PR row text before clicking (list fetch race). Assumes a freshly-seeded DB (run via ./scripts/e2e.sh).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["wait", "--text", "Adds a token-bucket rate limiter to the public API endpoints"], "label": "seeded brief summary is visible" },
+    { "cmd": ["wait", "--text", "REVIEW FOCUS"], "label": "review-focus section is visible" },
+    { "cmd": ["reload"], "label": "reload the page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles after reload" },
+    { "cmd": ["wait", "--text", "Adds a token-bucket rate limiter to the public API endpoints"], "label": "brief summary is still visible (served from the cache)" },
+    { "cmd": ["scrollintoview", "button[aria-label='Open src/middleware/ratelimit.ts:9 in Files changed']"], "label": "scroll the in-hunk review-focus item into view" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Open src/middleware/ratelimit.ts:9 in Files changed"], "label": "click the in-hunk ratelimit.ts review-focus item" },
+    { "cmd": ["wait", "--url", "tab=diff"], "label": "diff tab is active in the URL" },
+    { "cmd": ["wait", "--url", "ratelimit.ts"], "label": "deep link carries the file" },
+    { "cmd": ["wait", "--url", "line=9"], "label": "deep link carries the line" },
+    { "cmd": ["wait", "--text", "src/middleware/ratelimit.ts"], "label": "the target file card is rendered" },
+    { "cmd": ["wait", "--fn", "document.querySelectorAll(\"[aria-current='location']\").length === 1"], "label": "exactly one diff row is highlighted as the deep-link target" }
+  ]
+}

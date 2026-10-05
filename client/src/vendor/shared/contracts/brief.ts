@@ -186,10 +186,77 @@ export const SmartDiff = z.object({
 export type SmartDiff = z.infer<typeof SmartDiff>;
 
 // ---- Composed PR Brief (pr_brief.json) ----
+
+/** A place the reviewer should open first; `line` is 1-based and grounded against the diff. */
+export const ReviewFocusItem = z.object({
+  file: z.string(),
+  line: z.number().int().min(1),
+  reason: z.string(),
+});
+export type ReviewFocusItem = z.infer<typeof ReviewFocusItem>;
+
+export const BriefMissingInputKind = z.enum([
+  'intent',
+  'blast',
+  'linked_issue',
+  'description',
+  'specs',
+]);
+export type BriefMissingInputKind = z.infer<typeof BriefMissingInputKind>;
+
+/** An input the brief could not use, with the reason shown to the user. */
+export const BriefMissingInput = z.object({
+  input: BriefMissingInputKind,
+  reason: z.string(),
+});
+export type BriefMissingInput = z.infer<typeof BriefMissingInput>;
+
+/** What went into the prompt: gaps, truncated sections, skipped docs, and the input token count. */
+export const BriefInputs = z.object({
+  missing: z.array(BriefMissingInput),
+  truncated: z.array(z.string()),
+  skipped: z.array(z.string()),
+  notes: z.array(z.string()).nullish(),
+  input_tokens: z.number().int(),
+});
+export type BriefInputs = z.infer<typeof BriefInputs>;
+
+export const BriefUsage = z.object({
+  llm_calls: z.number().int(),
+  tokens_in: z.number().int(),
+  tokens_out: z.number().int(),
+  cost_usd: z.number().nullable(),
+  duration_ms: z.number().int(),
+});
+export type BriefUsage = z.infer<typeof BriefUsage>;
+
+/**
+ * The stored brief is a jsonb document, so every field added after the first
+ * version is `.nullish()` (older rows have no such key). `intent`/`blast`/
+ * `history` are null on new briefs — those cards read their own endpoints.
+ */
 export const PrBrief = z.object({
-  intent: Intent,
-  blast: BlastRadius,
+  intent: Intent.nullish(),
+  blast: BlastRadius.nullish(),
   risks: Risks,
-  history: PrHistory,
+  history: PrHistory.nullish(),
+  summary: z.string(),
+  review_focus: z.array(ReviewFocusItem),
+  head_sha: z.string().nullish(),
+  generated_at: z.string().nullish(),
+  model: z.string().nullish(),
+  usage: BriefUsage.nullish(),
+  inputs: BriefInputs.nullish(),
+  dropped_items: z.number().int().nullish(),
 });
 export type PrBrief = z.infer<typeof PrBrief>;
+
+export const PrBriefStatus = z.enum(['none', 'ready', 'generating']);
+export type PrBriefStatus = z.infer<typeof PrBriefStatus>;
+
+export const PrBriefResponse = z.object({
+  status: PrBriefStatus,
+  stale: z.boolean(),
+  brief: PrBrief.nullable(),
+});
+export type PrBriefResponse = z.infer<typeof PrBriefResponse>;

@@ -3,5 +3,6 @@
 export { DiffViewer } from "./DiffViewer";
 export type { DiffCommentApi } from "./comments";
 export type { DiffFindingApi } from "./findings";
+export type { DiffTarget } from "./helpers";
 export { chevronFor } from "./styles";
 export { topSeverity } from "./findings";

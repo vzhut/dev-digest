@@ -40,10 +40,10 @@ const RECORD: PrIntentRecord = {
   updated_at: "2026-09-24T10:00:00Z",
 };
 
-function renderCard() {
+function renderCard(risks?: React.ReactNode) {
   return render(
     <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
-      <IntentCard prId="pr1" />
+      <IntentCard prId="pr1" risks={risks} />
     </NextIntlClientProvider>,
   );
 }
@@ -56,7 +56,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("IntentCard", () => {
-  it("shows the summary, scope lists, risk chips, sources and meta, and re-classifies on click", () => {
+  it("shows the summary, scope lists, sources and meta, and re-classifies on click", () => {
     intentQuery.mockReturnValue({ data: { intent: RECORD }, isLoading: false, isError: false });
     renderCard();
 
@@ -65,7 +65,6 @@ describe("IntentCard", () => {
     expect(within(inScope).getAllByRole("listitem")).toHaveLength(2);
     const outScope = screen.getByRole("list", { name: "1 out-of-scope item" });
     expect(within(outScope).getByText("users endpoint refactor")).toBeInTheDocument();
-    expect(screen.getByText("webhooks")).toBeInTheDocument();
     expect(screen.getByText("Confidence: Medium")).toBeInTheDocument();
     expect(screen.getByText("deepseek-v4-flash · $0.0003")).toBeInTheDocument();
     expect(screen.getByText(/#12/)).toBeInTheDocument();
@@ -77,7 +76,18 @@ describe("IntentCard", () => {
     expect(rerunMutate).toHaveBeenCalledTimes(1);
   });
 
-  it("hides the risk block when empty and shows stale and low-confidence notices", () => {
+  it("renders the risks slot inside the card and no longer renders risk_areas chips", () => {
+    intentQuery.mockReturnValue({ data: { intent: RECORD }, isLoading: false, isError: false });
+    const { unmount } = renderCard(<div>RISKS-SLOT</div>);
+    expect(within(screen.getByRole("region", { name: "Intent" })).getByText("RISKS-SLOT")).toBeInTheDocument();
+    expect(screen.queryByText("webhooks")).not.toBeInTheDocument();
+    unmount();
+    renderCard();
+    expect(screen.queryByText("RISKS-SLOT")).not.toBeInTheDocument();
+    expect(screen.queryByText("Risk areas")).not.toBeInTheDocument();
+  });
+
+  it("shows stale and low-confidence notices", () => {
     intentQuery.mockReturnValue({
       data: { intent: { ...RECORD, risk_areas: null, stale: true, confidence: "low", missing_context: [] } },
       isLoading: false,

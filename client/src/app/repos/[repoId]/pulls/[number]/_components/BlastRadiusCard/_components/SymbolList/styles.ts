@@ -12,6 +12,7 @@ export const s = {
   item: {
     display: "flex",
     flexDirection: "column",
+    minWidth: 0,
     gap: 6,
     paddingBottom: 12,
     borderBottom: "1px solid var(--border)",
@@ -40,8 +41,8 @@ export const s = {
     clip: "rect(0 0 0 0)",
     whiteSpace: "nowrap",
   } satisfies CSSProperties,
-  symbolName: { fontSize: 14, fontWeight: 600, color: "var(--text-primary)" } satisfies CSSProperties,
-  symbolFile: { fontSize: 12.5, color: "var(--text-muted)" } satisfies CSSProperties,
+  symbolName: { fontSize: 14, fontWeight: 600, color: "var(--text-primary)", minWidth: 0, overflowWrap: "anywhere" } satisfies CSSProperties,
+  symbolFile: { fontSize: 12.5, color: "var(--text-muted)", minWidth: 0, overflowWrap: "anywhere" } satisfies CSSProperties,
   count: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
   callerList: {
     listStyle: "none",
@@ -54,8 +55,11 @@ export const s = {
   callerItem: {
     display: "flex",
     alignItems: "baseline",
+    flexWrap: "wrap",
     gap: 8,
     fontSize: 13,
+    minWidth: 0,
+    overflowWrap: "anywhere",
   } satisfies CSSProperties,
   callerLink: { fontSize: 13 } satisfies CSSProperties,
   callerText: { fontSize: 13, color: "var(--text-secondary)" } satisfies CSSProperties,

@@ -109,6 +109,19 @@ Also: the pill's accessible name is `Show only CRITICAL findings (1)` (`client/m
 `--exact` on `--name "Show only CRITICAL findings"` fails deterministically. Don't use `--exact` on names with a
 `({count})` suffix. Flow 09 (`wait --text repo-conventions`) flaked twice locally on a cold first run; unrelated, not fixed.
 
+### 2026-10-04 — the last flows of a fast CI run hit the API's global 120 req/min limit
+
+Flow 14 failed in CI only (13/14), on the step after `reload`: the failure screenshot shows the brief card with
+"Could not load the brief — Rate limit exceeded, retry in 7 seconds". Locally the same flow passed every time.
+Cause: `server/src/app.ts:105` registers a global `@fastify/rate-limit` at 120 requests per minute per client, and every
+flow comes from the same address. In CI flows 10–13 finish in about 9 s (log timestamps 09:21:31 → 09:21:40), each PR
+detail load makes a dozen requests, so the 14th flow starts inside a nearly full window. Any new flow added at the end
+would have hit it; the local run is slower per flow, which hid it. The earlier unexplained `wait --url /pulls` failures
+in this suite (flows 10–13, 2026-10-04 local runs) are probably the same limit.
+Fix: a `RATE_LIMIT_MAX` env (`server/src/platform/config.ts`, default 120), set to 100000 in `scripts/e2e.sh` and in the
+`env:` block of `.github/workflows/e2e-web.yml`. Not tried: pausing between flows (fragile) and removing the `reload`
+step (it is the point of the flow). Evidence: CI run 37191711253, artifact `e2e-failure/14-pr-brief-fail.png`.
+
 ## Open Questions
 
 _No entries yet._
