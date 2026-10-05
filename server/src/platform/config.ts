@@ -32,6 +32,9 @@ const EnvSchema = z.object({
   // Per-section detail (tokens, caps) in the prompt-assembly log. Local development
   // only: honoured when NODE_ENV=development, ignored (with a startup warning) anywhere else.
   PROMPT_LOG_VERBOSE: z.string().optional(),
+  // Global API rate limit, requests per minute per client. The e2e stack raises it: its
+  // flows run back to back from one address and would otherwise trip the default.
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
@@ -53,6 +56,8 @@ export type AppConfig = {
   /** Absolute path to the writable secrets store (BYO keys from the UI). */
   secretsPath: string;
   nodeEnv: 'development' | 'test' | 'production';
+  /** Global rate limit (requests per minute per client). */
+  rateLimitMax: number;
   logLevel: string;
   /** Allowed CORS origin for the Next.js dev server. */
   webOrigin: string;
@@ -90,6 +95,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     cloneDir,
     secretsPath: join(homedir(), '.devdigest', 'secrets.json'),
     nodeEnv: parsed.NODE_ENV,
+    rateLimitMax: parsed.RATE_LIMIT_MAX,
     logLevel: parsed.LOG_LEVEL ?? (parsed.NODE_ENV === 'test' ? 'silent' : 'info'),
     webOrigin: `http://localhost:${parsed.WEB_PORT}`,
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',

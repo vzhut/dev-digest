@@ -12,8 +12,9 @@ import { s } from "./styles";
 /**
  * What the PR is meant to change, as understood by the intent classifier — shown
  * before the review results so the reader can check the model's understanding.
+ * `risks` is an optional slot (the PR brief's risk areas) shown after the scope columns.
  */
-export function IntentCard({ prId }: { prId: string | null }) {
+export function IntentCard({ prId, risks }: { prId: string | null; risks?: React.ReactNode }) {
   const t = useTranslations("prReview");
   const { data, isLoading, isError, error, refetch } = usePrIntent(prId);
   const rerun = useRerunIntent(prId);
@@ -88,7 +89,7 @@ export function IntentCard({ prId }: { prId: string | null }) {
           {apiErrorMessage(rerun.error, t("intent.rerunError"))}
         </div>
       )}
-      <IntentBody intent={intent} />
+      <IntentBody intent={intent} risks={risks} />
     </section>
   );
 }

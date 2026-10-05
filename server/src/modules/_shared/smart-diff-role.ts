@@ -1,5 +1,6 @@
 /**
- * Smart Diff constants: display order and the path -> role rules.
+ * Smart Diff role classification: display order, path -> role rules and the
+ * pure classifier. Shared by the Smart Diff builder and the PR brief.
  */
 import type { SmartDiffRole } from '@devdigest/shared';
 
@@ -71,3 +72,12 @@ export const CLASSIFY_RULES: readonly { role: SmartDiffRole; patterns: RegExp[] 
     ],
   },
 ];
+
+/** Path -> Smart Diff role. Pure; first matching rule wins, default `core`. */
+export function classifyFile(path: string): SmartDiffRole {
+  const p = path.replace(/\\/g, '/').replace(/^\.\//, '');
+  for (const rule of CLASSIFY_RULES) {
+    if (rule.patterns.some((re) => re.test(p))) return rule.role;
+  }
+  return 'core';
+}

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyFile } from '../src/modules/reviews/smart-diff/classify.js';
-import { SMART_DIFF_ROLE_ORDER } from '../src/modules/reviews/smart-diff/constants.js';
+import { classifyFile, SMART_DIFF_ROLE_ORDER } from '../src/modules/_shared/smart-diff-role.js';
 
 describe('classifyFile', () => {
   it.each([

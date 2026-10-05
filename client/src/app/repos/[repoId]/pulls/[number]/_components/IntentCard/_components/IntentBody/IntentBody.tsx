@@ -2,15 +2,14 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon, Badge } from "@devdigest/ui";
+import { Icon } from "@devdigest/ui";
 import type { PrIntentRecord } from "@devdigest/shared";
-import { hasFixedLabel, riskAreasOf, sourceSummary } from "../../helpers";
+import { hasFixedLabel, sourceSummary } from "../../helpers";
 import { s } from "../../styles";
 
-/** The loaded intent: quoted summary, scope columns, risk chips, sources, missing context and notices. */
-export function IntentBody({ intent }: { intent: PrIntentRecord }) {
+/** The loaded intent: quoted summary, scope columns, risks slot, sources, missing context and notices. */
+export function IntentBody({ intent, risks }: { intent: PrIntentRecord; risks?: React.ReactNode }) {
   const t = useTranslations("prReview");
-  const risks = riskAreasOf(intent);
   const { loaded, unavailable } = sourceSummary(intent.sources);
   const sourceLabel = (src: PrIntentRecord["sources"][number]) =>
     hasFixedLabel(src) ? t(`intent.sourceKind.${src.kind}`) : src.ref;
@@ -56,18 +55,7 @@ export function IntentBody({ intent }: { intent: PrIntentRecord }) {
         </div>
       </div>
 
-      {risks.length > 0 && (
-        <div>
-          <div style={s.label}>{t("intent.riskAreas")}</div>
-          <div style={s.chips}>
-            {risks.map((r) => (
-              <Badge key={r} color="var(--warn)" bg="var(--warn-bg)">
-                {r}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
+      {risks}
 
       <div style={s.sourcesRow}>
         <span>{t("intent.sources")}: </span>

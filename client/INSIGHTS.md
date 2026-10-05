@@ -34,6 +34,18 @@ The first Smart Diff pass drove the inline finding cards from the existing `show
 
 The homework mockups show the cards open by default, while a single toggle must still hide both findings and GitHub comments. Findings now have their own `showFindings` (default `true`), comments keep `showComments` (default `false`), and one button sets both to `!(showFindings || showComments)`. A test that asserts on visibility must assert the state on first render, not after toggling.
 
+### 2026-10-04 — the page scrolls inside the shell's `<main>`, not the window; tab switches keep its `scrollTop`
+
+Clicking a file link in Risk areas opens Files changed, which scrolls the deep diff into view. Clicking Overview then
+landed at the end of the page instead of where the reader had been. Cause: the scroll container is
+`<main style="overflow: auto">` in `client/src/vendor/ui/shell/AppFrame.tsx:29`, so `window.scrollY` is always 0 and
+`window.scrollTo` does nothing; the tab switch swaps the content but leaves `main.scrollTop` where it was (measured on a
+74-file PR: 872 px on Overview, 51,328 px in the diff, so coming back was clamped to the bottom).
+Fix: `PrDetailView` records `main.scrollTop` before leaving Overview (tab click or `openInDiff`) and restores it in a layout
+effect when the tab is Overview again (`scrollParentOf` in `PrDetailView/helpers.ts` finds the container). Re-measured in a
+real browser: 872 → 51,328 → 872. Vendored `AppFrame` was not touched. Any new scroll-to-position code must target
+`scrollParentOf(...)`, not `window`.
+
 ## Codebase Patterns
 
 ### An SSE subscription hook keys on a joined id string, not the array it is given

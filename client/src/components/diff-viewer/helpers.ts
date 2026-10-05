@@ -36,3 +36,16 @@ export function parsePatch(patch: string | null | undefined): Line[] {
   }
   return out;
 }
+
+/** A diff deep-link target: a file and a new-file line number. */
+export interface DiffTarget {
+  file: string;
+  line: number;
+}
+
+/** Index of the rendered row showing new-file line `line`, or null when the line
+    is outside the changed hunks (deleted rows have no new-file number). */
+export function findTargetLine(lines: Line[], line: number): number | null {
+  const i = lines.findIndex((ln) => ln.kind !== "hunk" && ln.kind !== "del" && ln.newNo === line);
+  return i === -1 ? null : i;
+}

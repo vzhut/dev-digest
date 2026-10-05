@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { IntentSource } from "@devdigest/shared";
-import { formatIntentMeta, hasFixedLabel, riskAreasOf, sourceSummary } from "./helpers";
+import { formatIntentMeta, hasFixedLabel, sourceSummary } from "./helpers";
 
 const src = (kind: IntentSource["kind"], status: IntentSource["status"], ref = "x"): IntentSource => ({
   kind,
@@ -33,15 +33,5 @@ describe("IntentCard helpers", () => {
     });
     expect(formatIntentMeta({ model: null, cost_usd: null })).toEqual({ model: null, cost: "—" });
     expect(formatIntentMeta({ model: "m", cost_usd: 0 }).cost).toBe("$0.0000");
-  });
-
-  it("treats missing or blank risk areas as none", () => {
-    expect(riskAreasOf({ risk_areas: undefined })).toEqual([]);
-    expect(riskAreasOf({ risk_areas: null })).toEqual([]);
-    expect(riskAreasOf({ risk_areas: ["webhooks", "  "] })).toEqual(["webhooks"]);
-  });
-
-  it("drops repeated risk areas (they are React keys) and trims", () => {
-    expect(riskAreasOf({ risk_areas: ["webhooks", " webhooks ", "config"] })).toEqual(["webhooks", "config"]);
   });
 });
