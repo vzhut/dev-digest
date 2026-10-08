@@ -78,6 +78,12 @@ Flow 12 passed 12/12 locally (agent-browser 0.38.1) and failed on the GitHub run
 
 For a new page assert what is plain text in the DOM (`wait --text "specs,docs,insights"`) and use `find role button|list` for controls, which are stable across Chrome builds; avoid landmark roles and headings whose styling changes the name. After any UI change made *after* a flow was last run, re-run `./scripts/e2e.sh`; flow 12 was written before the two-pane restyle and broke without anyone noticing until CI. To reproduce CI without touching your dev server's `client/.next`, run the script from a scratch `git worktree` with `node_modules` symlinked in, and download the screenshot with `gh run download <run-id> -n e2e-failure`.
 
+### `find role button click --name X` takes the FIRST match — a disabled twin earlier in the DOM silently eats the click
+
+`e2e/specs/15-eval-pipeline.flow.json:17-18` · 2026-10-08
+
+Flow 15 failed at `wait --text must_find` (and the failure screenshot showed an untouched, disabled "Turn into eval case" button). PR #482's Agent runs tab lists the newest 2-finding run first, expanded, whose undecided finding renders the same button disabled; both the `scrollintoview` and the role/name `click` resolved to that one, not to the older General Reviewer run's accepted finding below. Target the right instance by position instead: `find last "button[data-eval-case-action]" hover` (scrolls it in) then `find last ... click`. Run only `./scripts/e2e.sh`; rewording the expected text was a red herring (the tag renders `must_find`).
+
 ## Session Notes
 
 _No entries yet._
