@@ -70,10 +70,11 @@ export const cases: AgentCase[] = [
     name: "reports no findings for a benign rename",
     kind: "quality",
     prompt: BENIGN_PROMPT,
+    // Every practice is a positive, quotable fact: "did not invent X" has no evidence for the judge.
     practices: [
-      "reports no findings for the benign rename (states 'No findings.' or equivalent), or lists only non-blocking low-confidence items under Questions",
-      "does not fabricate a layering, DI or purity violation where the diff violates none of the checked rules",
-      "does not issue a PASS or BLOCK verdict",
+      "the report states that there are no findings (for example 'No findings.' under Findings or in the Summary), or lists only non-blocking low-confidence items under Questions",
+      "the Summary or Findings section contains no severity count above zero and no findings table row with a severity (CRITICAL/HIGH/MEDIUM/LOW)",
+      "the report is made of the structured sections of the agent's format (Scope reviewed, Summary, Findings, Baseline hits skipped, Questions, Not verified) and contains no PASS or BLOCK verdict line",
     ],
     threshold: 1.0,
     maxTurns: 25,
