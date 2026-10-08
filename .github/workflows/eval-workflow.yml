@@ -6,6 +6,7 @@
 # Backend: OpenRouter through the bundled LiteLLM proxy. google/gemini-2.5-flash is the model that
 # actually DISPATCHES subagents (deepseek and gpt-4.1-mini do the work inline), so it is the default
 # and the only verified choice for this tier; the model can be overridden via workflow_dispatch.
+# The eval step is non-blocking (continue-on-error): failures surface as a warning, not a red PR.
 # Needs the repo Actions secret OPENROUTER_API_KEY (not exposed to fork PRs → the job skips).
 name: eval-workflow
 
@@ -96,9 +97,20 @@ jobs:
           docker compose -f proxy/docker-compose.yml up -d
           pnpm proxy:wait
 
+      # Non-blocking on purpose: the tool tier asserts real tool use (skill activation, doc reads), which
+      # non-Anthropic models like Gemini Flash only do part of the time (evals/README.md, "Two caveats").
+      # The result stays visible as a warning + step summary instead of turning the PR red.
       - name: Run workflow evals
+        id: wf
         if: steps.key.outputs.present == 'true'
+        continue-on-error: true
         run: pnpm eval:workflow
+
+      - name: Report workflow eval result
+        if: steps.key.outputs.present == 'true' && steps.wf.outcome == 'failure'
+        run: |
+          echo "::warning title=workflow evals::some workflow evals failed on $EVAL_MODEL (non-blocking, see the 'Run workflow evals' step log)"
+          echo "### eval-workflow: FAILED (non-blocking) on \`$EVAL_MODEL\` - see the step log" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Proxy logs
         if: failure() && steps.key.outputs.present == 'true'
