@@ -134,6 +134,18 @@ report traced back to a `tsconfig.json`/`.eslintrc.json` citation; every genuine
 one cited a real `.ts` source line showing a *repeated pattern*. A future improvement could
 weight or filter candidates whose only evidence is a config file rather than actual source.
 
+### Eval precision `1 − FP/total` barely moves when the prompt gets noisier — only hits on the few dismissed ranges count
+
+`server/src/modules/eval/scoring.ts:149` · 2026-10-08
+
+Real General Reviewer runs on 10 cases (6 `must_find`, 4 `must_not_flag`), claude-sonnet-4.6: baseline prompt precision 0.926 / 0.966, improved prompt 0.897 / 0.935, and two deliberately "nitpick everything" prompts 0.938 and 0.926 — no drop. `precision = (kept − FP) / kept` where `kept` is every grounded finding of the run (~30) and `FP` only counts findings overlapping a `must_not_flag` range (2–3, four tiny ranges). Extra noise anywhere else enlarges the denominator and even lifts precision; the model also largely ignores "comment on every line" instructions. recall and the pass count are the sensitive signals on a small set (recall 0.667 → 1.0 → 0.833 across prompt versions). To make precision react, noise must be defined wider (e.g. count unlabeled findings) — a deliberate metric change that diverges from the reference formula the mentor's scoring tests assume (spec OQ-2).
+
+### A `Promise.race` timeout does not bound a provider call — pass `singleAttempt` + `timeoutMs` so the SDK request itself aborts
+
+`server/src/modules/eval/executor.ts:99-106,147` · 2026-10-08
+
+A first eval run recorded two cases erroring after ~937 s and ~930 s despite `CASE_TIMEOUT_MS = 120_000`, so the run took 35 min instead of ~3. The race only abandoned `reviewPullRequest`; the provider call underneath kept running with the OpenRouter client's 90 s timeout, `maxRetries: 2` (`reviewer-core/src/llm/openrouter.ts:57-58`) and the structured-output re-prompt loop (up to 3 attempts), ~800 s worst case. Why the race timer itself fired late was not reproduced. The executor now wraps the provider (`boundedLlm`) so every request carries `singleAttempt: true` and `timeoutMs <= CASE_TIMEOUT_MS`; the race stays as a backstop. Extends the `singleAttempt` entry on SDK default retries above.
+
 ## Codebase Patterns
 
 ### `getBlastRadius` had a global caller cap and a `partial`-index blind spot before T2/T3 (Blast Radius, L04)
@@ -371,6 +383,13 @@ The server `tsconfig.json` only includes `src/**`, so a test file that still imp
 `reviewer-core/src/prompt.ts:50` · `server/src/modules/brief/prompt.ts` (`labelOf`) · 2026-10-02
 
 The body has `</untrusted>` neutralised, but the label (a spec document's repo-relative path) only gets `"` and newlines handled, so a file named `a</untrusted>.md` puts a literal closing tag inside the opening tag's `source="…"` attribute. A balance check (`</untrusted>` count equals `<untrusted source=` count) caught it. Callers that pass attacker-influenced paths as labels must escape `<`/`>` first; the brief prompt does (`&lt;`/`&gt;`).
+
+
+### Eval runs: the boot-time orphan sweep fails EVERY `running` run, so a second `buildApp` on one DB kills the first app's run
+
+`server/src/modules/eval/routes.ts` (`failOrphanedRuns` at plugin registration) · `server/test/eval.it.test.ts` · 2026-10-08
+
+`failOrphanedRunning` marks all `eval_runs` with `status = 'running'` as `errored` (`server_restarted`) when the eval plugin registers, so a run abandoned by a dead process does not return 409 forever (the partial unique index allows one running run per agent). It cannot tell "abandoned" from "owned by another live process": in a test that builds two apps over one database, building the second one errors the first app's in-flight run. Each `it` in `eval.it.test.ts` therefore finishes (or awaits) its runs before building another app. In production this is only safe because there is a single API process; two API instances on one database would need an owner/heartbeat column.
 
 ## Recurring Errors & Fixes
 

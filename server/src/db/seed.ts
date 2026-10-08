@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { pathToFileURL } from 'node:url';
 import { createDb, type Db } from './client.js';
 import * as t from './schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { inputHash } from '../modules/intent/helpers.js';
 import { PrBrief } from '@devdigest/shared';
 import {
@@ -514,6 +514,80 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       .from(t.agents)
       .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, a.name)));
     if (!existing) await db.insert(t.agents).values(a);
+  }
+
+  // ---- decided, agent-attributed findings on PR #482 (eval-case demo data) ----
+  // One OLDER review by the General Reviewer (the existing agent-less 2-finding review stays the newest,
+  // which the PR list, e2e 02 and e2e 04 rely on). Every line sits inside a seeded new-file hunk, so
+  // each decided finding can be turned into an eval case. Re-seed safe: skipped once the review exists.
+  const [generalAgent] = await db
+    .select()
+    .from(t.agents)
+    .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, 'General Reviewer')));
+  if (generalAgent) {
+    const [already] = await db
+      .select({ id: t.reviews.id })
+      .from(t.reviews)
+      .where(and(eq(t.reviews.prId, pr!.id), eq(t.reviews.agentId, generalAgent.id)));
+    if (!already) {
+      const [newest] = await db
+        .select({ createdAt: t.reviews.createdAt })
+        .from(t.reviews)
+        .where(eq(t.reviews.prId, pr!.id))
+        .orderBy(desc(t.reviews.createdAt))
+        .limit(1);
+      const olderThanSeeded = new Date((newest?.createdAt ?? new Date()).getTime() - 24 * 60 * 60 * 1000);
+      const decidedAt = new Date();
+      type Decision = 'accepted' | 'dismissed' | 'open';
+      const seedDecided: Array<{
+        file: string; start: number; end: number; severity: string; category: string;
+        title: string; rationale: string; decision: Decision;
+      }> = [
+        { file: 'src/middleware/ratelimit.ts', start: 8, end: 9, severity: 'CRITICAL', category: 'bug', title: 'Expired rate-limit buckets are never reset', rationale: '`resetAt` is stored but never compared with `now`, so a client stays limited forever after its first burst.', decision: 'accepted' },
+        { file: 'src/middleware/ratelimit.ts', start: 4, end: 4, severity: 'WARNING', category: 'perf', title: 'Unbounded in-memory bucket map', rationale: 'Buckets are keyed by IP and never evicted, so the map grows with every distinct client.', decision: 'accepted' },
+        { file: 'src/middleware/ratelimit.ts', start: 8, end: 8, severity: 'WARNING', category: 'security', title: 'Limiter keys on req.ip behind a proxy', rationale: 'Behind a load balancer every request shares one address unless the proxy header is trusted.', decision: 'accepted' },
+        { file: 'src/middleware/ratelimit.ts', start: 11, end: 11, severity: 'SUGGESTION', category: 'bug', title: 'No Retry-After header on 429', rationale: 'Clients cannot tell when to retry.', decision: 'accepted' },
+        { file: 'src/api/public/webhooks.ts', start: 4, end: 4, severity: 'CRITICAL', category: 'security', title: 'Stripe webhook route has no signature check', rationale: 'The route is rate limited but any caller can post events to it.', decision: 'accepted' },
+        { file: 'src/config.ts', start: 1, end: 2, severity: 'SUGGESTION', category: 'style', title: 'Rate limit values are hardcoded constants', rationale: 'The limit and window cannot differ per environment.', decision: 'accepted' },
+        { file: 'src/middleware/ratelimit.ts', start: 1, end: 1, severity: 'SUGGESTION', category: 'style', title: 'Use a namespace import for express types', rationale: 'Style preference only.', decision: 'dismissed' },
+        { file: 'src/api/public/webhooks.ts', start: 3, end: 3, severity: 'SUGGESTION', category: 'style', title: 'Inline app type is too loose', rationale: 'The structural type is enough for this wrapper.', decision: 'dismissed' },
+        { file: 'src/config.ts', start: 4, end: 4, severity: 'WARNING', category: 'bug', title: 'RATE_LIMIT_ENABLED is never read', rationale: 'The flag is read by the deployment layer, not this file.', decision: 'dismissed' },
+        { file: 'src/middleware/ratelimit.ts', start: 6, end: 6, severity: 'SUGGESTION', category: 'style', title: 'Middleware should be async', rationale: 'Nothing in the body awaits.', decision: 'dismissed' },
+        { file: 'src/config.ts', start: 3, end: 3, severity: 'WARNING', category: 'bug', title: 'Burst limit is not wired into the limiter', rationale: 'RATE_LIMIT_BURST is exported but unused.', decision: 'open' },
+      ];
+      for (const f of seedDecided) {
+        for (const line of [f.start, f.end]) assertLineInHunk(f.file, line);
+      }
+      const [generalReview] = await db
+        .insert(t.reviews)
+        .values({
+          workspaceId,
+          prId: pr!.id,
+          agentId: generalAgent.id,
+          kind: 'review',
+          verdict: 'comment',
+          summary: 'Earlier pass over the rate limiter; findings triaged by a reviewer.',
+          score: 70,
+          model: 'seed',
+          createdAt: olderThanSeeded,
+        })
+        .returning();
+      await db.insert(t.findings).values(
+        seedDecided.map((f) => ({
+          reviewId: generalReview!.id,
+          file: f.file,
+          startLine: f.start,
+          endLine: f.end,
+          severity: f.severity,
+          category: f.category,
+          title: f.title,
+          rationale: f.rationale,
+          confidence: 0.85,
+          acceptedAt: f.decision === 'accepted' ? decidedAt : null,
+          dismissedAt: f.decision === 'dismissed' ? decidedAt : null,
+        })),
+      );
+    }
   }
 
   // ---- manual skills + agent links (agents exist by now) ----
