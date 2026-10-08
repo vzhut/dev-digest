@@ -83,14 +83,16 @@ export const cases: SkillCase[] = [
     maxTurns: 6,
   },
   {
-    name: "does not flag server-controlled values, framework-escaped output or test fixtures",
+    name: "judges server-controlled values, framework-escaped output and test fixtures as safe",
     kind: "quality",
-    prompt: `Security-review this code. Only report what is really exploitable.\n\n${SAFE_CODE}`,
+    // The prompt demands one explicit verdict per block: a "did not report X" practice has no
+    // quotable evidence, so a terse model answer would fail the judge for the wrong reason.
+    prompt: `Security-review this code. For EACH of the three blocks write one line: the block name, a verdict (SAFE or VULNERABLE) and the reason. Only call something VULNERABLE if an attacker can really exploit it.\n\n${SAFE_CODE}`,
     practices: [
-      "the review does not report fetch(upstream) using process.env.API_URL as an SSRF or injection vulnerability, or explicitly says it is safe because the value is server-controlled and not attacker-controlled",
-      "the review does not report the JSX child {comment.body} as an XSS vulnerability, or explicitly says React escapes it",
-      "the review does not report the hardcoded TEST_PASSWORD in the test file as a leaked secret, or explicitly says test files are out of scope",
-      "the review concludes that no HIGH-confidence issues were found, or reports nothing, rather than inventing vulnerabilities",
+      "gives the fetch(upstream) block in sync.js a SAFE verdict (or states it is not exploitable) and gives as the reason that API_URL comes from process.env / is server-controlled, not attacker-controlled",
+      "gives the Comment.jsx block a SAFE verdict (or states it is not exploitable) and gives as the reason that React escapes JSX children",
+      "gives the test-file block a SAFE verdict (or states it is out of scope) and gives as the reason that it is a test fixture / test-only value",
+      "does not label any of the three blocks VULNERABLE",
     ],
     threshold: 0.75,
     maxTurns: 6,
