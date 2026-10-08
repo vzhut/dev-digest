@@ -37,7 +37,7 @@ export const cases: AgentCase[] = [
       "gives a recommendation for each finding",
       "does not issue a PASS or BLOCK verdict — it only reports findings",
     ],
-    threshold: 1.0,
+    threshold: 0.8, // one missed practice out of 6-7 is tolerated: CI runs a cheap model (Gemini Flash)
     maxTurns: 25,
   },
   {
@@ -63,7 +63,7 @@ export const cases: AgentCase[] = [
       "assigns a severity (critical/high/medium/low) to each finding",
       "does not issue a PASS or BLOCK verdict — it only reports findings",
     ],
-    threshold: 1.0,
+    threshold: 0.8, // one missed practice out of 6-7 is tolerated: CI runs a cheap model (Gemini Flash)
     maxTurns: 25,
   },
   {
