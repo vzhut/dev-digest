@@ -1,0 +1,132 @@
+# Agent evals — tool tier for the subagents in .claude/agents/.
+#
+# Runs only the evals affected by the change: evals/scripts/ci-detect.mjs maps the changed files
+# onto evals/agents/<name>/ and logs "SKIP <name>" for every agent without an eval (never a failure).
+# Backend: OpenRouter through the bundled LiteLLM proxy (the Claude Agent SDK speaks the Anthropic
+# wire protocol, the proxy translates it for non-Anthropic models). Default model:
+# google/gemini-2.5-flash. Override per run via the workflow_dispatch inputs; a manual dispatch runs
+# every agent that has an eval. Needs the repo Actions secret OPENROUTER_API_KEY (not exposed to
+# fork PRs → the job skips).
+name: eval-agents
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.claude/agents/**'
+      - 'evals/agents/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-agents.yml'
+  pull_request:
+    paths:
+      - '.claude/agents/**'
+      - 'evals/agents/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-agents.yml'
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter model slug for the task (default google/gemini-2.5-flash)
+        required: false
+      judge_model:
+        description: OpenRouter model slug for the judge (default = model)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-agents-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: agent evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: evals
+    env:
+      EVAL_BACKEND: openrouter
+      OPENROUTER_BASE_URL: http://localhost:4000
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      EVAL_MODEL: ${{ inputs.model || 'google/gemini-2.5-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.judge_model || inputs.model || 'google/gemini-2.5-flash' }}
+    steps:
+      - name: Check OpenRouter key
+        id: key
+        working-directory: .
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "::warning::OPENROUTER_API_KEY is not available (fork PR or secret not set) - skipping agent evals"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - if: steps.key.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - if: steps.key.outputs.present == 'true'
+        run: pnpm typecheck
+
+      - name: Detect affected agent evals
+        id: detect
+        if: steps.key.outputs.present == 'true'
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: CHANGED_FILES="$(scripts/ci-changed.sh)" node scripts/ci-detect.mjs
+
+      - name: Start OpenRouter proxy
+        if: steps.key.outputs.present == 'true' && steps.detect.outputs.agents != '[]'
+        run: |
+          docker compose -f proxy/docker-compose.yml up -d
+          pnpm proxy:wait
+
+      - name: Run agent evals
+        if: steps.key.outputs.present == 'true' && steps.detect.outputs.agents != '[]'
+        env:
+          AGENTS: ${{ steps.detect.outputs.agents }}
+          SKIPPED: ${{ steps.detect.outputs.skipped_agents }}
+        run: |
+          for a in $(echo "$AGENTS" | jq -r '.[]'); do
+            echo "::group::eval agent $a ($EVAL_MODEL)"
+            pnpm vitest run "agents/$a/" || failed=1
+            echo "::endgroup::"
+          done
+          [ -z "${SKIPPED:-}" ] || echo "SKIP (no evals): $SKIPPED"
+          [ -z "${failed:-}" ]
+
+      - name: Nothing to run
+        if: steps.key.outputs.present == 'true' && steps.detect.outputs.agents == '[]'
+        env:
+          SKIPPED: ${{ steps.detect.outputs.skipped_agents }}
+        run: |
+          echo "SKIP: no changed agent has an eval${SKIPPED:+ (changed without evals: $SKIPPED)}"
+          echo "### eval-agents: nothing to run${SKIPPED:+ — SKIP $SKIPPED (no evals)}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Proxy logs
+        if: failure() && steps.key.outputs.present == 'true'
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+
+      - name: Stop proxy
+        if: always() && steps.key.outputs.present == 'true'
+        run: docker compose -f proxy/docker-compose.yml down

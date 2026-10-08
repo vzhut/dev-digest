@@ -1,0 +1,120 @@
+# Skill evals — content tier (LLM-judged) for the skills in .claude/skills/.
+#
+# Runs only the evals affected by the change: evals/scripts/ci-detect.mjs maps the changed files
+# onto evals/skills/<name>/ and logs "SKIP <name>" for every skill without an eval (never a failure).
+# Backend: OpenRouter, called natively (no proxy needed for the content tier).
+# Default model: deepseek/deepseek-chat — cheap and good enough for judged text. Override per run
+# through the workflow_dispatch inputs. A manual dispatch runs every skill that has an eval.
+# Needs the repo Actions secret OPENROUTER_API_KEY (not exposed to fork PRs → the job skips).
+name: eval-skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+      - 'evals/skills/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-skills.yml'
+  pull_request:
+    paths:
+      - '.claude/skills/**'
+      - 'evals/skills/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-skills.yml'
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter model slug for the task (default deepseek/deepseek-chat)
+        required: false
+      judge_model:
+        description: OpenRouter model slug for the judge (default = model)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-skills-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: skill evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: evals
+    env:
+      EVAL_BACKEND: openrouter
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      EVAL_MODEL: ${{ inputs.model || 'deepseek/deepseek-chat' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.judge_model || inputs.model || 'deepseek/deepseek-chat' }}
+    steps:
+      - name: Check OpenRouter key
+        id: key
+        working-directory: .
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "::warning::OPENROUTER_API_KEY is not available (fork PR or secret not set) - skipping skill evals"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - if: steps.key.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - if: steps.key.outputs.present == 'true'
+        run: pnpm typecheck
+
+      - name: Static skill quality gate (no model)
+        if: steps.key.outputs.present == 'true'
+        run: pnpm eval:quality
+
+      - name: Detect affected skill evals
+        id: detect
+        if: steps.key.outputs.present == 'true'
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: CHANGED_FILES="$(scripts/ci-changed.sh)" node scripts/ci-detect.mjs
+
+      - name: Run skill evals
+        if: steps.key.outputs.present == 'true' && steps.detect.outputs.skills != '[]'
+        env:
+          SKILLS: ${{ steps.detect.outputs.skills }}
+          SKIPPED: ${{ steps.detect.outputs.skipped_skills }}
+        run: |
+          for s in $(echo "$SKILLS" | jq -r '.[]'); do
+            echo "::group::eval skill $s ($EVAL_MODEL)"
+            pnpm vitest run "skills/$s/" || failed=1
+            echo "::endgroup::"
+          done
+          [ -z "${SKIPPED:-}" ] || echo "SKIP (no evals): $SKIPPED"
+          [ -z "${failed:-}" ]
+
+      - name: Nothing to run
+        if: steps.key.outputs.present == 'true' && steps.detect.outputs.skills == '[]'
+        env:
+          SKIPPED: ${{ steps.detect.outputs.skipped_skills }}
+        run: |
+          echo "SKIP: no changed skill has an eval${SKIPPED:+ (changed without evals: $SKIPPED)}"
+          echo "### eval-skills: nothing to run${SKIPPED:+ — SKIP $SKIPPED (no evals)}" >> "$GITHUB_STEP_SUMMARY"

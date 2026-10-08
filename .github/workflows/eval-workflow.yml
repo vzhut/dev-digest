@@ -1,0 +1,109 @@
+# Workflow evals — the live harness (CLAUDE.md + .claude/ skills & agents): does a subagent get
+# dispatched, does a skill activate, does CLAUDE.md route the model to the right docs.
+#
+# Triggered by CLAUDE.md or any agent change (plus the evals themselves). Always runs the whole
+# evals/workflow/ suite - it measures the harness as a whole, not one artifact.
+# Backend: OpenRouter through the bundled LiteLLM proxy. google/gemini-2.5-flash is the model that
+# actually DISPATCHES subagents (deepseek and gpt-4.1-mini do the work inline), so it is the default
+# and the only verified choice for this tier; the model can be overridden via workflow_dispatch.
+# Needs the repo Actions secret OPENROUTER_API_KEY (not exposed to fork PRs → the job skips).
+name: eval-workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/CLAUDE.md'
+      - '.claude/agents/**'
+      - 'evals/workflow/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-workflow.yml'
+  pull_request:
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/CLAUDE.md'
+      - '.claude/agents/**'
+      - 'evals/workflow/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-workflow.yml'
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter model slug (default google/gemini-2.5-flash - the verified dispatcher)
+        required: false
+      judge_model:
+        description: OpenRouter model slug for the judge (default = model)
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-workflow-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: workflow evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: evals
+    env:
+      EVAL_BACKEND: openrouter
+      OPENROUTER_BASE_URL: http://localhost:4000
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      EVAL_MODEL: ${{ inputs.model || 'google/gemini-2.5-flash' }}
+      EVAL_JUDGE_MODEL: ${{ inputs.judge_model || inputs.model || 'google/gemini-2.5-flash' }}
+    steps:
+      - name: Check OpenRouter key
+        id: key
+        working-directory: .
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "::warning::OPENROUTER_API_KEY is not available (fork PR or secret not set) - skipping workflow evals"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+
+      - uses: pnpm/action-setup@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - if: steps.key.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - if: steps.key.outputs.present == 'true'
+        run: pnpm typecheck
+
+      - name: Start OpenRouter proxy
+        if: steps.key.outputs.present == 'true'
+        run: |
+          docker compose -f proxy/docker-compose.yml up -d
+          pnpm proxy:wait
+
+      - name: Run workflow evals
+        if: steps.key.outputs.present == 'true'
+        run: pnpm eval:workflow
+
+      - name: Proxy logs
+        if: failure() && steps.key.outputs.present == 'true'
+        run: docker compose -f proxy/docker-compose.yml logs --tail 100
+
+      - name: Stop proxy
+        if: always() && steps.key.outputs.present == 'true'
+        run: docker compose -f proxy/docker-compose.yml down
