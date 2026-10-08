@@ -38,7 +38,26 @@ Only Postgres runs in Docker (`docker-compose.yml`); API and web run on the host
 | `client` | `pnpm test` | `pnpm typecheck` |
 | `reviewer-core` | `npm test` | `npm run build` (type-check only, emits nothing) |
 | `mcp-server` | `pnpm test` | `pnpm typecheck` |
+| `evals` | `pnpm eval:quality` (static, no model) · `pnpm eval:skills` · `pnpm eval:agents` · `pnpm eval:workflow` (model-backed; see below) | `pnpm typecheck` |
 | `e2e` | `./scripts/e2e.sh` from the repo root (isolated fresh stack on 5433/3101/3100; first run: `cd e2e && npm install`, plus `npm i -g agent-browser && agent-browser install`) | — |
+
+### Harness evals (`evals/`)
+Evals for the Claude Code harness itself — skills (`.claude/skills`), subagents (`.claude/agents`) and the
+workflow (this file + `.claude/`). Standalone package (README: `evals/README.md`), pnpm.
+Model-backed runs use the Claude Code login by default; CI uses OpenRouter (`EVAL_BACKEND=openrouter`).
+
+| What changed | Run | Cases live in |
+|---|---|---|
+| `.claude/skills/<name>/**` | `cd evals && pnpm eval:quality && pnpm vitest run skills/<name>/` (or `pnpm eval:skills`) | `evals/skills/<name>/` |
+| `.claude/agents/<name>.md` | `cd evals && pnpm vitest run agents/<name>/` (or `pnpm eval:agents`), then `pnpm eval:workflow` | `evals/agents/<name>/` |
+| `CLAUDE.md` / `AGENTS.md` | `cd evals && pnpm eval:workflow` | `evals/workflow/` |
+| New case / new skill or agent eval | `pnpm eval:scaffold <skill>` · `pnpm eval:scaffold --agent <agent>` | — |
+| Before/after of an artifact edit | `pnpm eval:repeat <pattern> -n 3 --label before` → edit → `--label after` → `pnpm eval:delta before after` | `evals/results/` |
+
+CI mirrors this: `.github/workflows/eval-skills.yml`, `eval-agents.yml`, `eval-workflow.yml` run only what the PR
+touches (`evals/scripts/ci-detect.mjs`); a skill or agent without an eval is logged as `SKIP`, never a failure.
+Needs the Actions secret `OPENROUTER_API_KEY`. Models: `deepseek/deepseek-chat` (skills), `google/gemini-2.5-flash`
+(agents, workflow — the only verified subagent dispatcher); override via `workflow_dispatch` inputs.
 
 **There is no linter or formatter** — no package defines a `lint` script; typecheck + tests are the gate. Don't add one unasked.
 
@@ -90,4 +109,5 @@ Only Postgres runs in Docker (`docker-compose.yml`); API and web run on the host
 - Agent prompt templates, prompt assembly, output schema, scoring → read `docs/agent-prompts/`
 - Cross-package behaviour specs → read `specs/` · cross-package findings → read/append `INSIGHTS.md`
 - Before publishing work (push, PR create/merge) → run the `pr-self-review` skill **by hand** (`/pr-self-review`); it is manual-only — no hook blocks a push. Spec: `specs/pr-self-review-skill.md`
+- Changed `.claude/skills` / `.claude/agents` / `CLAUDE.md` / `AGENTS.md` → run the matching eval from "Harness evals" above and record a before/after score for agent edits (`evals/INSIGHTS.md`)
 - Project skills catalog (Fastify, Drizzle, Next, Zod, …) → read `.claude/skills/README.md` (each `SKILL.md` is plain markdown any agent can follow)

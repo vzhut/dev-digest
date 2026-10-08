@@ -45,7 +45,7 @@ export const cases: AgentCase[] = [
     kind: "quality",
     prompt: REVIEW_PROMPT,
     practices: [
-      "does not invent an architecture-contract violation for the optional `reply?: FastifyReply` parameter beyond the layering import issue itself (no runtime bug/security finding fabricated as an architecture rule)",
+      "does not report the optional `reply?: FastifyReply` parameter as a runtime bug or a security vulnerability — a layering finding about a Fastify type in the domain function's signature is acceptable, a security or correctness finding is not",
       "stays scoped to structural/layering/DI findings and does not comment on naming, style, or test coverage",
     ],
     threshold: 1.0,
