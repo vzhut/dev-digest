@@ -56,7 +56,7 @@ export const cases: AgentCase[] = [
     kind: "quality",
     prompt: REVIEWER_CORE_PROMPT,
     practices: [
-      "flags the `import { readFileSync } from 'node:fs'` added to reviewer-core/src/pipeline/run.ts as a violation (reviewer-core must do no filesystem, DB or GitHub I/O; the LLM only via the injected LLMProvider)",
+      "flags the `import { readFileSync } from 'node:fs'` added to reviewer-core/src/review/run.ts as a violation (reviewer-core must do no filesystem, DB or GitHub I/O; the LLM only via the injected LLMProvider)",
       "flags that runPipeline now returns `deduped` directly, skipping the mandatory `groundFindings()` gate before emitting findings",
       "every finding cites a file path with a line number (path:line) pointing at a changed line",
       "quotes or names the offending code (readFileSync / returning deduped) as evidence for each finding, not a paraphrase",
