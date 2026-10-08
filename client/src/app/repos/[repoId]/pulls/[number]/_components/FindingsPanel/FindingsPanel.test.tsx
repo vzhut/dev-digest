@@ -5,6 +5,8 @@ import type { FindingRecord, Severity } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 
 const { mutate } = vi.hoisted(() => ({ mutate: vi.fn() }));
+// The eval-case action has its own tests (and its own data hooks); these tests are about something else.
+vi.mock("../FindingCard/_components/EvalCaseAction", () => ({ EvalCaseAction: () => null }));
 vi.mock("@/lib/hooks/reviews", () => ({
   useFindingAction: () => ({ mutate, isPending: false }),
 }));

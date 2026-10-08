@@ -9,6 +9,8 @@ import type { DiffTarget } from "@/components/diff-viewer";
 
 const state: { smart: SmartDiff | undefined; reviews: ReviewRecord[] } = { smart: undefined, reviews: [] };
 const mutate = vi.fn();
+// The eval-case action has its own tests (and its own data hooks); these tests are about something else.
+vi.mock("../FindingCard/_components/EvalCaseAction", () => ({ EvalCaseAction: () => null }));
 vi.mock("@/lib/hooks/reviews", () => ({
   usePrComments: () => ({ data: [] }),
   useCreatePrComment: () => ({ isPending: false, mutateAsync: vi.fn() }),

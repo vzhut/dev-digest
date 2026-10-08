@@ -194,6 +194,12 @@ type level — `vi.mock` just silently stops intercepting anything, and the real
 imports from, not the path that used to hold the hook — grep every `vi.mock(...)` target whenever a
 hook is moved between files, not just its own test.
 
+### A partial `vi.mock` factory for a hook module silently breaks components that start using a second hook from it
+
+`client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.test.tsx` · 2026-10-08
+
+`FindingsPanel.test.tsx` and `DiffTab.test.tsx` mock `@/lib/hooks/reviews` with only `useFindingAction`. Once `FindingCard` rendered an action that also calls `usePrReviews` plus a new query hook, 9 unrelated tests failed with `No QueryClient set`. The fix was to mock the new leaf component (`FindingCard/_components/EvalCaseAction`) in those two files, since they are about severity pills and diff rendering, not eval; the new component has its own test with a real `QueryClientProvider`.
+
 ## Open Questions
 
 _No entries yet._

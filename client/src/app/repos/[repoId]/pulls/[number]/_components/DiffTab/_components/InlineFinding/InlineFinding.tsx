@@ -17,6 +17,7 @@ export function InlineFinding({ finding, prId }: InlineFindingProps) {
     <FindingCard
       f={finding}
       defaultExpanded
+      prId={prId}
       pending={action.isPending}
       onAction={(act, reply) =>
         action.mutate({ findingId: finding.id, action: act, reply, prId: prId ?? undefined })
