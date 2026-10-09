@@ -14,12 +14,22 @@ export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose:
     closeRef.current = onClose;
   });
 
+  const dialogOf = React.useCallback(() => ref.current?.closest<HTMLElement>('[role="dialog"]') ?? null, [ref]);
+
+  // Focus moves into the dialog when it opens and back to the opener when it really goes away. This is NOT
+  // tied to `enabled`: pausing the keys (a confirm sits on top) must not yank focus out from under that confirm.
+  React.useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    dialogOf()?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    return () => opener?.focus?.();
+  }, [dialogOf]);
+
   React.useEffect(() => {
     if (!enabled) return;
-    const dialog = ref.current?.closest<HTMLElement>('[role="dialog"]') ?? null;
-    const opener = document.activeElement as HTMLElement | null;
-    const focusables = () => (dialog ? [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)] : []);
-    focusables()[0]?.focus();
+    const focusables = () => {
+      const dialog = dialogOf();
+      return dialog ? [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)] : [];
+    };
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -30,6 +40,7 @@ export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose:
       if (e.key !== "Tab") return;
       const items = focusables();
       if (items.length === 0) return;
+      const dialog = dialogOf();
       const first = items[0]!;
       const last = items[items.length - 1]!;
       const active = document.activeElement;
@@ -42,9 +53,6 @@ export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose:
       }
     };
     document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      opener?.focus?.();
-    };
-  }, [ref, enabled]);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [dialogOf, enabled]);
 }

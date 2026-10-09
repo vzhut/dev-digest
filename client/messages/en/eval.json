@@ -251,7 +251,6 @@
       "discardTitle": "Discard your changes?",
       "discardBody": "The case has unsaved changes. Closing the editor throws them away.",
       "discardConfirm": "Discard changes",
-      "keepEditing": "Keep editing",
       "runFailed": "The case was saved, but the run could not be started."
     },
     "deleteFailed": "Could not delete the case.",

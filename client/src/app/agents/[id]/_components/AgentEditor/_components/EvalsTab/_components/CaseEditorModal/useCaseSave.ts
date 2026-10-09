@@ -25,9 +25,15 @@ export function useCaseSave({
   const update = useUpdateEvalCase(agentId);
   const start = useStartEvalRun(agentId);
   const [error, setError] = React.useState<string | null>(null);
+  // true for the WHOLE save + run sequence (not just the save request), so Save / Run case cannot be submitted twice
+  const [busy, setBusy] = React.useState(false);
+  const busyRef = React.useRef(false);
   const born = existing?.meta.source_finding_id != null;
 
   const save = async (thenRun: boolean) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
     setError(null);
     try {
       const body = toWriteBody(form, born);
@@ -47,8 +53,11 @@ export function useCaseSave({
       onDone();
     } catch (e) {
       setError(apiErrorMessage(e, t("saveFailed")));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
   };
 
-  return { save, error, pending: create.isPending || update.isPending, born };
+  return { save, error, pending: busy, born };
 }

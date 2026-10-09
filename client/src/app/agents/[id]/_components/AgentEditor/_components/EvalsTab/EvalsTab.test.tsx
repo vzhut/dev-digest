@@ -295,6 +295,28 @@ describe("Evals tab", () => {
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     });
 
+    it("Save and Run case cannot be submitted twice while the save (and the run it starts) is in flight", async () => {
+      let release!: () => void;
+      spies.create.mockImplementation(() => new Promise((resolve) => (release = () => resolve({ created: true, case: { id: "new1" } } as never))));
+      await open();
+      fireEvent.click(screen.getByRole("button", { name: "New eval case" }));
+      fill(/^Name/, "n");
+      fill("Diff", DIFF);
+      fill("File", "src/a.ts");
+      fill("Start line", "1");
+      fill("End line", "1");
+      const save = screen.getByRole("button", { name: /^Save/ });
+      fireEvent.click(save);
+      fireEvent.click(save);
+      await waitFor(() => expect(spies.create).toHaveBeenCalledTimes(1));
+      fireEvent.click(screen.getByRole("button", { name: /^Saving/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Run case" }));
+      expect(spies.create).toHaveBeenCalledTimes(1);
+      release();
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(spies.create).toHaveBeenCalledTimes(1);
+    });
+
     it("Escape closes a pristine editor at once, but asks before discarding edits", async () => {
       await open();
       fireEvent.click(screen.getByRole("button", { name: "New eval case" }));
