@@ -29,3 +29,14 @@ export const DASHBOARD_RUN_WINDOW = 200;
 export const RECENT_RUNS_LIMIT = 20;
 /** `error_reason` of a run whose process died while it was running. */
 export const ORPHANED_RUN_REASON = 'server_restarted';
+
+/** Most eval cases one agent may own: every case is one paid LLM call per run. */
+export const MAX_CASES_PER_AGENT = 200;
+
+/** Stable, user-facing reasons stored on an errored case; the detail goes to the server log only. */
+export const CASE_ERROR_REASON = {
+  provider: 'provider error',
+  providerUnavailable: 'provider unavailable',
+  invalidOutput: 'invalid structured output',
+  runFailed: 'run failed',
+} as const;

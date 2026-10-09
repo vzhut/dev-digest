@@ -2,7 +2,6 @@ import type {
   AgentEvalCase,
   AgentEvalCaseDetail,
   EvalCaseLastRun,
-  EvalCaseResult,
   EvalFindingLink,
   EvalSuiteRun,
   EvalSuiteRunDetail,
@@ -15,17 +14,6 @@ import type { EvalRunnableCase } from './ports.js';
  * Pure row → DTO mappers for the eval module. A case row whose jsonb columns are missing
  * (legacy / hand-inserted rows) maps to null so the caller can skip it instead of crashing.
  */
-
-/** Last-run summary of one case from its stored per-case result. */
-export function toCaseLastRun(r: EvalCaseResult): EvalCaseLastRun {
-  return {
-    status: r.status,
-    findings_total: r.produced.length,
-    findings_matched: new Set(r.outcomes.flatMap((o) => o.matched_by)).size,
-    duration_ms: r.duration_ms,
-    cost_usd: r.cost_usd,
-  };
-}
 
 export function toAgentEvalCase(row: EvalCaseRow, last: EvalCaseLastRun | undefined): AgentEvalCase | null {
   if (!row.agentId || !row.expectedOutput || !row.inputMeta) return null;

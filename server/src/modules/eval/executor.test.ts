@@ -131,7 +131,10 @@ describe('EvalExecutor', () => {
     const messages = llm.requests[0]!.messages.map((m) => m.content).join('\n');
     expect(messages).toContain('sk_live_TEST123'); // the frozen diff reaches the model...
     expect(messages).toContain('<untrusted source="pr-description">');
-    expect(messages).toContain('Review PR #482: Add payments');
+    expect(messages).toContain('Review PR #482.');
+    // the author-controlled PR title is inside the untrusted PR block, not in the trusted task line
+    expect(messages).toMatch(/<untrusted source="pr-description">\nTitle: Add payments/);
+    expect(messages).not.toContain('Review PR #482: Add payments');
     expect(llm.requests[0]!.model).toBe('m');
     for (const section of [
       '## PR intent',
@@ -163,7 +166,9 @@ describe('EvalExecutor', () => {
     const results = await new EvalExecutor(h.deps).runSuite(snapshot, [makeCase('c1'), makeCase('c2'), makeCase('c3')]);
 
     expect(results.map((r) => r.status)).toEqual(['passed', 'error', 'passed']);
-    expect(results[1]?.error).toContain('provider 500');
+    // the stored reason is stable; the provider's own text stays in the server log
+    expect(results[1]?.error).toBe('provider error');
+    expect(JSON.stringify(h.logs)).toContain('provider 500');
     expect(h.progress).toEqual([1, 2, 3]);
     expect(h.finished).toHaveLength(1);
     expect(h.finished[0]).toMatchObject({ status: 'completed' });
@@ -178,6 +183,8 @@ describe('EvalExecutor', () => {
     expect(h.llmCalls).toEqual(['openrouter']); // resolved once per run
     expect(results.every((r) => r.status === 'error')).toBe(true);
     expect(new Set(results.map((r) => r.error)).size).toBe(1);
+    expect(results[0]?.error).toBe('provider unavailable'); // opaque error: no detail stored
+    expect(JSON.stringify(h.logs)).toContain('OPENROUTER_API_KEY is not set'); // detail is for the log
     expect(h.finished[0]).toMatchObject({
       status: 'completed',
       score: { cases_errored: 2, recall: null, precision: null, citation_accuracy: null },
@@ -214,6 +221,19 @@ describe('EvalExecutor', () => {
     expect(r).toMatchObject({ status: 'error', error: 'case timed out after 120s' });
   });
 
+  it('keeps our own actionable message for a configuration error and maps a schema failure to a stable reason', async () => {
+    const { ConfigError } = await import('../../platform/errors.js');
+    const missing = harness(new ConfigError('OPENROUTER_API_KEY is not configured'));
+    const [a] = await new EvalExecutor(missing.deps).runSuite(snapshot, [makeCase('c1')]);
+    expect(a?.error).toBe('provider unavailable: OPENROUTER_API_KEY is not configured');
+
+    const llm = new FakeLLM(() => {
+      throw new Error('OpenRouter structured output failed schema validation for Review');
+    });
+    const [b] = await new EvalExecutor(harness(llm).deps).runSuite(snapshot, [makeCase('c1')]);
+    expect(b?.error).toBe('invalid structured output');
+  });
+
   it('a frozen diff with no files is an error case, not a silent pass', async () => {
     const llm = new FakeLLM(() => ({ findings: [], cost: 0 }));
     const [r] = await new EvalExecutor(harness(llm).deps).runSuite(snapshot, [makeCase('c1', { inputDiff: '' })]);
@@ -226,7 +246,8 @@ describe('EvalExecutor', () => {
     const manual = makeCase('m1', { meta: { pr_title: 'stripe-key-leak', pr_body: null } });
     await new EvalExecutor(harness(llm).deps).runSuite(snapshot, [manual]);
     const prompt = llm.requests[0]!.messages.map((m) => m.content).join('\n');
-    expect(prompt).toContain('Review: stripe-key-leak');
+    expect(prompt).toContain('Review the change below.');
+    expect(prompt).toMatch(/<untrusted source="pr-description">\nTitle: stripe-key-leak/);
     expect(prompt).not.toContain('Review PR #');
   });
 

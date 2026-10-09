@@ -46,6 +46,8 @@ export const evalCases = pgTable(
     // One case per (source finding, owning agent) — the dedup key (AC-6).
     sourceUq: uniqueIndex('eval_cases_source_owner_uq').on(t.sourceFindingId, t.ownerKind, t.ownerId),
     ownerIdx: index('eval_cases_owner_idx').on(t.workspaceId, t.ownerKind, t.ownerId),
+    // FK index: deleting an agent cascades here (Postgres does not index FK columns itself).
+    agentIdx: index('eval_cases_agent_idx').on(t.agentId),
     agentOwnerCheck: check(
       'eval_cases_agent_owner_chk',
       sql`${t.ownerKind} <> 'agent' OR ${t.agentId} = ${t.ownerId}`,
@@ -91,6 +93,15 @@ export const evalRuns = pgTable(
   },
   (t) => ({
     byAgentIdx: index('eval_runs_agent_ran_idx').on(t.workspaceId, t.agentId, t.ranAt),
+    // FK indexes: deleting an agent / a case cascades to the (wide, jsonb-carrying) run rows.
+    agentIdx: index('eval_runs_agent_idx').on(t.agentId, t.ranAt),
+    caseIdx: index('eval_runs_case_idx').on(t.caseId),
+    // Legacy per-case rows have no status; every suite run has a valid one and its workspace + agent.
+    statusCheck: check('eval_runs_status_chk', sql`${t.status} IS NULL OR ${t.status} IN ('running', 'completed', 'errored')`),
+    suiteScopeCheck: check(
+      'eval_runs_suite_scope_chk',
+      sql`${t.status} IS NULL OR (${t.workspaceId} IS NOT NULL AND ${t.agentId} IS NOT NULL)`,
+    ),
     // At most one running suite per agent — race-safe backing for the 409 (AC-18).
     oneRunningUq: uniqueIndex('eval_runs_one_running_per_agent')
       .on(t.agentId)

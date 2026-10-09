@@ -435,6 +435,7 @@ export const EvalErrorCode = z.enum([
   'no_eval_cases',
   'compare_different_agents',
   'unknown_case',
+  'case_limit_reached',
 ]);
 export type EvalErrorCode = z.infer<typeof EvalErrorCode>;
 

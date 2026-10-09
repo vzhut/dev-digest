@@ -1,7 +1,8 @@
 import type { EvalCaseResult, LLMProvider } from '@devdigest/shared';
 import { reviewPullRequest } from '@devdigest/reviewer-core';
+import { AppError } from '../../platform/errors.js';
 import { redactSecrets } from '../_shared/redact.js';
-import { CASE_TIMEOUT_MS, TASK_TITLE_MAX_CHARS } from './constants.js';
+import { CASE_ERROR_REASON, CASE_TIMEOUT_MS, TASK_TITLE_MAX_CHARS } from './constants.js';
 import type { EvalExecutorDeps, EvalRunSnapshot, EvalRunnableCase } from './ports.js';
 import { errorCaseOutcome, scoreCase, scoreRun } from './scoring.js';
 
@@ -29,19 +30,28 @@ export class EvalExecutor {
     try {
       llm = await this.deps.llm(snapshot.provider);
     } catch (err) {
-      providerError = `provider unavailable: ${redactSecrets(errorMessage(err))}`;
-      log.warn({ ...ids, event: 'eval.run.provider_unavailable', provider: snapshot.provider }, providerError);
+      // an AppError (e.g. "OPENROUTER_API_KEY is not configured") is our own actionable message; anything else is opaque
+      providerError =
+        err instanceof AppError
+          ? `${CASE_ERROR_REASON.providerUnavailable}: ${redactSecrets(err.message)}`
+          : CASE_ERROR_REASON.providerUnavailable;
+      log.warn(
+        { ...ids, event: 'eval.run.provider_unavailable', provider: snapshot.provider, detail: redactSecrets(errorMessage(err)) },
+        'eval provider unavailable',
+      );
     }
 
     const results: EvalCaseResult[] = [];
     for (const c of cases) {
       const caseStart = now();
       let result: EvalCaseResult;
+      let detail: string | undefined; // raw provider detail: server log only, never stored or returned
       try {
         if (!llm) throw new CaseError(providerError ?? 'provider unavailable');
         result = await this.runCase(snapshot, c, llm, caseStart);
       } catch (err) {
-        const reason = err instanceof CaseError ? err.message : redactSecrets(errorMessage(err));
+        const reason = classifyError(err);
+        detail = err instanceof CaseError ? undefined : redactSecrets(errorMessage(err));
         result = errorCaseOutcome(c.id, reason, {
           caseName: c.name,
           expectation: c.expectation,
@@ -57,7 +67,7 @@ export class EvalExecutor {
           status: result.status,
           ms: result.duration_ms,
           cost_usd: result.cost_usd,
-          ...(result.status === 'error' ? { error: result.error } : {}),
+          ...(result.status === 'error' ? { error: result.error, ...(detail ? { detail } : {}) } : {}),
         },
         `eval case ${result.status}`,
       );
@@ -106,8 +116,9 @@ export class EvalExecutor {
         llm: boundedLlm(llm, budgetMs),
         ...(snapshot.strategy ? { strategy: snapshot.strategy } : {}),
         ...(snapshot.skills.length > 0 ? { skills: snapshot.skills } : {}),
-        ...(c.meta.pr_body ? { prDescription: c.meta.pr_body } : {}),
-        task: c.meta.pr_number != null ? `Review PR #${c.meta.pr_number}: ${title}` : `Review: ${title}`,
+        // The PR title is author-controlled: it travels in the untrusted PR block (wrapped by the engine), never in the task line.
+        prDescription: `Title: ${title}${c.meta.pr_body ? `\n\n${c.meta.pr_body}` : ''}`,
+        task: c.meta.pr_number != null ? `Review PR #${c.meta.pr_number}.` : 'Review the change below.',
         correlationId: this.deps.correlationId,
       }),
       budgetMs,
@@ -132,6 +143,14 @@ export class EvalExecutor {
 
 /** A failure whose message is already safe to store and show. */
 class CaseError extends Error {}
+
+/** The stable, short reason stored on an errored case; the provider's own text stays in the server log. */
+function classifyError(err: unknown): string {
+  if (err instanceof CaseError) return err.message;
+  const text = errorMessage(err);
+  if (/failed schema validation|not valid JSON/i.test(text)) return CASE_ERROR_REASON.invalidOutput;
+  return CASE_ERROR_REASON.provider;
+}
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 

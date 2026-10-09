@@ -26,6 +26,8 @@ import { regressions } from './callout.js';
 import {
   AGENT_RUNS_LIMIT,
   DASHBOARD_RUN_WINDOW,
+  MAX_CASES_PER_AGENT,
+  CASE_ERROR_REASON,
   ORPHANED_RUN_REASON,
   RECENT_RUNS_LIMIT,
   TREND_POINTS,
@@ -128,6 +130,7 @@ export class EvalService {
       );
     }
 
+    await this.assertRoomForCase(workspaceId, agentId);
     const { row, created } = await repo.insertCase({
       workspaceId,
       agentId,
@@ -156,6 +159,7 @@ export class EvalService {
     if (!(await repo.agentExists(workspaceId, agentId))) throw new NotFoundError('Agent not found');
     const check = checkManualCase(body.input_diff, body.expectation, parseDiff);
     if (!check.ok) throw new EvalRequestError(check.code, check.reason);
+    await this.assertRoomForCase(workspaceId, agentId);
     const row = await repo.insertManualCase({
       workspaceId,
       agentId,
@@ -193,6 +197,13 @@ export class EvalService {
     const detail = row ? toAgentEvalCaseDetail(row, last) : null;
     if (!detail) throw new NotFoundError('Eval case not found');
     return detail;
+  }
+
+  /** One agent may own at most MAX_CASES_PER_AGENT cases (each is a paid call per run). */
+  private async assertRoomForCase(workspaceId: string, agentId: string): Promise<void> {
+    if ((await this.deps.repo.countCases(workspaceId, agentId)) >= MAX_CASES_PER_AGENT) {
+      throw new EvalRequestError('case_limit_reached', `An agent can own at most ${MAX_CASES_PER_AGENT} eval cases`);
+    }
   }
 
   async listCases(workspaceId: string, agentId: string): Promise<AgentEvalCase[]> {
@@ -252,7 +263,7 @@ export class EvalService {
     const skills = resolveRunSkills(snap.skillLinks);
     const versionById = new Map(snap.skillLinks.map((l) => [l.skill.id, l.skill.version]));
     const { agent } = snap;
-    const run = await repo.insertRunningRun({
+    const inserted = await repo.insertRunningRun({
       workspaceId,
       agentId,
       agentVersion: agent.version,
@@ -263,6 +274,10 @@ export class EvalService {
       skills: skills.map((s) => ({ id: s.id, name: s.name, version: versionById.get(s.id) ?? null })),
       caseIds: cases.map((c) => c.id),
     });
+    if (!inserted.ok) {
+      throw new EvalRequestError('eval_run_in_progress', 'An eval run for this agent is already running', 409);
+    }
+    const run = inserted.run;
 
     const executor = new EvalExecutor({
       llm,
@@ -290,9 +305,10 @@ export class EvalService {
         cases,
       )
       .catch(async (err: unknown) => {
-        const reason = redactSecrets(err instanceof Error ? err.message : String(err));
-        log.error({ event: 'eval.run.failed', run_id: run.id, correlation_id: opts.correlationId, error: reason }, 'eval run failed');
-        await repo.failRun(run.id, reason).catch((e: unknown) =>
+        // the stored reason is stable; the detail (redacted) is for the server log only
+        const detail = redactSecrets(err instanceof Error ? err.message : String(err));
+        log.error({ event: 'eval.run.failed', run_id: run.id, correlation_id: opts.correlationId, detail }, 'eval run failed');
+        await repo.failRun(run.id, CASE_ERROR_REASON.runFailed).catch((e: unknown) =>
           log.error({ event: 'eval.run.fail_persist_failed', run_id: run.id, error: redactSecrets(String(e)) }, 'could not persist the failed eval run'),
         );
       });
@@ -377,20 +393,34 @@ export class EvalService {
     };
   }
 
-  /** Start a run for every agent that has cases; agents already running (or failing to start) are skipped. */
+  /**
+   * Start a run for every agent that has cases. One agent failing never discards the runs already started:
+   * every failure is recorded per agent in `skipped` (an unexpected one as `internal_error`, detail in the log)
+   * and only a total failure (nothing started, something unexpected) is rethrown.
+   */
   async runAll(workspaceId: string, opts: { correlationId: string }): Promise<RunAllEvalResponse> {
     const agents = await this.deps.repo.agentsWithCases(workspaceId);
     const started: string[] = [];
     const skipped: RunAllEvalResponse['skipped'] = [];
+    let unexpected: unknown;
     for (const agent of agents) {
       try {
         await this.startRun(workspaceId, agent.id, opts);
         started.push(agent.id);
       } catch (err) {
-        if (!(err instanceof AppError)) throw err;
-        skipped.push({ agent_id: agent.id, reason: err.code });
+        if (err instanceof AppError) {
+          skipped.push({ agent_id: agent.id, reason: err.code });
+          continue;
+        }
+        unexpected ??= err;
+        this.deps.log.error(
+          { event: 'eval.run_all.agent_failed', agent_id: agent.id, correlation_id: opts.correlationId, detail: redactSecrets(String(err)) },
+          'run-all: could not start an agent',
+        );
+        skipped.push({ agent_id: agent.id, reason: 'internal_error' });
       }
     }
+    if (started.length === 0 && unexpected !== undefined) throw unexpected;
     return { started, skipped };
   }
 

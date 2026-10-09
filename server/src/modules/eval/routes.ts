@@ -39,6 +39,8 @@ import { EvalService } from './service.js';
 const OptionalRunBody = z.preprocess((v) => v ?? {}, StartEvalRunBody);
 const CompareQuery = z.object({ a: z.string().uuid(), b: z.string().uuid() });
 /** Tight per-route limit: every run is a batch of paid LLM calls. */
+/** Writes that grow the paid surface (each case is one LLM call per run). */
+const WRITE_RATE_LIMIT = { max: 60, timeWindow: '1 minute' } as const;
 const PAID_RATE_LIMIT = { max: 10, timeWindow: '1 minute' } as const;
 export default async function evalRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
@@ -90,7 +92,10 @@ export default async function evalRoutes(appBase: FastifyInstance) {
 
   app.post(
     '/agents/:id/eval-cases',
-    { schema: { params: IdParams, body: EvalCaseWrite, response: { 201: CreateEvalCaseResponse } } },
+    {
+      schema: { params: IdParams, body: EvalCaseWrite, response: { 201: CreateEvalCaseResponse } },
+      config: { rateLimit: WRITE_RATE_LIMIT },
+    },
     async (req, reply): Promise<CreateEvalCaseResponse> => {
       const { workspaceId } = await getContext(container, req);
       const created = await service.createManual(workspaceId, req.params.id, req.body);
@@ -101,7 +106,10 @@ export default async function evalRoutes(appBase: FastifyInstance) {
 
   app.put(
     '/eval-cases/:id',
-    { schema: { params: IdParams, body: EvalCaseWrite, response: { 200: AgentEvalCaseDetail } } },
+    {
+      schema: { params: IdParams, body: EvalCaseWrite, response: { 200: AgentEvalCaseDetail } },
+      config: { rateLimit: WRITE_RATE_LIMIT },
+    },
     async (req): Promise<AgentEvalCaseDetail> => {
       const { workspaceId } = await getContext(container, req);
       return service.updateCase(workspaceId, req.params.id, req.body);

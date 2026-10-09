@@ -1,10 +1,8 @@
-import { and, count, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import type { AgentRow, EvalCaseRow, EvalRunRow } from '../../db/rows.js';
 import * as t from '../../db/schema.js';
 import type { EvalCaseLastRun, EvalCaseMeta, EvalExpectation, EvalSkillRef } from '@devdigest/shared';
-import { toCaseLastRun } from './helpers.js';
-import { EvalRequestError } from './errors.js';
 import type { EvalRunFinish } from './ports.js';
 
 export type { EvalCaseRow, EvalRunRow };
@@ -226,21 +224,43 @@ export class EvalRepository {
    * mentions is simply absent from the map (= never run).
    */
   async lastResultsForAgent(workspaceId: string, agentId: string): Promise<Map<string, EvalCaseLastRun>> {
-    const runs = await this.db
-      .select({ results: t.evalRuns.results })
-      .from(t.evalRuns)
-      .where(
-        and(
-          eq(t.evalRuns.workspaceId, workspaceId),
-          eq(t.evalRuns.agentId, agentId),
-          eq(t.evalRuns.status, 'completed'),
-        ),
-      )
-      .orderBy(desc(t.evalRuns.ranAt))
-      .limit(LAST_RESULT_RUN_WINDOW);
+    // Only the per-case summary leaves the database: the wide `results` jsonb of the newest runs is
+    // unpacked in SQL (newest result per case wins) instead of being shipped to Node and parsed.
+    const rows = await this.db.execute<{
+      case_id: string;
+      status: EvalCaseLastRun['status'];
+      findings_total: number;
+      findings_matched: number;
+      duration_ms: number;
+      cost_usd: number | null;
+    }>(sql`
+      SELECT DISTINCT ON (r.value ->> 'case_id')
+        r.value ->> 'case_id' AS case_id,
+        r.value ->> 'status' AS status,
+        jsonb_array_length(r.value -> 'produced') AS findings_total,
+        (
+          SELECT count(DISTINCT m.value)::int
+          FROM jsonb_array_elements(r.value -> 'outcomes') o, jsonb_array_elements(o.value -> 'matched_by') m
+        ) AS findings_matched,
+        (r.value ->> 'duration_ms')::int AS duration_ms,
+        (r.value ->> 'cost_usd')::float8 AS cost_usd
+      FROM (
+        SELECT results, ran_at FROM eval_runs
+        WHERE workspace_id = ${workspaceId} AND agent_id = ${agentId} AND status = 'completed'
+        ORDER BY ran_at DESC
+        LIMIT ${LAST_RESULT_RUN_WINDOW}
+      ) runs, jsonb_array_elements(runs.results) r
+      ORDER BY r.value ->> 'case_id', runs.ran_at DESC
+    `);
     const last = new Map<string, EvalCaseLastRun>();
-    for (const run of runs) {
-      for (const r of run.results ?? []) if (!last.has(r.case_id)) last.set(r.case_id, toCaseLastRun(r));
+    for (const r of rows) {
+      last.set(r.case_id, {
+        status: r.status,
+        findings_total: r.findings_total,
+        findings_matched: r.findings_matched,
+        duration_ms: r.duration_ms,
+        cost_usd: r.cost_usd,
+      });
     }
     return last;
   }
@@ -367,8 +387,11 @@ export class EvalRepository {
     return row?.n ?? 0;
   }
 
-  /** Insert the run in `running`; a second concurrent run of the agent is `409 eval_run_in_progress`. */
-  async insertRunningRun(v: InsertRunningRun): Promise<EvalRunRow> {
+  /**
+   * Insert the run in `running`. A second concurrent run of the agent violates the partial unique index:
+   * that comes back as `{ ok: false }` so the SERVICE decides it is a 409 (no HTTP rule in the repository).
+   */
+  async insertRunningRun(v: InsertRunningRun): Promise<{ ok: true; run: EvalRunRow } | { ok: false; reason: 'already_running' }> {
     try {
       const [row] = await this.db
         .insert(t.evalRuns)
@@ -387,11 +410,9 @@ export class EvalRepository {
           results: [],
         })
         .returning();
-      return row!;
+      return { ok: true, run: row! };
     } catch (err) {
-      if (isOneRunningViolation(err)) {
-        throw new EvalRequestError('eval_run_in_progress', 'An eval run for this agent is already running', 409);
-      }
+      if (isOneRunningViolation(err)) return { ok: false, reason: 'already_running' };
       throw err;
     }
   }

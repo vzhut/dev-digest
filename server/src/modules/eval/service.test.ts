@@ -21,11 +21,15 @@ const caseRow = (id: string) => ({
 
 const agentRow = { id: 'a1', name: 'General', model: 'm', provider: 'openrouter', systemPrompt: 'p', strategy: 'single-pass', version: 3 };
 
-function build(over: Partial<EvalServiceDeps['repo']> = {}, llm: EvalServiceDeps['llm'] = async () => ({}) as LLMProvider) {
+function build(
+  over: Partial<EvalServiceDeps['repo']> = {},
+  llm: EvalServiceDeps['llm'] = async () => ({}) as LLMProvider,
+  parseDiff: EvalServiceDeps['parseDiff'] = () => ({ raw: '', files: [] }),
+) {
   const repo = {
     agentSnapshot: vi.fn(async () => ({ agent: agentRow, skillLinks: [] })),
     listCasesForAgent: vi.fn(async () => [caseRow('c1')]),
-    insertRunningRun: vi.fn(async () => ({ id: 'run-1' }) as EvalRunRow),
+    insertRunningRun: vi.fn(async () => ({ ok: true as const, run: { id: 'run-1' } as EvalRunRow })),
     markProgress: vi.fn(async () => {}),
     finishRun: vi.fn(async () => {}),
     failRun: vi.fn(async () => {}),
@@ -36,7 +40,7 @@ function build(over: Partial<EvalServiceDeps['repo']> = {}, llm: EvalServiceDeps
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
   const service = new EvalService({
     repo: repo as unknown as EvalServiceDeps['repo'],
-    parseDiff: () => ({ raw: '', files: [] }),
+    parseDiff,
     llm,
     log,
   });
@@ -72,9 +76,11 @@ describe('EvalService.startRun', () => {
     await vi.waitFor(() => expect(failRun).toHaveBeenCalledTimes(1));
     const [id, reason] = failRun.mock.calls[0]!;
     expect(id).toBe('run-1');
-    expect(reason).toContain('db went away');
-    expect(reason).not.toContain('sk-abcdefghijklmnop'); // redacted before it is stored
-    expect(log.error).toHaveBeenCalled();
+    // the stored reason is stable: nothing of the raw error reaches the run row or the API
+    expect(reason).toBe('run failed');
+    const logged = JSON.stringify(log.error.mock.calls);
+    expect(logged).toContain('db went away'); // the detail is in the server log...
+    expect(logged).not.toContain('sk-abcdefghijklmnop'); // ...redacted
   });
 
   it('rejects an unknown agent and an agent without cases before inserting a run', async () => {
@@ -91,7 +97,10 @@ describe('EvalService.startRun', () => {
 
 describe('EvalService.startRun with case_ids (AC-46)', () => {
   it('runs only the chosen subset and rejects an id that is not the agent’s', async () => {
-    const insertRunningRun = vi.fn(async (v: { caseIds: string[] }) => ({ id: 'run-1', caseIds: v.caseIds }) as unknown as EvalRunRow);
+    const insertRunningRun = vi.fn(async (v: { caseIds: string[] }) => ({
+      ok: true as const,
+      run: { id: 'run-1', caseIds: v.caseIds } as unknown as EvalRunRow,
+    }));
     const { service } = build({
       listCasesForAgent: vi.fn(async () => [caseRow('c1'), caseRow('c2'), caseRow('c3')]),
       insertRunningRun,
@@ -108,22 +117,68 @@ describe('EvalService.startRun with case_ids (AC-46)', () => {
 });
 
 describe('EvalService.runAll', () => {
-  it('reports started and skipped (a conflict or no cases) without throwing', async () => {
+  const two = [
+    { id: 'a1', name: 'A', model: 'm', casesTotal: 1 },
+    { id: 'a2', name: 'B', model: 'm', casesTotal: 1 },
+  ];
+
+  it('reports started and skipped (an already-running agent) without throwing', async () => {
     const { service } = build({
-      agentsWithCases: vi.fn(async () => [
-        { id: 'a1', name: 'A', model: 'm', casesTotal: 1 },
-        { id: 'a2', name: 'B', model: 'm', casesTotal: 1 },
-      ]),
-      insertRunningRun: vi.fn(async (v: { agentId: string }) => {
-        if (v.agentId === 'a2') {
-          const { EvalRequestError } = await import('./errors.js');
-          throw new EvalRequestError('eval_run_in_progress', 'busy', 409);
-        }
-        return { id: 'run-1' } as EvalRunRow;
-      }),
+      agentsWithCases: vi.fn(async () => two),
+      insertRunningRun: vi.fn(async (v: { agentId: string }) =>
+        v.agentId === 'a2' ? { ok: false as const, reason: 'already_running' as const } : { ok: true as const, run: { id: 'run-1' } as EvalRunRow },
+      ),
     });
     const out = await service.runAll('ws', { correlationId: 'r' });
     expect(out.started).toEqual(['a1']);
     expect(out.skipped).toEqual([{ agent_id: 'a2', reason: 'eval_run_in_progress' }]);
+  });
+
+  it('an unexpected failure of one agent never hides the runs already started (internal_error, detail in the log)', async () => {
+    const { service, log } = build({
+      agentsWithCases: vi.fn(async () => two),
+      insertRunningRun: vi.fn(async (v: { agentId: string }) => {
+        if (v.agentId === 'a2') throw new Error('connection reset sk-abcdefghijklmnop');
+        return { ok: true as const, run: { id: 'run-1' } as EvalRunRow };
+      }),
+    });
+    const out = await service.runAll('ws', { correlationId: 'r' });
+    expect(out).toEqual({ started: ['a1'], skipped: [{ agent_id: 'a2', reason: 'internal_error' }] });
+    const logged = JSON.stringify(log.error.mock.calls);
+    expect(logged).toContain('connection reset');
+    expect(logged).not.toContain('sk-abcdefghijklmnop');
+  });
+
+  it('rethrows an unexpected failure only when nothing was started', async () => {
+    const { service } = build({
+      agentsWithCases: vi.fn(async () => two),
+      insertRunningRun: vi.fn(async () => {
+        throw new Error('db down');
+      }),
+    });
+    await expect(service.runAll('ws', { correlationId: 'r' })).rejects.toThrow('db down');
+  });
+});
+
+describe('case cap (1a5b)', () => {
+  const diff = ['--- a/x.ts', '+++ b/x.ts', '@@ -0,0 +1,2 @@', '+a', '+b'].join('\n');
+  const body = {
+    name: 'n',
+    input_diff: diff,
+    expectation: { type: 'must_find' as const, file: 'x.ts', start_line: 1, end_line: 1 },
+  };
+
+  it('refuses a manual case past MAX_CASES_PER_AGENT with 422 case_limit_reached and inserts nothing', async () => {
+    const insertManualCase = vi.fn();
+    const { service } = build(
+      { agentExists: vi.fn(async () => true), countCases: vi.fn(async () => 200), insertManualCase } as never,
+      async () => ({}) as LLMProvider,
+      () => ({
+        raw: diff,
+        files: [{ path: 'x.ts', additions: 2, deletions: 0, hunks: [{ file: 'x.ts', oldStart: 0, oldLines: 0, newStart: 1, newLines: 2, newLineNumbers: [1, 2] }] }],
+      }),
+    );
+    await expect(service.createManual('ws', 'a1', body)).rejects.toMatchObject({ code: 'case_limit_reached', statusCode: 422 });
+    expect(insertManualCase).not.toHaveBeenCalled();
   });
 });

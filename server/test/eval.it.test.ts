@@ -472,7 +472,7 @@ d('eval cases (Testcontainers pg)', () => {
       citation_accuracy: null,
       cost_usd: null,
     });
-    expect(run.results.every((r) => r.status === 'error' && r.error?.includes('provider 500'))).toBe(true);
+    expect(run.results.every((r) => r.status === 'error' && r.error === 'provider error')).toBe(true);
     await app.close();
   });
 
