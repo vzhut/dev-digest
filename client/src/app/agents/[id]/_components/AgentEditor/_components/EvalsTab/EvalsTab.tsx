@@ -12,7 +12,6 @@ import { EvalMetricTiles } from "@/components/eval-metric-tiles";
 import { EvalRunHistory } from "@/components/eval-run-history";
 import { useAgentEvalCases, useAgentEvalRuns, useEvalRun } from "@/lib/hooks/eval";
 import { CaseList } from "./_components/CaseList";
-import { RunPanel } from "./_components/RunPanel";
 import { s } from "./styles";
 
 export function EvalsTab({ agent }: { agent: Agent }) {
@@ -64,11 +63,7 @@ export function EvalsTab({ agent }: { agent: Agent }) {
       )}
 
       <section aria-label={t("casesHeading")}>
-        <CaseList
-          agentId={agent.id}
-          cases={cases.data}
-          actions={<RunPanel agentId={agent.id} casesTotal={cases.data.length} runs={runs.data ?? []} />}
-        />
+        <CaseList agent={agent} cases={cases.data} runs={runs.data ?? []} />
       </section>
 
       <section>

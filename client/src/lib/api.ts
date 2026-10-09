@@ -6,6 +6,7 @@ import type {
   AgentEvalCase,
   AgentEvalCaseDetail,
   CreateEvalCaseResponse,
+  EvalCaseWrite,
   EvalAgentDashboard,
   EvalFindingLink,
   EvalRunCompare,
@@ -118,9 +119,17 @@ export const api = {
   listAgentEvalCases: (agentId: string) => apiFetch<AgentEvalCase[]>(`/agents/${agentId}/eval-cases`),
   getEvalCase: (caseId: string) => apiFetch<AgentEvalCaseDetail>(`/eval-cases/${caseId}`),
   deleteEvalCase: (caseId: string) => apiFetch<void>(`/eval-cases/${caseId}`, { method: "DELETE" }),
-  /** Paid: starts the agent's eval run in the background (202). */
-  startEvalRun: (agentId: string) =>
-    apiFetch<StartEvalRunResponse>(`/agents/${agentId}/eval-runs`, { method: "POST" }),
+  /** A case written by hand in the editor (201). */
+  createManualEvalCase: (agentId: string, body: EvalCaseWrite) =>
+    apiFetch<CreateEvalCaseResponse>(`/agents/${agentId}/eval-cases`, { method: "POST", body: JSON.stringify(body) }),
+  updateEvalCase: (caseId: string, body: EvalCaseWrite) =>
+    apiFetch<AgentEvalCaseDetail>(`/eval-cases/${caseId}`, { method: "PUT", body: JSON.stringify(body) }),
+  /** Paid: starts the agent's eval run in the background (202). Without `caseIds`: every case, and no body is sent. */
+  startEvalRun: (agentId: string, caseIds?: string[]) =>
+    apiFetch<StartEvalRunResponse>(`/agents/${agentId}/eval-runs`, {
+      method: "POST",
+      ...(caseIds ? { body: JSON.stringify({ case_ids: caseIds }) } : {}),
+    }),
   listAgentEvalRuns: (agentId: string) => apiFetch<EvalSuiteRun[]>(`/agents/${agentId}/eval-runs`),
   getEvalRun: (runId: string) => apiFetch<EvalSuiteRunDetail>(`/eval-runs/${runId}`),
   compareEvalRuns: (a: string, b: string) =>

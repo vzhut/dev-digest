@@ -28,7 +28,7 @@ export function RunPanel({
   return (
     <div style={WRAP}>
       <Button
-        kind="primary"
+        kind="secondary"
         icon="Play"
         disabled={noCases || !!running}
         loading={start.isPending}

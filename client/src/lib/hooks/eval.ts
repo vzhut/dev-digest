@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import type { EvalSuiteRun } from "@devdigest/shared";
+import type { EvalCaseWrite, EvalSuiteRun } from "@devdigest/shared";
 
 export const EVAL_POLL_MS = 2000;
 
@@ -73,7 +73,31 @@ export function useDeleteEvalCase(agentId: string | null | undefined) {
   });
 }
 
-/** Paid. The 202 only means "started": the runs list then polls for progress. */
+/** Create a case by hand (the editor's New eval case). */
+export function useCreateManualEvalCase(agentId: string | null | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: EvalCaseWrite) => api.createManualEvalCase(agentId as string, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: evalKeys.cases(agentId) });
+      qc.invalidateQueries({ queryKey: evalKeys.dashboard });
+    },
+  });
+}
+
+/** Edit a case; earlier runs keep their stored results. */
+export function useUpdateEvalCase(agentId: string | null | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, body }: { caseId: string; body: EvalCaseWrite }) => api.updateEvalCase(caseId, body),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: evalKeys.cases(agentId) });
+      qc.invalidateQueries({ queryKey: evalKeys.case(vars.caseId) });
+    },
+  });
+}
+
+/** Paid. The 202 only means "started": the runs list then polls for progress. `caseIds` runs a subset. */
 export function useStartEvalRun(agentId: string | null | undefined) {
   const qc = useQueryClient();
   const refresh = () => {
@@ -82,7 +106,7 @@ export function useStartEvalRun(agentId: string | null | undefined) {
     qc.invalidateQueries({ queryKey: evalKeys.dashboard });
   };
   return useMutation({
-    mutationFn: () => api.startEvalRun(agentId as string),
+    mutationFn: (caseIds?: string[]) => api.startEvalRun(agentId as string, caseIds),
     onSuccess: refresh,
     // a 409 (already running) still needs the list refreshed so the progress shows
     onError: refresh,
