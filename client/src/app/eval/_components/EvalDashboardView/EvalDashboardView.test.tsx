@@ -1,26 +1,19 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import React from "react";
-import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { EvalWorkspaceDashboard } from "@devdigest/shared";
+import { api } from "@/lib/api";
 import { NextIntlClientProvider } from "next-intl";
 import messages from "../../../../../messages/en/eval.json";
 
 vi.mock("@/components/app-shell", () => ({ AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 
-const state = vi.hoisted(() => ({
-  data: undefined as unknown,
-  runAllMutate: vi.fn(),
-}));
-vi.mock("@/lib/hooks/eval", () => ({
-  useEvalDashboard: () => ({ data: state.data, isError: false, refetch: vi.fn() }),
-  useRunAllEvals: () => ({ mutate: state.runAllMutate, isPending: false }),
-}));
-
 import { EvalDashboardView } from "./EvalDashboardView";
 
 afterEach(() => {
   cleanup();
-  state.data = undefined;
-  state.runAllMutate.mockReset();
+  vi.restoreAllMocks();
 });
 
 const run = (over: Record<string, unknown>) => ({
@@ -30,12 +23,19 @@ const run = (over: Record<string, unknown>) => ({
 });
 const point = (passed: number) => ({ run_id: `p${passed}`, ran_at: "2026-10-01T00:00:00Z", recall: 1, precision: 1, citation_accuracy: 1, traces_passed: passed, traces_total: 4 });
 
-function renderView() {
-  return render(
-    <NextIntlClientProvider locale="en" messages={{ eval: messages }}>
-      <EvalDashboardView />
-    </NextIntlClientProvider>,
+/** Real query client and hooks; only the network edge is replaced. */
+async function renderView(dashboard: unknown) {
+  vi.spyOn(api, "getEvalDashboard").mockResolvedValue(dashboard as EvalWorkspaceDashboard);
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={qc}>
+      <NextIntlClientProvider locale="en" messages={{ eval: messages }}>
+        <EvalDashboardView />
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
+  await screen.findByRole("heading", { name: "Eval Dashboard" });
+  await waitFor(() => expect(screen.queryByLabelText("Loading eval dashboard…")).not.toBeInTheDocument());
 }
 
 const TWO_AGENTS = {
@@ -50,9 +50,8 @@ const TWO_AGENTS = {
 };
 
 describe("EvalDashboardView", () => {
-  it("shows one card per agent with metrics, p / n and a sparkline, linking to the agent's view", () => {
-    state.data = TWO_AGENTS;
-    renderView();
+  it("shows one card per agent with metrics, p / n and a sparkline, linking to the agent's view", async () => {
+    await renderView(TWO_AGENTS);
     const link = screen.getByRole("link", { name: /General Reviewer/ });
     expect(link).toHaveAttribute("href", "/eval/agents/a1");
     expect(within(link).getByText("50%")).toBeInTheDocument();
@@ -67,31 +66,29 @@ describe("EvalDashboardView", () => {
     expect(within(other).queryByRole("img")).not.toBeInTheDocument();
   });
 
-  it("lists recent runs newest first", () => {
-    state.data = TWO_AGENTS;
-    renderView();
+  it("lists recent runs newest first", async () => {
+    await renderView(TWO_AGENTS);
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows[0]).toHaveTextContent("Security Reviewer");
     expect(rows[1]).toHaveTextContent("General Reviewer");
   });
 
-  it("with no cases anywhere shows an explicit empty state and no chart or table", () => {
-    state.data = { cards: [], recent_runs: [] };
-    renderView();
+  it("with no cases anywhere shows an explicit empty state and no chart or table", async () => {
+    await renderView({ cards: [], recent_runs: [] });
     expect(screen.getByText("No eval cases yet")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Run all agents" })).not.toBeInTheDocument();
   });
 
-  it("Run all agents reports which agents were started and which skipped", () => {
-    state.data = TWO_AGENTS;
-    state.runAllMutate.mockImplementation((_v: unknown, o: { onSuccess: (r: unknown) => void }) =>
-      o.onSuccess({ started: ["a1"], skipped: [{ agent_id: "a2", reason: "eval_run_in_progress" }] }),
-    );
-    renderView();
+  it("Run all agents reports which agents were started and which skipped", async () => {
+    const runAll = vi
+      .spyOn(api, "runAllEvals")
+      .mockResolvedValue({ started: ["a1"], skipped: [{ agent_id: "a2", reason: "eval_run_in_progress" }] });
+    await renderView(TWO_AGENTS);
     fireEvent.click(screen.getByRole("button", { name: "Run all agents" }));
-    const report = screen.getByRole("status");
+    await waitFor(() => expect(runAll).toHaveBeenCalledTimes(1));
+    const report = await screen.findByRole("status");
     expect(report).toHaveTextContent("Started: General Reviewer");
     expect(report).toHaveTextContent("Skipped: Security Reviewer (already running)");
   });

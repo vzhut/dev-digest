@@ -9,7 +9,10 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  */
 export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose: () => void): void {
   const closeRef = React.useRef(onClose);
-  closeRef.current = onClose;
+  // keep the latest handler without writing a ref during render
+  React.useEffect(() => {
+    closeRef.current = onClose;
+  });
 
   React.useEffect(() => {
     const dialog = ref.current?.closest<HTMLElement>('[role="dialog"]') ?? null;

@@ -248,6 +248,11 @@
         "lineRange": "Lines must be whole numbers, start ≥ 1 and end ≥ start.",
         "outsideHunks": "These lines are outside every hunk of the diff."
       }
+    },
+    "deleteFailed": "Could not delete the case.",
+    "chip": {
+      "mustFind": "must find",
+      "mustNotFlag": "empty []"
     }
   },
   "board": {

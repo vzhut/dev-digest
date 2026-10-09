@@ -16,11 +16,13 @@ export function sourceLabel(meta: { repo?: string | null; pr_number?: number | n
   return meta.repo && meta.pr_number != null ? `${meta.repo} #${meta.pr_number}` : null;
 }
 
-/** Chip text of a case row: "CRITICAL · security" from the finding it was frozen from, else the case type. */
-export function chipText(c: AgentEvalCase): string {
+/** What a row's chip shows: the finding's severity and category, or (no such label) the case type. */
+export type CaseChip = { kind: "finding"; severity: string; category: string } | { kind: "type"; type: "must_find" | "must_not_flag" };
+
+export function caseChip(c: AgentEvalCase): CaseChip {
   const label = c.expectation.label;
-  if (label?.severity && label.category) return `${label.severity} · ${label.category}`;
-  return c.expectation.type === "must_not_flag" ? "empty []" : c.expectation.type;
+  if (label?.severity && label.category) return { kind: "finding", severity: label.severity, category: label.category };
+  return { kind: "type", type: c.expectation.type };
 }
 
 /** Findings the case expects: one for `must_find`, none for `must_not_flag`. */

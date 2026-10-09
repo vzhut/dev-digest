@@ -11,7 +11,7 @@ import { useDeleteEvalCase, useStartEvalRun } from "@/lib/hooks/eval";
 import { notify } from "@/lib/toast";
 import { CaseEditorModal } from "../CaseEditorModal";
 import { RunPanel } from "../RunPanel";
-import { chipText, expectedFindings, passingCount, sourceLabel } from "../../helpers";
+import { caseChip, expectedFindings, passingCount, sourceLabel } from "../../helpers";
 import { RowButton } from "./RowButton";
 import { s } from "./styles";
 
@@ -35,6 +35,8 @@ export function CaseList({ agent, cases, runs }: { agent: Agent; cases: AgentEva
   const start = useStartEvalRun(agent.id);
   const running = runs.some((r) => r.status === "running");
   const { passed, total } = passingCount(cases);
+  const chipLabel = (chip: ReturnType<typeof caseChip>) =>
+    chip.kind === "finding" ? `${chip.severity} · ${chip.category}` : t(chip.type === "must_find" ? "chip.mustFind" : "chip.mustNotFlag");
 
   const runCase = (c: AgentEvalCase) =>
     start.mutate([c.id], { onError: (e) => notify.error(apiErrorMessage(e, t("startFailed"))) });
@@ -75,7 +77,7 @@ export function CaseList({ agent, cases, runs }: { agent: Agent; cases: AgentEva
                     {` · ${c.expectation.file}:${c.expectation.start_line}-${c.expectation.end_line} · ${source ?? t("sourceManual")}`}
                   </div>
                 </div>
-                <span style={s.chip}>{chipText(c)}</span>
+                <span style={s.chip}>{chipLabel(caseChip(c))}</span>
                 <div style={s.buttons}>
                   <RowButton icon="Play" label={`${t("rowRun")} ${c.name}`} disabled={running || start.isPending} onClick={() => runCase(c)} />
                   <IconBtn icon="Edit" label={`${t("rowEdit")} ${c.name}`} onClick={() => setEditing(c.id)} />
@@ -100,7 +102,7 @@ export function CaseList({ agent, cases, runs }: { agent: Agent; cases: AgentEva
           onConfirm={() =>
             del.mutate(deleting.id, {
               onSuccess: () => setDeleting(null),
-              onError: (e) => notify.error(apiErrorMessage(e, t("deleteTitle"))),
+              onError: (e) => notify.error(apiErrorMessage(e, t("deleteFailed"))),
             })
           }
         />

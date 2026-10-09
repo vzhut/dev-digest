@@ -24,7 +24,9 @@ export function EvalCaseAction({ finding, prId }: { finding: FindingRecord; prId
   if (link) {
     return (
       <span style={s.tagWrap}>
-        <Badge mono>{link.type}</Badge>
+        <span title={t("tagLabel", { type: link.type })} aria-label={t("tagLabel", { type: link.type })}>
+          <Badge mono>{link.type}</Badge>
+        </span>
       </span>
     );
   }

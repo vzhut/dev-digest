@@ -1,6 +1,8 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi, type MockInstance } from "vitest";
 import React from "react";
-import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { NextIntlClientProvider } from "next-intl";
 import messages from "../../../../../../../messages/en/eval.json";
 
@@ -10,31 +12,30 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-const state = vi.hoisted(() => ({
+/* Real query client + hooks; only the network edge (`api.*`) is replaced. AppShell and the router stay mocked
+   (they need the Next app context). */
+const state = {
   dash: undefined as unknown,
-  all: { cards: [] } as unknown,
+  all: { cards: [], recent_runs: [] } as unknown,
   compare: undefined as unknown,
-  compareArgs: [] as unknown[],
-  startMutate: vi.fn(),
-}));
-vi.mock("@/lib/hooks/eval", () => ({
-  useAgentEvalDashboard: () => ({ data: state.dash, isError: false, refetch: vi.fn() }),
-  useEvalDashboard: () => ({ data: state.all }),
-  useStartEvalRun: () => ({ mutate: state.startMutate, isPending: false }),
-  useEvalCompare: (a: string, b: string) => {
-    state.compareArgs.push([a, b]);
-    return { data: state.compare, isError: false };
-  },
-}));
+};
+let spies: { start: MockInstance; compare: MockInstance };
 
 import { EvalAgentDetailView } from "./EvalAgentDetailView";
 
+beforeEach(() => {
+  spies = {
+    start: vi.spyOn(api, "startEvalRun").mockResolvedValue({ eval_run_id: "new", status: "running" }),
+    compare: vi.spyOn(api, "compareEvalRuns").mockImplementation(async () => state.compare as never),
+  };
+  vi.spyOn(api, "getAgentEvalDashboard").mockImplementation(async () => state.dash as never);
+  vi.spyOn(api, "getEvalDashboard").mockImplementation(async () => state.all as never);
+});
 afterEach(() => {
   cleanup();
   state.dash = undefined;
   state.compare = undefined;
-  state.compareArgs = [];
-  state.startMutate.mockReset();
+  vi.restoreAllMocks();
 });
 
 const run = (over: Record<string, unknown>) => ({
@@ -53,56 +54,60 @@ const base = (over: Record<string, unknown> = {}) => ({
   latest: r2, previous: r1, trend: [point("r1", 0.8), point("r2", 0.74)], runs: [r2, r1], regression: [], ...over,
 });
 
-function renderView() {
-  return render(
-    <NextIntlClientProvider locale="en" messages={{ eval: messages }}>
-      <EvalAgentDetailView />
-    </NextIntlClientProvider>,
+async function renderView() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={qc}>
+      <NextIntlClientProvider locale="en" messages={{ eval: messages }}>
+        <EvalAgentDetailView />
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
+  await screen.findByRole("heading", { level: 1 }); // the agent's data arrived
 }
 const pick = (name: RegExp) => fireEvent.click(screen.getByRole("checkbox", { name }));
 
 describe("EvalAgentDetailView", () => {
-  it("shows metric tiles with signed deltas, the trend, the run history and Run eval", () => {
+  it("shows metric tiles with signed deltas, the trend, the run history and Run eval", async () => {
     state.dash = base();
-    renderView();
+    await renderView();
     expect(screen.getByRole("heading", { name: "General Reviewer" })).toBeInTheDocument();
     expect(screen.getByText("▼ −6 pts")).toBeInTheDocument(); // precision 0.80 → 0.74, with arrow and sign
     expect(screen.getByRole("img", { name: "Recall, precision and citation accuracy over 2 runs" })).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Eval runs" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Run eval" }));
-    expect(state.startMutate).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(spies.start).toHaveBeenCalledTimes(1));
   });
 
-  it("names a regressed metric and its drop in a banner", () => {
+  it("names a regressed metric and its drop in a banner", async () => {
     state.dash = base({ regression: [{ metric: "precision", drop: 0.06 }] });
-    renderView();
+    await renderView();
     expect(screen.getByRole("alert")).toHaveTextContent("Regression since the previous run: precision ▼ −6 pts");
   });
 
-  it("explains the next step for an agent with cases but no runs (no zeros, no chart)", () => {
+  it("explains the next step for an agent with cases but no runs (no zeros, no chart)", async () => {
     state.dash = base({ latest: null, previous: null, trend: [], runs: [], regression: [] });
-    renderView();
+    await renderView();
     expect(screen.getByText("No eval runs yet")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Run eval" })).toBeEnabled();
   });
 
-  it("disables Run eval with no cases, and while a run is running", () => {
+  it("disables Run eval with no cases, and while a run is running", async () => {
     state.dash = base({ cases_total: 0, latest: null, previous: null, runs: [], trend: [] });
-    renderView();
+    await renderView();
     expect(screen.getByText("This agent has no eval cases")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Run eval" })).toBeDisabled();
     cleanup();
     state.dash = base({ runs: [run({ id: "r9", status: "running", cases_done: 2, traces_total: 5 }), r2, r1] });
-    renderView();
+    await renderView();
     expect(screen.getByRole("button", { name: "Run eval" })).toBeDisabled();
     expect(screen.getAllByRole("status").some((el) => el.textContent === "2 / 5 cases")).toBe(true);
   });
 
-  it("Compare is enabled only with exactly two runs selected", () => {
+  it("Compare is enabled only with exactly two runs selected", async () => {
     state.dash = base({ runs: [r3, r2, r1] });
-    renderView();
+    await renderView();
     const compare = screen.getByRole("button", { name: "Compare" });
     expect(compare).toBeDisabled();
     pick(/Select run v1/);
@@ -136,19 +141,20 @@ describe("EvalAgentDetailView", () => {
       ...over,
     });
 
-    function open() {
+    async function open() {
       state.dash = base({ runs: [r3, r2, r1] });
       state.compare = compare();
-      renderView();
+      await renderView();
       pick(/Select run v3/); // newer first on purpose
       pick(/Select run v1/);
       fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+      await screen.findByText(/^Compare runs · v/); // the comparison arrived
       return screen.getByRole("dialog");
     }
 
-    it("shows old before new regardless of selection order, with deltas, flipped cases, config and a prompt line diff as text", () => {
-      const dialog = open();
-      expect(state.compareArgs.at(-1)).toEqual(["r3", "r1"]);
+    it("shows old before new regardless of selection order, with deltas, flipped cases, config and a prompt line diff as text", async () => {
+      const dialog = await open();
+      expect(spies.compare).toHaveBeenLastCalledWith("r3", "r1");
       expect(dialog).toHaveTextContent("Compare runs · v1 → v3");
       expect(dialog).toHaveTextContent("precision50%80%→50%▼ −30 pts");
       expect(dialog).toHaveTextContent("citation accuracy—100%→—");
@@ -162,37 +168,39 @@ describe("EvalAgentDetailView", () => {
       expect(within(dialog).queryByRole("button", { name: /promote/i })).not.toBeInTheDocument();
     });
 
-    it("folds long unchanged runs of the prompt diff into an unchanged-lines row", () => {
+    it("folds long unchanged runs of the prompt diff into an unchanged-lines row", async () => {
       state.dash = base({ runs: [r3, r2, r1] });
       const same = (p: string) => Array.from({ length: 12 }, (_, i) => ({ op: "same", text: `${p} ${i}` }));
       state.compare = compare({ prompt_diff: [...same("head"), { op: "add", text: "new rule" }, ...same("tail")] });
-      renderView();
+      await renderView();
       pick(/Select run v3/);
       pick(/Select run v1/);
       fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+      await screen.findByText(/^Compare runs · v/);
       const dialog = screen.getByRole("dialog");
       expect(dialog).toHaveTextContent("… 9 unchanged lines");
       expect(dialog).toHaveTextContent("new rule");
       expect(dialog).not.toHaveTextContent("head 0");
     });
 
-    it("warns with common / added / removed when the case sets differ", () => {
-      expect(within(open()).getByRole("alert")).toHaveTextContent("Different case sets: 3 common, 1 added, 2 removed.");
+    it("warns with common / added / removed when the case sets differ", async () => {
+      expect(within(await open()).getByRole("alert")).toHaveTextContent("Different case sets: 3 common, 1 added, 2 removed.");
     });
 
-    it("says so when the two runs have the same config", () => {
+    it("says so when the two runs have the same config", async () => {
       state.dash = base({ runs: [r3, r2, r1] });
       state.compare = compare({ same_config: true, case_set: { common: 4, added: 0, removed: 0 }, prompt_diff: [{ op: "same", text: "x" }] });
-      renderView();
+      await renderView();
       pick(/Select run v3/);
       pick(/Select run v1/);
       fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+      await screen.findByText(/^Compare runs · v/);
       expect(screen.getByRole("dialog")).toHaveTextContent("Same config");
       expect(screen.getByRole("dialog")).toHaveTextContent("No prompt changes");
     });
 
-    it("closes on Escape and keeps Tab inside the dialog", () => {
-      const dialog = open();
+    it("closes on Escape and keeps Tab inside the dialog", async () => {
+      const dialog = await open();
       const close = within(dialog).getAllByRole("button", { name: "Close" })[0]!;
       close.focus();
       fireEvent.keyDown(document, { key: "Tab" });

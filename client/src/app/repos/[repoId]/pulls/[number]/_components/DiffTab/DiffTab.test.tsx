@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import type { FindingRecord, PrFile, ReviewRecord, SmartDiff } from "@devdigest/shared";
 import prReview from "../../../../../../../../messages/en/prReview.json";
 import shell from "../../../../../../../../messages/en/shell.json";
@@ -9,8 +11,6 @@ import type { DiffTarget } from "@/components/diff-viewer";
 
 const state: { smart: SmartDiff | undefined; reviews: ReviewRecord[] } = { smart: undefined, reviews: [] };
 const mutate = vi.fn();
-// The eval-case action has its own tests (and its own data hooks); these tests are about something else.
-vi.mock("../FindingCard/_components/EvalCaseAction", () => ({ EvalCaseAction: () => null }));
 vi.mock("@/lib/hooks/reviews", () => ({
   usePrComments: () => ({ data: [] }),
   useCreatePrComment: () => ({ isPending: false, mutateAsync: vi.fn() }),
@@ -19,8 +19,13 @@ vi.mock("@/lib/hooks/reviews", () => ({
   useFindingAction: () => ({ isPending: false, mutate }),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 beforeEach(() => {
+  // the FindingCard's eval-case action reads the PR's case links: stub the network edge only
+  vi.spyOn(api, "getEvalCaseLinks").mockResolvedValue([]);
   state.reviews = [];
   mutate.mockClear();
   state.smart = {
@@ -66,9 +71,11 @@ const FILES = [file("pnpm-lock.yaml"), file("README.md"), file("a.test.ts"), fil
 
 function renderTab() {
   return render(
-    <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
       <DiffTab prId="p1" filesCount={4} files={FILES} />
-    </NextIntlClientProvider>,
+    </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -125,9 +132,11 @@ describe("DiffTab inline findings", () => {
       ]),
     ];
     render(
+      <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
         <DiffTab prId="p1" filesCount={1} files={[patched("src/a.ts")]} />
-      </NextIntlClientProvider>,
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
     );
     // Group header: dot + count of FILES (2 findings, 1 file); file dot has no number.
     expect(screen.getByTitle("1 file with findings")).toHaveTextContent("1");
@@ -156,9 +165,11 @@ describe("DiffTab inline findings", () => {
   it("calls the finding action with accept when the user accepts an inline finding", () => {
     state.reviews = [review([finding({ id: "f1", start_line: 2, title: "Hardcoded key" })])];
     render(
+      <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
         <DiffTab prId="p1" filesCount={1} files={[patched("src/a.ts")]} />
-      </NextIntlClientProvider>,
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
     expect(mutate).toHaveBeenCalledWith(expect.objectContaining({ findingId: "f1", action: "accept", prId: "p1" }));
@@ -176,9 +187,11 @@ describe("DiffTab inline findings", () => {
       split_suggestion: { too_big: false, total_lines: 3, proposed_splits: [] },
     };
     render(
+      <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
         <DiffTab prId="p1" filesCount={3} files={[file("src/a.ts"), file("src/b.ts"), file("a.test.ts")]} />
-      </NextIntlClientProvider>,
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
     );
     expect(screen.getByRole("button", { name: /Core.*2 files$/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Tests.*1 file$/ })).toBeInTheDocument();
@@ -203,9 +216,11 @@ describe("DiffTab deep-link target", () => {
 
   function renderTarget(target: DiffTarget, files: PrFile[]) {
     return render(
+      <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
         <DiffTab prId="p1" filesCount={files.length} files={files} target={target} />
-      </NextIntlClientProvider>,
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
     );
   }
 
@@ -235,9 +250,11 @@ describe("DiffTab deep-link target", () => {
   it("does not re-open a card the user collapsed when the parent re-renders an equal target", () => {
     const files = [patched("src/a.ts")];
     const ui = (target: DiffTarget) => (
+      <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
         <DiffTab prId="p1" filesCount={files.length} files={files} target={target} />
       </NextIntlClientProvider>
+      </QueryClientProvider>
     );
     const { rerender } = render(ui({ file: "src/a.ts", line: 2 }));
     expect(document.querySelector('[aria-current="location"]')).not.toBeNull();
@@ -257,9 +274,11 @@ describe("DiffTab deep-link target", () => {
     expect(screen.queryByRole("button", { name: /1 file/ })).not.toBeInTheDocument();
     expect(document.querySelector('[aria-current="location"]')).toHaveTextContent("const alpha = 1;");
     rerender(
+      <QueryClientProvider client={new QueryClient()}>
       <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
         <DiffTab prId="p1" filesCount={2} files={[patched("README.md"), patched("src/a.ts")]} target={{ file: "README.md", line: 1 }} />
-      </NextIntlClientProvider>,
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
     );
     expect(document.querySelectorAll('[aria-current="location"]')).toHaveLength(1);
   });

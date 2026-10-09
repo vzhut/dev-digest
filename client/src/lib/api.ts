@@ -114,29 +114,29 @@ export const api = {
   // ---- eval pipeline (specs/eval-pipeline.md) ----
   /** One click, no body: 201 created / 200 already existed. */
   createEvalCase: (findingId: string) =>
-    apiFetch<CreateEvalCaseResponse>(`/findings/${findingId}/eval-case`, { method: "POST" }),
-  getEvalCaseLinks: (prId: string) => apiFetch<EvalFindingLink[]>(`/pulls/${prId}/eval-case-links`),
-  listAgentEvalCases: (agentId: string) => apiFetch<AgentEvalCase[]>(`/agents/${agentId}/eval-cases`),
-  getEvalCase: (caseId: string) => apiFetch<AgentEvalCaseDetail>(`/eval-cases/${caseId}`),
-  deleteEvalCase: (caseId: string) => apiFetch<void>(`/eval-cases/${caseId}`, { method: "DELETE" }),
+    apiFetch<CreateEvalCaseResponse>(`/findings/${encodeURIComponent(findingId)}/eval-case`, { method: "POST" }),
+  getEvalCaseLinks: (prId: string) => apiFetch<EvalFindingLink[]>(`/pulls/${encodeURIComponent(prId)}/eval-case-links`),
+  listAgentEvalCases: (agentId: string) => apiFetch<AgentEvalCase[]>(`/agents/${encodeURIComponent(agentId)}/eval-cases`),
+  getEvalCase: (caseId: string) => apiFetch<AgentEvalCaseDetail>(`/eval-cases/${encodeURIComponent(caseId)}`),
+  deleteEvalCase: (caseId: string) => apiFetch<void>(`/eval-cases/${encodeURIComponent(caseId)}`, { method: "DELETE" }),
   /** A case written by hand in the editor (201). */
   createManualEvalCase: (agentId: string, body: EvalCaseWrite) =>
-    apiFetch<CreateEvalCaseResponse>(`/agents/${agentId}/eval-cases`, { method: "POST", body: JSON.stringify(body) }),
+    apiFetch<CreateEvalCaseResponse>(`/agents/${encodeURIComponent(agentId)}/eval-cases`, { method: "POST", body: JSON.stringify(body) }),
   updateEvalCase: (caseId: string, body: EvalCaseWrite) =>
-    apiFetch<AgentEvalCaseDetail>(`/eval-cases/${caseId}`, { method: "PUT", body: JSON.stringify(body) }),
+    apiFetch<AgentEvalCaseDetail>(`/eval-cases/${encodeURIComponent(caseId)}`, { method: "PUT", body: JSON.stringify(body) }),
   /** Paid: starts the agent's eval run in the background (202). Without `caseIds`: every case, and no body is sent. */
   startEvalRun: (agentId: string, caseIds?: string[]) =>
-    apiFetch<StartEvalRunResponse>(`/agents/${agentId}/eval-runs`, {
+    apiFetch<StartEvalRunResponse>(`/agents/${encodeURIComponent(agentId)}/eval-runs`, {
       method: "POST",
       ...(caseIds ? { body: JSON.stringify({ case_ids: caseIds }) } : {}),
     }),
-  listAgentEvalRuns: (agentId: string) => apiFetch<EvalSuiteRun[]>(`/agents/${agentId}/eval-runs`),
-  getEvalRun: (runId: string) => apiFetch<EvalSuiteRunDetail>(`/eval-runs/${runId}`),
+  listAgentEvalRuns: (agentId: string) => apiFetch<EvalSuiteRun[]>(`/agents/${encodeURIComponent(agentId)}/eval-runs`),
+  getEvalRun: (runId: string) => apiFetch<EvalSuiteRunDetail>(`/eval-runs/${encodeURIComponent(runId)}`),
   compareEvalRuns: (a: string, b: string) =>
     apiFetch<EvalRunCompare>(`/eval-runs/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
   getEvalDashboard: () => apiFetch<EvalWorkspaceDashboard>("/eval/dashboard"),
   getAgentEvalDashboard: (agentId: string) =>
-    apiFetch<EvalAgentDashboard>(`/agents/${agentId}/eval-dashboard`),
+    apiFetch<EvalAgentDashboard>(`/agents/${encodeURIComponent(agentId)}/eval-dashboard`),
   /** Paid: one run per agent that has cases. */
   runAllEvals: () => apiFetch<RunAllEvalResponse>("/eval/run-all", { method: "POST" }),
 };

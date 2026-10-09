@@ -13,7 +13,9 @@ export const evalKeys = {
   links: (prId: string | null | undefined) => ["eval-case-links", prId] as const,
   cases: (agentId: string | null | undefined) => ["eval-cases", agentId] as const,
   case: (caseId: string | null | undefined) => ["eval-case", caseId] as const,
-  runs: (agentId: string | null | undefined) => ["eval-runs", agentId] as const,
+  /** Prefix of every agent's runs list: invalidating it refreshes them all. */
+  runsAll: ["eval-runs"] as const,
+  runs: (agentId: string | null | undefined) => [...evalKeys.runsAll, agentId] as const,
   run: (runId: string | null | undefined) => ["eval-run", runId] as const,
   compare: (a: string | null | undefined, b: string | null | undefined) => ["eval-compare", a, b] as const,
   dashboard: ["eval-dashboard"] as const,
@@ -164,7 +166,7 @@ export function useRunAllEvals() {
     mutationFn: () => api.runAllEvals(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: evalKeys.dashboard });
-      qc.invalidateQueries({ queryKey: ["eval-runs"] });
+      qc.invalidateQueries({ queryKey: evalKeys.runsAll });
     },
   });
 }

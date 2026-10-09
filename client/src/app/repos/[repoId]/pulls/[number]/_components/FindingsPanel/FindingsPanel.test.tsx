@@ -1,21 +1,28 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import type { FindingRecord, Severity } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 
 const { mutate } = vi.hoisted(() => ({ mutate: vi.fn() }));
-// The eval-case action has its own tests (and its own data hooks); these tests are about something else.
-vi.mock("../FindingCard/_components/EvalCaseAction", () => ({ EvalCaseAction: () => null }));
-vi.mock("@/lib/hooks/reviews", () => ({
+// Only the accept/dismiss mutation is replaced; the real reviews/eval hooks run (their network edge is stubbed below).
+vi.mock("@/lib/hooks/reviews", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/hooks/reviews")>()),
   useFindingAction: () => ({ mutate, isPending: false }),
 }));
 
 import { FindingsPanel } from "./FindingsPanel";
 
+beforeEach(() => {
+  vi.spyOn(api, "get").mockResolvedValue([]); // the PR's reviews
+  vi.spyOn(api, "getEvalCaseLinks").mockResolvedValue([]);
+});
 afterEach(() => {
   cleanup();
   mutate.mockClear();
+  vi.restoreAllMocks();
 });
 
 function finding(id: string, severity: Severity, title: string, confidence = 0.95): FindingRecord {
@@ -50,9 +57,11 @@ const MIXED: FindingRecord[] = [
 
 function renderWithIntl(ui: React.ReactElement) {
   return render(
-    <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
-      {ui}
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
+        {ui}
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 }
 
