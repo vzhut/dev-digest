@@ -150,15 +150,30 @@ describe("EvalAgentDetailView", () => {
       const dialog = open();
       expect(state.compareArgs.at(-1)).toEqual(["r3", "r1"]);
       expect(dialog).toHaveTextContent("Compare runs · v1 → v3");
-      expect(dialog).toHaveTextContent("precision80%→50%▼ −30 pts");
-      expect(dialog).toHaveTextContent("citation accuracy100%→—");
+      expect(dialog).toHaveTextContent("precision50%80%→50%▼ −30 pts");
+      expect(dialog).toHaveTextContent("citation accuracy—100%→—");
       expect(dialog).toHaveTextContent("3 / 4 → 1 / 4");
       expect(dialog).toHaveTextContent("must_find-a: passed → failed");
       expect(dialog).toHaveTextContent("Model: m1 → m2");
-      expect(dialog).toHaveTextContent("- Be terse.");
-      expect(dialog).toHaveTextContent("+ Flag <b>everything</b>.");
+      const rows = within(dialog).getByText("Be terse.").closest("div")!;
+      expect(rows).toHaveTextContent("−Be terse.");
+      expect(within(dialog).getByText("Flag <b>everything</b>.").closest("div")).toHaveTextContent("+Flag <b>everything</b>.");
       expect(dialog.querySelector("b")).toBeNull(); // plain text, never HTML
       expect(within(dialog).queryByRole("button", { name: /promote/i })).not.toBeInTheDocument();
+    });
+
+    it("folds long unchanged runs of the prompt diff into an unchanged-lines row", () => {
+      state.dash = base({ runs: [r3, r2, r1] });
+      const same = (p: string) => Array.from({ length: 12 }, (_, i) => ({ op: "same", text: `${p} ${i}` }));
+      state.compare = compare({ prompt_diff: [...same("head"), { op: "add", text: "new rule" }, ...same("tail")] });
+      renderView();
+      pick(/Select run v3/);
+      pick(/Select run v1/);
+      fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+      const dialog = screen.getByRole("dialog");
+      expect(dialog).toHaveTextContent("… 9 unchanged lines");
+      expect(dialog).toHaveTextContent("new rule");
+      expect(dialog).not.toHaveTextContent("head 0");
     });
 
     it("warns with common / added / removed when the case sets differ", () => {
@@ -173,7 +188,7 @@ describe("EvalAgentDetailView", () => {
       pick(/Select run v1/);
       fireEvent.click(screen.getByRole("button", { name: "Compare" }));
       expect(screen.getByRole("dialog")).toHaveTextContent("Same config");
-      expect(screen.getByRole("dialog")).toHaveTextContent("The system prompt did not change.");
+      expect(screen.getByRole("dialog")).toHaveTextContent("No prompt changes");
     });
 
     it("closes on Escape and keeps Tab inside the dialog", () => {

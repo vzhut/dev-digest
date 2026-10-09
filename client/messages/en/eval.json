@@ -287,13 +287,14 @@
       "strategy": "Strategy",
       "skills": "Skills",
       "prompt": "System prompt",
-      "promptSame": "The system prompt did not change.",
+      "promptSame": "No prompt changes",
       "subtitle": "Old prompt vs new: metric deltas and prompt diff on the {cases}-case gold set",
       "titleVersions": "Compare runs · v{old} → v{new}",
       "legendOld": "v{version} (old)",
       "legendNew": "v{version} (new)",
       "closeButton": "Close",
-      "costLabel": "Cost"
+      "costLabel": "Cost",
+      "unchangedLines": "… {count, plural, one {# unchanged line} other {# unchanged lines}}"
     },
     "subtitle": "Regression harness · {runs, plural, one {# run} other {# runs}} on the {cases}-case gold set",
     "recentRuns": "Recent runs",

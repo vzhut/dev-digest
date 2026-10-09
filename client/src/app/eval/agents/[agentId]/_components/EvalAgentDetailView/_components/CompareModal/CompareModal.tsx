@@ -9,25 +9,32 @@ import { Button, Icon, Modal, Skeleton } from "@devdigest/ui";
 import type { EvalRunCompare } from "@devdigest/shared";
 import { deltaColor, EVAL_METRIC_COLOR, formatDelta, formatMetric, formatRunCost, progressLabel } from "@/lib/eval-format";
 import { useEvalCompare } from "@/lib/hooks/eval";
+import { collapseDiff, hasChanges } from "./helpers";
 import { useDialogKeys } from "./useDialogKeys";
 
 const BODY = { padding: "4px 24px 20px", display: "flex", flexDirection: "column", gap: 14, fontSize: 13 } as const;
 const H = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--text-muted)", margin: "0 0 4px", textTransform: "uppercase" } as const;
 const TILES = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 } as const;
-const TILE = { padding: "12px 16px", border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg-surface)" } as const;
+const TILE = { minWidth: 0, padding: "12px 16px", border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg-surface)" } as const;
 const TILE_LABEL = { fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" } as const;
+const BIG = { fontSize: 24, fontWeight: 600, marginTop: 8, overflowWrap: "anywhere" } as const;
+const SMALL = { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 8px", marginTop: 4, fontSize: 12.5 } as const;
 const TILE_VALUES = { display: "flex", alignItems: "baseline", gap: 8, marginTop: 8, flexWrap: "nowrap", whiteSpace: "nowrap" } as const;
 const LEGEND = { display: "flex", gap: 16, fontSize: 12.5, color: "var(--text-secondary)", marginBottom: 8 } as const;
 const SWATCH = { display: "inline-block", width: 10, height: 10, borderRadius: 2, border: "1px solid var(--border-strong)", verticalAlign: "middle" } as const;
 const NOTE = { padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "var(--bg-surface)" } as const;
 const WARN = { ...NOTE, borderColor: "var(--warn)" } as const;
-const PRE = { margin: 0, padding: 14, background: "var(--code-bg)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, overflow: "auto", maxHeight: 260 } as const;
+const PRE = { padding: "6px 0", background: "var(--code-bg)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, maxHeight: 320, overflowY: "auto" } as const;
+const ROW = { display: "flex", gap: 8, padding: "1px 12px" } as const;
+const MARK = { width: 10, flexShrink: 0, userSelect: "none" } as const;
+const TEXT = { flex: 1, minWidth: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" } as const;
+const ROW_GAP = { padding: "3px 12px", color: "var(--text-muted)", fontStyle: "italic" } as const;
 const LINE = {
-  same: { color: "var(--text-secondary)" },
-  add: { color: "var(--ok)", background: "var(--ok-bg, transparent)" },
-  del: { color: "var(--crit)", background: "var(--crit-bg, transparent)" },
+  same: { color: "var(--text-muted)" },
+  add: { color: "var(--code-add-text)", background: "var(--code-add)" },
+  del: { color: "var(--code-del-text)", background: "var(--code-del)" },
 } as const;
-const PREFIX = { same: "  ", add: "+ ", del: "- " } as const;
+const MARKER = { same: " ", add: "+", del: "−" } as const;
 
 export function CompareModal({ a, b, onClose }: { a: string; b: string; onClose: () => void }) {
   const t = useTranslations("eval.agentView.compareModal");
@@ -63,7 +70,7 @@ export function CompareModal({ a, b, onClose }: { a: string; b: string; onClose:
 function CompareBody({ c }: { c: EvalRunCompare }) {
   const t = useTranslations("eval.agentView.compareModal");
   const m = useTranslations("eval.agentView.metricName");
-  const changes = c.prompt_diff.some((l) => l.op !== "same");
+  const changes = hasChanges(c.prompt_diff);
   const { provider, model, strategy, skills } = c.config_diff;
   return (
     <>
@@ -78,20 +85,26 @@ function CompareBody({ c }: { c: EvalRunCompare }) {
         {c.metrics.map((x) => (
           <div key={x.metric} style={TILE}>
             <div style={TILE_LABEL}>{m(x.metric)}</div>
-            <div style={TILE_VALUES}>
+            <div style={BIG} className="tnum" >
+              <span style={{ color: EVAL_METRIC_COLOR[x.metric] }}>{formatMetric(x.new)}</span>
+            </div>
+            <div style={SMALL}>
               <span style={{ color: "var(--text-muted)" }}>{formatMetric(x.old)}</span>
               <span style={{ color: "var(--text-muted)" }}>→</span>
-              <span style={{ fontSize: 24, fontWeight: 600, color: EVAL_METRIC_COLOR[x.metric] }}>{formatMetric(x.new)}</span>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: deltaColor(x.delta) }}>{formatDelta(x.delta)}</span>
+              <span style={{ color: "var(--text-secondary)" }}>{formatMetric(x.new)}</span>
+              <span style={{ fontWeight: 600, color: deltaColor(x.delta) }}>{formatDelta(x.delta)}</span>
             </div>
           </div>
         ))}
         <div style={TILE}>
           <div style={TILE_LABEL}>{t("costLabel")}</div>
-          <div style={TILE_VALUES}>
+          <div style={BIG}>
+            <span>{formatRunCost(c.cost.new, c.new.cost_partial)}</span>
+          </div>
+          <div style={SMALL}>
             <span style={{ color: "var(--text-muted)" }}>{formatRunCost(c.cost.old, c.old.cost_partial)}</span>
             <span style={{ color: "var(--text-muted)" }}>→</span>
-            <span style={{ fontSize: 24, fontWeight: 600 }}>{formatRunCost(c.cost.new, c.new.cost_partial)}</span>
+            <span style={{ color: "var(--text-secondary)" }}>{formatRunCost(c.cost.new, c.new.cost_partial)}</span>
           </div>
         </div>
       </div>
@@ -136,20 +149,28 @@ function CompareBody({ c }: { c: EvalRunCompare }) {
           <Icon.FileText size={13} /> {t("prompt")}
         </h3>
         <div style={LEGEND}>
-          <span><span style={{ ...SWATCH, background: "var(--crit-bg)" }} /> {t("legendOld", { version: c.old.agent_version ?? "—" })}</span>
-          <span><span style={{ ...SWATCH, background: "var(--ok-bg)" }} /> {t("legendNew", { version: c.new.agent_version ?? "—" })}</span>
+          <span><span style={{ ...SWATCH, background: "var(--crit)" }} /> {t("legendOld", { version: c.old.agent_version ?? "—" })}</span>
+          <span><span style={{ ...SWATCH, background: "var(--ok)" }} /> {t("legendNew", { version: c.new.agent_version ?? "—" })}</span>
         </div>
         {!changes ? (
           <div>{t("promptSame")}</div>
         ) : (
-          <pre className="mono" style={PRE}>
-            {c.prompt_diff.map((l, i) => (
-              <div key={i} style={LINE[l.op]}>
-                {PREFIX[l.op]}
-                {l.text}
-              </div>
-            ))}
-          </pre>
+          <div className="mono" style={PRE}>
+            {collapseDiff(c.prompt_diff).map((r, i) =>
+              r.kind === "gap" ? (
+                <div key={i} style={ROW_GAP}>
+                  {t("unchangedLines", { count: r.count })}
+                </div>
+              ) : (
+                <div key={i} style={{ ...ROW, ...LINE[r.op] }}>
+                  <span style={MARK} aria-hidden="true">
+                    {MARKER[r.op]}
+                  </span>
+                  <span style={TEXT}>{r.text || " "}</span>
+                </div>
+              ),
+            )}
+          </div>
         )}
       </section>
     </>

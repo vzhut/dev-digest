@@ -4,6 +4,7 @@
 
 import { useTranslations } from "next-intl";
 import type { EvalSuiteRun } from "@devdigest/shared";
+import { Icon } from "@devdigest/ui";
 import { EvalMetricBar } from "@/components/eval-metric-bar";
 import { EVAL_METRIC_COLOR, formatRunCost, formatRunStamp } from "@/lib/eval-format";
 import { newestFirst } from "./helpers";
@@ -47,13 +48,16 @@ export function EvalRunHistory({
               <tr key={run.id} style={s.row(selectedIds.includes(run.id))}>
                 {selectable && (
                   <td style={s.td}>
-                    <input
-                      type="checkbox"
-                      style={s.checkbox}
-                      checked={selectedIds.includes(run.id)}
-                      onChange={() => onToggle?.(run.id)}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={selectedIds.includes(run.id)}
                       aria-label={t("selectRun", { version, stamp })}
-                    />
+                      onClick={() => onToggle?.(run.id)}
+                      style={s.checkbox(selectedIds.includes(run.id))}
+                    >
+                      {selectedIds.includes(run.id) && <Icon.Check size={11} style={s.check} />}
+                    </button>
                   </td>
                 )}
                 <td className="mono" style={{ ...s.td, ...s.when }}>

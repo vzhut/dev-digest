@@ -20,7 +20,19 @@ export const s = {
   version: { color: "var(--accent)" } satisfies CSSProperties,
   passed: { fontWeight: 700 } satisfies CSSProperties,
   cost: { color: "var(--text-secondary)", fontSize: 13 } satisfies CSSProperties,
-  checkbox: { accentColor: "var(--accent)", width: 15, height: 15 } satisfies CSSProperties,
+  // a real button styled as a checkbox: a native one renders as a white square in the dark theme
+  checkbox: (checked: boolean): CSSProperties => ({
+    width: 16,
+    height: 16,
+    padding: 0,
+    borderRadius: 4,
+    display: "grid",
+    placeItems: "center",
+    cursor: "pointer",
+    border: `1.5px solid ${checked ? "var(--accent)" : "var(--border-strong)"}`,
+    background: checked ? "var(--accent)" : "var(--bg-surface)",
+  }),
+  check: { color: "#fff" } satisfies CSSProperties,
   muted: { color: "var(--text-muted)" } satisfies CSSProperties,
   empty: { padding: 16, color: "var(--text-muted)", fontSize: 13 } satisfies CSSProperties,
 };
