@@ -50,7 +50,7 @@ describe("EvalRunHistory", () => {
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows.map((r) => within(r).getByText(/^v\d$/).textContent)).toEqual(["v3", "v2", "v1"]);
     expect(within(rows[1]!).getAllByText("—").length).toBeGreaterThan(0); // null recall is a dash
-    expect(within(rows[0]!).getByText("2 / 3")).toBeInTheDocument();
+    expect(within(rows[0]!).getByText("2/3")).toBeInTheDocument();
     expect(within(rows[0]!).getByText("≥ $0.020")).toBeInTheDocument(); // partial marker, never plain
   });
 

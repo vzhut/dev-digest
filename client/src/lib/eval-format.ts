@@ -54,3 +54,16 @@ export function formatDuration(ms: number | null | undefined): string {
   if (ms == null || !Number.isFinite(ms)) return UNKNOWN;
   return `${(ms / 1000).toFixed(1)}s`;
 }
+
+/** One colour per metric, shared by every eval surface (cards, tiles, bars, trend lines). */
+export const EVAL_METRIC_COLOR = {
+  recall: "var(--accent)",
+  precision: "var(--ok)",
+  citation_accuracy: "var(--warn)",
+} as const;
+
+/** Colour for a signed delta: green up, red down, muted otherwise (the arrow carries the meaning too). */
+export function deltaColor(delta: number | null | undefined): string {
+  const direction = deltaDirection(delta);
+  return direction === "up" ? "var(--ok)" : direction === "down" ? "var(--crit)" : "var(--text-muted)";
+}

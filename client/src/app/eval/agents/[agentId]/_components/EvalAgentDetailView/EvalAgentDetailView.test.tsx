@@ -149,9 +149,9 @@ describe("EvalAgentDetailView", () => {
     it("shows old before new regardless of selection order, with deltas, flipped cases, config and a prompt line diff as text", () => {
       const dialog = open();
       expect(state.compareArgs.at(-1)).toEqual(["r3", "r1"]);
-      expect(dialog).toHaveTextContent("old v1 → new v3");
-      expect(dialog).toHaveTextContent("precision80% → 50%▼ −30 pts");
-      expect(dialog).toHaveTextContent("citation accuracy100% → —");
+      expect(dialog).toHaveTextContent("Compare runs · v1 → v3");
+      expect(dialog).toHaveTextContent("precision80%→50%▼ −30 pts");
+      expect(dialog).toHaveTextContent("citation accuracy100%→—");
       expect(dialog).toHaveTextContent("3 / 4 → 1 / 4");
       expect(dialog).toHaveTextContent("must_find-a: passed → failed");
       expect(dialog).toHaveTextContent("Model: m1 → m2");
@@ -178,7 +178,7 @@ describe("EvalAgentDetailView", () => {
 
     it("closes on Escape and keeps Tab inside the dialog", () => {
       const dialog = open();
-      const close = within(dialog).getByRole("button", { name: "Close" });
+      const close = within(dialog).getAllByRole("button", { name: "Close" })[0]!;
       close.focus();
       fireEvent.keyDown(document, { key: "Tab" });
       expect(dialog.contains(document.activeElement)).toBe(true);

@@ -145,7 +145,7 @@ describe("Evals tab", () => {
     const labels = screen.getAllByRole("button").map((el) => el.textContent?.trim());
     expect(labels.indexOf("Evals")).toBe(labels.indexOf("Context") + 1);
     expect(screen.getByText("1 / 3 passing")).toBeInTheDocument();
-    for (const text of ["passed", "failed", "never run"]) expect(screen.getAllByText(text).length).toBeGreaterThan(0);
+    for (const text of ["passed", "failed", "never run"]) expect(screen.getAllByText(new RegExp(`^${text} ·`)).length).toBeGreaterThan(0);
   });
 
   it("opens a case read-only with its diff, expectation and a link to the source PR", () => {

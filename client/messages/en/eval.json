@@ -100,7 +100,8 @@
       "citation": "Citation",
       "passed": "Cases passed",
       "cost": "Cost",
-      "select": "Select"
+      "select": "Select",
+      "pass": "Pass"
     },
     "selectRun": "Select run v{version}, {stamp}",
     "progress": "{done} / {total} cases",
@@ -183,11 +184,19 @@
       "openPr": "Open {repo} #{number} on GitHub",
       "loading": "Loading case…",
       "loadError": "Could not load this case."
+    },
+    "metricsHeading": "Eval metrics",
+    "lastDetail": "{type} · {location}",
+    "status": {
+      "passed": "Last run passed",
+      "failed": "Last run failed",
+      "error": "Last run errored",
+      "never_run": "never run"
     }
   },
   "board": {
     "title": "Eval Dashboard",
-    "subtitle": "Regression evals per agent: recall, precision and citation accuracy over cases frozen from your decisions.",
+    "subtitle": "Regression harness across all reviewer agents · pick an agent to see its runs",
     "loading": "Loading eval dashboard…",
     "loadError": "Could not load the eval dashboard.",
     "emptyTitle": "No eval cases yet",
@@ -196,7 +205,7 @@
     "noRunsYet": "No runs yet",
     "latest": "v{version} · {when} ago",
     "agentsHeading": "Agents",
-    "recentHeading": "Recent runs",
+    "recentHeading": "Recent eval runs · all agents",
     "noRecent": "No eval runs yet.",
     "sparkline": "Pass rate over the last {count} runs",
     "runAll": "Run all agents",
@@ -221,7 +230,14 @@
       "running": "running",
       "completed": "completed",
       "errored": "errored"
-    }
+    },
+    "lastRun": "Last run v{version} · {when} · {passed}/{total} pass",
+    "metricShort": {
+      "recall": "Recall",
+      "precision": "Prec",
+      "citation": "Cite"
+    },
+    "openAgent": "Open {name}"
   },
   "agentView": {
     "crumbLab": "Skills Lab",
@@ -271,7 +287,16 @@
       "strategy": "Strategy",
       "skills": "Skills",
       "prompt": "System prompt",
-      "promptSame": "The system prompt did not change."
-    }
+      "promptSame": "The system prompt did not change.",
+      "subtitle": "Old prompt vs new: metric deltas and prompt diff on the {cases}-case gold set",
+      "titleVersions": "Compare runs · v{old} → v{new}",
+      "legendOld": "v{version} (old)",
+      "legendNew": "v{version} (new)",
+      "closeButton": "Close",
+      "costLabel": "Cost"
+    },
+    "subtitle": "Regression harness · {runs, plural, one {# run} other {# runs}} on the {cases}-case gold set",
+    "recentRuns": "Recent runs",
+    "selected": "{count} selected"
   }
 }

@@ -58,12 +58,12 @@ describe("EvalDashboardView", () => {
     expect(within(link).getByText("50%")).toBeInTheDocument();
     expect(within(link).getByText("80%")).toBeInTheDocument();
     expect(within(link).getByText("100%")).toBeInTheDocument();
-    expect(within(link).getByText(/3 \/ 4/)).toBeInTheDocument();
+    expect(within(link).getByText(/3\/4 pass/)).toBeInTheDocument();
     expect(within(link).getByText(/v3/)).toBeInTheDocument();
     expect(within(link).getByRole("img", { name: "Pass rate over the last 3 runs" })).toBeInTheDocument();
     const other = screen.getByRole("link", { name: /Security Reviewer/ });
     expect(other).toHaveAttribute("href", "/eval/agents/a2");
-    expect(within(other).getByText("No runs yet")).toBeInTheDocument();
+    expect(within(other).getByText(/^No runs yet/)).toBeInTheDocument();
     expect(within(other).queryByRole("img")).not.toBeInTheDocument();
   });
 

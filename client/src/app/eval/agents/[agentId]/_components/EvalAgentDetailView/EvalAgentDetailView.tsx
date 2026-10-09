@@ -6,14 +6,14 @@ import React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Button, EmptyState, ErrorState, Skeleton } from "@devdigest/ui";
+import { Button, EmptyState, ErrorState, Icon, SectionLabel, Skeleton } from "@devdigest/ui";
 import { AppShell } from "@/components/app-shell";
 import { EvalRunHistory } from "@/components/eval-run-history";
 import { apiErrorMessage } from "@/lib/api";
 import { useAgentEvalDashboard, useEvalDashboard, useStartEvalRun } from "@/lib/hooks/eval";
 import { notify } from "@/lib/toast";
 import { CompareModal } from "./_components/CompareModal";
-import { MetricTiles } from "./_components/MetricTiles";
+import { EvalMetricTiles } from "@/components/eval-metric-tiles";
 import { RegressionBanner } from "./_components/RegressionBanner";
 import { TrendChart } from "./_components/TrendChart";
 import { toggleSelected } from "./helpers";
@@ -66,32 +66,36 @@ export function EvalAgentDetailView() {
           <Link href="/eval" style={s.back}>
             {t("backToAll")}
           </Link>
-          {all.data && all.data.cards.length > 1 && (
-            <label style={s.hint}>
-              {t("switcher")}{" "}
+        </div>
+
+        <div style={s.header}>
+          <div style={s.titleBox}>
+            <div style={s.titleRow}>
+              <h1 style={s.h1}>{d.agent_name}</h1>
+              <span className="mono" style={s.modelChip}>
+                {d.model}
+              </span>
+            </div>
+            <p style={s.meta}>{t("subtitle", { runs: d.runs.length, cases: d.cases_total })}</p>
+          </div>
+          <div style={s.actions}>
+            {all.data && all.data.cards.length > 1 && (
+            <label style={s.switcher}>
+              <Icon.Cpu size={14} />
+              <span style={s.srOnly}>{t("switcher")}</span>
               <select
                 style={s.select}
                 value={agentId}
                 onChange={(e) => router.push(`/eval/agents/${e.target.value}`)}
               >
-                {all.data.cards.map((c) => (
+                  {all.data.cards.map((c) => (
                   <option key={c.agent_id} value={c.agent_id}>
                     {c.agent_name}
                   </option>
                 ))}
               </select>
             </label>
-          )}
-        </div>
-
-        <div style={s.header}>
-          <div style={s.titleBox}>
-            <h1 style={s.h1}>{d.agent_name}</h1>
-            <p style={s.meta} className="mono">
-              {d.model}
-            </p>
-          </div>
-          <div style={s.actions}>
+            )}
             {running && (
               <span role="status" style={s.progress}>
                 {t("progress", { done: running.cases_done, total: running.traces_total })}
@@ -116,29 +120,27 @@ export function EvalAgentDetailView() {
         ) : (
           <>
             <RegressionBanner regression={d.regression} />
-            <MetricTiles latest={d.latest} previous={d.previous} />
-            <section>
-              <h2 style={s.h2}>{t("trendHeading")}</h2>
-              <TrendChart trend={d.trend} />
-            </section>
+            <EvalMetricTiles latest={d.latest} previous={d.previous} trend={d.trend} />
+            <TrendChart trend={d.trend} />
           </>
         )}
 
         {d.runs.length > 0 && (
           <section>
             <div style={s.sectionHead}>
-              <h2 style={{ ...s.h2, margin: 0 }}>{t("historyHeading")}</h2>
               <div style={s.actions}>
-                <span style={s.hint}>{t("compareHint")}</span>
-                <Button
-                  kind="secondary"
-                  size="sm"
-                  disabled={selected.length !== 2}
-                  onClick={() => selected.length === 2 && setComparing([selected[0]!, selected[1]!])}
-                >
-                  {t("compare")}
-                </Button>
+                <SectionLabel icon="History">{t("recentRuns")}</SectionLabel>
+                <span style={s.hint}>{selected.length === 0 ? t("compareHint") : t("selected", { count: selected.length })}</span>
               </div>
+              <Button
+                kind="primary"
+                size="sm"
+                icon="GitMerge"
+                disabled={selected.length !== 2}
+                onClick={() => selected.length === 2 && setComparing([selected[0]!, selected[1]!])}
+              >
+                {t("compare")}
+              </Button>
             </div>
             <EvalRunHistory
               runs={d.runs}

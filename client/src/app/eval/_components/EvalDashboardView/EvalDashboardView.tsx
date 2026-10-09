@@ -4,7 +4,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Button, EmptyState, ErrorState, Skeleton } from "@devdigest/ui";
+import { Button, EmptyState, ErrorState, SectionLabel, Skeleton } from "@devdigest/ui";
 import type { RunAllEvalResponse } from "@devdigest/shared";
 import { AppShell } from "@/components/app-shell";
 import { apiErrorMessage } from "@/lib/api";
@@ -17,6 +17,7 @@ import { s } from "./styles";
 
 export function EvalDashboardView() {
   const t = useTranslations("eval.board");
+  const tv = useTranslations("eval.agentView");
   const dash = useEvalDashboard();
   const runAll = useRunAllEvals();
   const [report, setReport] = React.useState<RunAllEvalResponse | null>(null);
@@ -29,7 +30,7 @@ export function EvalDashboardView() {
     });
 
   return (
-    <AppShell crumb={[{ label: t("title") }]}>
+    <AppShell crumb={[{ label: tv("crumbLab") }, { label: t("title") }]}>
       <div style={s.page}>
         <div style={s.header}>
           <div style={s.headerText}>
@@ -37,7 +38,7 @@ export function EvalDashboardView() {
             <p style={s.subtitle}>{t("subtitle")}</p>
           </div>
           {dash.data && dash.data.cards.length > 0 && (
-            <Button kind="secondary" size="sm" icon="Play" loading={runAll.isPending} onClick={onRunAll}>
+            <Button kind="primary" size="sm" icon="Play" loading={runAll.isPending} onClick={onRunAll}>
               {t("runAll")}
             </Button>
           )}
@@ -69,6 +70,7 @@ export function EvalDashboardView() {
         ) : (
           <>
             <section aria-label={t("agentsHeading")}>
+              <SectionLabel icon="Cpu">{t("agentsHeading")}</SectionLabel>
               <div style={s.grid}>
                 {dash.data.cards.map((card) => (
                   <AgentCard key={card.agent_id} card={card} />
@@ -76,7 +78,7 @@ export function EvalDashboardView() {
               </div>
             </section>
             <section>
-              <h2 style={s.h2}>{t("recentHeading")}</h2>
+              <SectionLabel icon="History">{t("recentHeading")}</SectionLabel>
               <RecentRunsTable runs={dash.data.recent_runs} />
             </section>
           </>
