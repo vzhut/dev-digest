@@ -7,34 +7,12 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Button, Icon, Modal, Skeleton } from "@devdigest/ui";
 import type { EvalRunCompare } from "@devdigest/shared";
-import { deltaColor, EVAL_METRIC_COLOR, formatDelta, formatMetric, formatRunCost, progressLabel } from "@/lib/eval-format";
+import { deltaColor, EVAL_METRIC_COLOR, formatMetric, formatRunCost, progressLabel } from "@/lib/eval-format";
 import { useEvalCompare } from "@/lib/hooks/eval";
+import { useDeltaLabel } from "@/lib/use-delta-label";
+import { useDialogKeys } from "@/lib/use-dialog-keys";
 import { collapseDiff, hasChanges } from "./helpers";
-import { useDialogKeys } from "./useDialogKeys";
-
-const BODY = { padding: "4px 24px 20px", display: "flex", flexDirection: "column", gap: 14, fontSize: 13 } as const;
-const H = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--text-muted)", margin: "0 0 4px", textTransform: "uppercase" } as const;
-const TILES = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 } as const;
-const TILE = { minWidth: 0, padding: "12px 16px", border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg-surface)" } as const;
-const TILE_LABEL = { fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" } as const;
-const BIG = { fontSize: 24, fontWeight: 600, marginTop: 8, overflowWrap: "anywhere" } as const;
-const SMALL = { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 8px", marginTop: 4, fontSize: 12.5 } as const;
-const TILE_VALUES = { display: "flex", alignItems: "baseline", gap: 8, marginTop: 8, flexWrap: "nowrap", whiteSpace: "nowrap" } as const;
-const LEGEND = { display: "flex", gap: 16, fontSize: 12.5, color: "var(--text-secondary)", marginBottom: 8 } as const;
-const SWATCH = { display: "inline-block", width: 10, height: 10, borderRadius: 2, border: "1px solid var(--border-strong)", verticalAlign: "middle" } as const;
-const NOTE = { padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "var(--bg-surface)" } as const;
-const WARN = { ...NOTE, borderColor: "var(--warn)" } as const;
-const PRE = { padding: "6px 0", background: "var(--code-bg)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, maxHeight: 320, overflowY: "auto" } as const;
-const ROW = { display: "flex", gap: 8, padding: "1px 12px" } as const;
-const MARK = { width: 10, flexShrink: 0, userSelect: "none" } as const;
-const TEXT = { flex: 1, minWidth: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" } as const;
-const ROW_GAP = { padding: "3px 12px", color: "var(--text-muted)", fontStyle: "italic" } as const;
-const LINE = {
-  same: { color: "var(--text-muted)" },
-  add: { color: "var(--code-add-text)", background: "var(--code-add)" },
-  del: { color: "var(--code-del-text)", background: "var(--code-del)" },
-} as const;
-const MARKER = { same: " ", add: "+", del: "−" } as const;
+import { MARKER, s } from "./styles";
 
 export function CompareModal({ a, b, onClose }: { a: string; b: string; onClose: () => void }) {
   const t = useTranslations("eval.agentView.compareModal");
@@ -54,7 +32,7 @@ export function CompareModal({ a, b, onClose }: { a: string; b: string; onClose:
         </Button>
       }
     >
-      <div ref={bodyRef} style={BODY}>
+      <div ref={bodyRef} style={s.body}>
         {q.isError ? (
           <p>{t("loadError")}</p>
         ) : !q.data ? (
@@ -70,55 +48,56 @@ export function CompareModal({ a, b, onClose }: { a: string; b: string; onClose:
 function CompareBody({ c }: { c: EvalRunCompare }) {
   const t = useTranslations("eval.agentView.compareModal");
   const m = useTranslations("eval.agentView.metricName");
+  const deltaLabel = useDeltaLabel();
   const changes = hasChanges(c.prompt_diff);
   const { provider, model, strategy, skills } = c.config_diff;
   return (
     <>
-      {c.same_config && <div style={NOTE}>{t("sameConfig")}</div>}
+      {c.same_config && <div style={s.note}>{t("sameConfig")}</div>}
       {(c.case_set.added > 0 || c.case_set.removed > 0) && (
-        <div role="alert" style={WARN}>
+        <div role="alert" style={s.warn}>
           {t("caseSetWarning", { common: c.case_set.common, added: c.case_set.added, removed: c.case_set.removed })}
         </div>
       )}
 
-      <div style={TILES}>
+      <div style={s.tiles}>
         {c.metrics.map((x) => (
-          <div key={x.metric} style={TILE}>
-            <div style={TILE_LABEL}>{m(x.metric)}</div>
-            <div style={BIG} className="tnum" >
-              <span style={{ color: EVAL_METRIC_COLOR[x.metric] }}>{formatMetric(x.new)}</span>
+          <div key={x.metric} style={s.tile}>
+            <div style={s.tileLabel}>{m(x.metric)}</div>
+            <div style={s.big} className="tnum">
+              <span style={s.metricColor(EVAL_METRIC_COLOR[x.metric])}>{formatMetric(x.new)}</span>
             </div>
-            <div style={SMALL}>
-              <span style={{ color: "var(--text-muted)" }}>{formatMetric(x.old)}</span>
-              <span style={{ color: "var(--text-muted)" }}>→</span>
-              <span style={{ color: "var(--text-secondary)" }}>{formatMetric(x.new)}</span>
-              <span style={{ fontWeight: 600, color: deltaColor(x.delta) }}>{formatDelta(x.delta)}</span>
+            <div style={s.small}>
+              <span style={s.muted}>{formatMetric(x.old)}</span>
+              <span style={s.muted}>→</span>
+              <span style={s.secondary}>{formatMetric(x.new)}</span>
+              <span style={s.delta(deltaColor(x.delta))}>{deltaLabel(x.delta)}</span>
             </div>
           </div>
         ))}
-        <div style={TILE}>
-          <div style={TILE_LABEL}>{t("costLabel")}</div>
-          <div style={BIG}>
+        <div style={s.tile}>
+          <div style={s.tileLabel}>{t("costLabel")}</div>
+          <div style={s.big}>
             <span>{formatRunCost(c.cost.new, c.new.cost_partial)}</span>
           </div>
-          <div style={SMALL}>
-            <span style={{ color: "var(--text-muted)" }}>{formatRunCost(c.cost.old, c.old.cost_partial)}</span>
-            <span style={{ color: "var(--text-muted)" }}>→</span>
-            <span style={{ color: "var(--text-secondary)" }}>{formatRunCost(c.cost.new, c.new.cost_partial)}</span>
+          <div style={s.small}>
+            <span style={s.muted}>{formatRunCost(c.cost.old, c.old.cost_partial)}</span>
+            <span style={s.muted}>→</span>
+            <span style={s.secondary}>{formatRunCost(c.cost.new, c.new.cost_partial)}</span>
           </div>
         </div>
       </div>
       <div>
-        <span style={H}>{t("passed")}</span>{" "}
+        <span style={s.h}>{t("passed")}</span>{" "}
         {progressLabel(c.passed.old.passed, c.passed.old.total)} → {progressLabel(c.passed.new.passed, c.passed.new.total)}
       </div>
 
       <section>
-        <h3 style={H}>{t("flipped")}</h3>
+        <h3 style={s.h}>{t("flipped")}</h3>
         {c.flipped_cases.length === 0 ? (
           <div>{t("noFlipped")}</div>
         ) : (
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
+          <ul style={s.list}>
             {c.flipped_cases.map((f) => (
               <li key={f.case_id}>
                 {t("flippedRow", { name: f.case_name ?? f.case_id, old: f.old ?? "—", new: f.new ?? "—" })}
@@ -130,8 +109,8 @@ function CompareBody({ c }: { c: EvalRunCompare }) {
 
       {(provider || model || strategy || skills) && (
         <section>
-          <h3 style={H}>{t("config")}</h3>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
+          <h3 style={s.h}>{t("config")}</h3>
+          <ul style={s.list}>
             {provider && <li>{t("provider")}: {provider.old} → {provider.new}</li>}
             {model && <li>{t("model")}: {model.old} → {model.new}</li>}
             {strategy && <li>{t("strategy")}: {strategy.old ?? "—"} → {strategy.new ?? "—"}</li>}
@@ -145,28 +124,28 @@ function CompareBody({ c }: { c: EvalRunCompare }) {
       )}
 
       <section>
-        <h3 style={H}>
+        <h3 style={s.h}>
           <Icon.FileText size={13} /> {t("prompt")}
         </h3>
-        <div style={LEGEND}>
-          <span><span style={{ ...SWATCH, background: "var(--crit)" }} /> {t("legendOld", { version: c.old.agent_version ?? "—" })}</span>
-          <span><span style={{ ...SWATCH, background: "var(--ok)" }} /> {t("legendNew", { version: c.new.agent_version ?? "—" })}</span>
+        <div style={s.legend}>
+          <span><span style={s.swatch("var(--crit)")} /> {t("legendOld", { version: c.old.agent_version ?? "—" })}</span>
+          <span><span style={s.swatch("var(--ok)")} /> {t("legendNew", { version: c.new.agent_version ?? "—" })}</span>
         </div>
         {!changes ? (
           <div>{t("promptSame")}</div>
         ) : (
-          <div className="mono" style={PRE}>
+          <div className="mono" style={s.pre}>
             {collapseDiff(c.prompt_diff).map((r, i) =>
               r.kind === "gap" ? (
-                <div key={i} style={ROW_GAP}>
+                <div key={i} style={s.gap}>
                   {t("unchangedLines", { count: r.count })}
                 </div>
               ) : (
-                <div key={i} style={{ ...ROW, ...LINE[r.op] }}>
-                  <span style={MARK} aria-hidden="true">
+                <div key={i} style={{ ...s.row, ...s.line[r.op] }}>
+                  <span style={s.mark} aria-hidden="true">
                     {MARKER[r.op]}
                   </span>
-                  <span style={TEXT}>{r.text || " "}</span>
+                  <span style={s.text}>{r.text || " "}</span>
                 </div>
               ),
             )}

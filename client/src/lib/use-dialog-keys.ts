@@ -7,7 +7,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * focus moves into it on open (and back to the opener on close). `ref` marks an element INSIDE the
  * dialog; the nearest `[role=dialog]` ancestor is the trap boundary.
  */
-export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose: () => void): void {
+export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose: () => void, enabled = true): void {
   const closeRef = React.useRef(onClose);
   // keep the latest handler without writing a ref during render
   React.useEffect(() => {
@@ -15,6 +15,7 @@ export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose:
   });
 
   React.useEffect(() => {
+    if (!enabled) return;
     const dialog = ref.current?.closest<HTMLElement>('[role="dialog"]') ?? null;
     const opener = document.activeElement as HTMLElement | null;
     const focusables = () => (dialog ? [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)] : []);
@@ -45,5 +46,5 @@ export function useDialogKeys(ref: React.RefObject<HTMLElement | null>, onClose:
       document.removeEventListener("keydown", onKey);
       opener?.focus?.();
     };
-  }, [ref]);
+  }, [ref, enabled]);
 }

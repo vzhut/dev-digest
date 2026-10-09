@@ -44,5 +44,8 @@ export const s = {
   footer: { display: "flex", alignItems: "center", gap: 10 } satisfies CSSProperties,
   runOnSave: { display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--text-secondary)", marginRight: "auto" } satisfies CSSProperties,
   fileList: { margin: 0, paddingLeft: 18, fontSize: 13 } satisfies CSSProperties,
+  prMeta: { display: "flex", flexDirection: "column", gap: 10 } satisfies CSSProperties,
+  prBody: { minHeight: 120, fontFamily: "inherit" } satisfies CSSProperties,
+  link: { fontSize: 13 } satisfies CSSProperties,
   hint: { fontSize: 12.5, color: "var(--text-muted)" } satisfies CSSProperties,
 };

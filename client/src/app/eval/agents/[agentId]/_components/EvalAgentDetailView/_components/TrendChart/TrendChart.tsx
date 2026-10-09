@@ -5,6 +5,7 @@ import { SectionLabel } from "@devdigest/ui";
 import type { EvalSuiteTrendPoint } from "@devdigest/shared";
 import { sparklinePoints } from "@/lib/eval-chart";
 import { EVAL_METRIC_COLOR } from "@/lib/eval-format";
+import { s } from "./styles";
 
 const W = 1000;
 const H = 220;
@@ -15,9 +16,6 @@ const SERIES = [
   { key: "precision", color: EVAL_METRIC_COLOR.precision },
   { key: "citation_accuracy", color: EVAL_METRIC_COLOR.citation_accuracy },
 ] as const;
-
-const BOX = { border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg-surface)", padding: "18px 22px" } as const;
-const LEGEND = { display: "flex", gap: 16, fontSize: 12.5, color: "var(--text-secondary)" } as const;
 
 /** Recall / precision / citation over the runs as three inline-SVG lines on a 0.1-gridded axis (no chart library). */
 export function TrendChart({ trend }: { trend: EvalSuiteTrendPoint[] }) {
@@ -34,14 +32,14 @@ export function TrendChart({ trend }: { trend: EvalSuiteTrendPoint[] }) {
   const y = (v: number) => PADY + (1 - (v - lo) / (1 - lo)) * (H - 2 * PADY);
 
   return (
-    <section style={BOX}>
+    <section style={s.box}>
       <SectionLabel
         icon="TrendingUp"
         right={
-          <div style={LEGEND}>
+          <div style={s.legend}>
             {SERIES.map((x) => (
               <span key={x.key}>
-                <span style={{ color: x.color }}>━</span> {names[x.key]}
+                <span style={s.dot(x.color)}>━</span> {names[x.key]}
               </span>
             ))}
           </div>
@@ -50,7 +48,7 @@ export function TrendChart({ trend }: { trend: EvalSuiteTrendPoint[] }) {
         {t("trendHeading")}
       </SectionLabel>
       {!enough ? (
-        <div style={{ color: "var(--text-muted)", fontSize: 13 }}>{t("trendNeedsTwo")}</div>
+        <div style={s.needsTwo}>{t("trendNeedsTwo")}</div>
       ) : (
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("trendLabel", { count: trend.length })}>
           {ticks.map((v) => (

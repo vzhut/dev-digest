@@ -6,9 +6,7 @@ import type { EvalSuiteRun } from "@devdigest/shared";
 import { apiErrorMessage } from "@/lib/api";
 import { useStartEvalRun } from "@/lib/hooks/eval";
 import { notify } from "@/lib/toast";
-
-const WRAP = { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" } as const;
-const NOTE = { fontSize: 13, color: "var(--text-secondary)" } as const;
+import { s } from "./styles";
 
 /** Run eval: disabled with an explanation when there is nothing to run, and while a run is going. */
 export function RunPanel({
@@ -26,7 +24,7 @@ export function RunPanel({
   const noCases = casesTotal === 0;
 
   return (
-    <div style={WRAP}>
+    <div style={s.wrap}>
       <Button
         kind="secondary"
         icon="Play"
@@ -37,11 +35,11 @@ export function RunPanel({
         {t("runEval")}
       </Button>
       {running && (
-        <span role="status" style={NOTE}>
+        <span role="status" style={s.note}>
           {t("progress", { done: running.cases_done, total: running.traces_total })}
         </span>
       )}
-      {noCases && <span style={NOTE}>{t("noCasesToRun")}</span>}
+      {noCases && <span style={s.note}>{t("noCasesToRun")}</span>}
     </div>
   );
 }

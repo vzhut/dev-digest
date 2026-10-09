@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import React from "react";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { api } from "../api";
 import type { CreateEvalCaseResponse, EvalSuiteRun } from "@devdigest/shared";
-import { evalKeys, evalRunsRefetchInterval, useCreateEvalCase, useEvalCaseLinks } from "./eval";
+import { evalKeys, evalRunsRefetchInterval, useAgentEvalRuns, useCreateEvalCase, useDeleteEvalCase, useEvalCaseLinks } from "./eval";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -44,5 +44,36 @@ describe("eval hooks", () => {
     const { wrapper } = setup();
     renderHook(() => useEvalCaseLinks(null), { wrapper });
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it("when the last running run finishes, the case rows and dashboards are refreshed (polling alone never would)", async () => {
+    const list = vi
+      .spyOn(api, "listAgentEvalRuns")
+      .mockResolvedValueOnce([run("running")])
+      .mockResolvedValue([run("completed")]);
+    const { spy, wrapper } = setup();
+    const { result } = renderHook(() => useAgentEvalRuns("a1"), { wrapper });
+    await waitFor(() => expect(result.current.data?.[0]?.status).toBe("running"));
+    expect(spy).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.refetch();
+    });
+    await waitFor(() => expect(result.current.data?.[0]?.status).toBe("completed"));
+    const keys = spy.mock.calls.map((c) => c[0]?.queryKey);
+    expect(keys).toContainEqual(evalKeys.cases("a1"));
+    expect(keys).toContainEqual(evalKeys.agentDashboard("a1"));
+    expect(keys).toContainEqual(evalKeys.dashboard);
+    expect(list).toHaveBeenCalledTimes(2);
+  });
+
+  it("deleting a case refreshes every PR's case links, so the FindingCard action comes back", async () => {
+    vi.spyOn(api, "deleteEvalCase").mockResolvedValue(undefined);
+    const { spy, wrapper } = setup();
+    const { result } = renderHook(() => useDeleteEvalCase("a1"), { wrapper });
+    result.current.mutate("c1");
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const keys = spy.mock.calls.map((c) => c[0]?.queryKey);
+    expect(keys).toContainEqual(evalKeys.linksAll);
+    expect(keys).toContainEqual(evalKeys.agentDashboard("a1"));
   });
 });

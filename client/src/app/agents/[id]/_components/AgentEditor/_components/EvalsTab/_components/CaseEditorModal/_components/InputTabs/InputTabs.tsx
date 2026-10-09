@@ -61,7 +61,7 @@ export function InputTabs({
         </div>
       )}
       {tab === "prMeta" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={s.prMeta}>
           {born && <p style={s.hint}>{t("prReadOnly")}</p>}
           <div>
             <label style={s.fieldLabel} htmlFor="eval-case-pr-title">
@@ -75,14 +75,14 @@ export function InputTabs({
             </label>
             <textarea
               id="eval-case-pr-body"
-              style={{ ...s.textarea, minHeight: 120, fontFamily: "inherit" }}
+              style={{ ...s.textarea, ...s.prBody }}
               value={form.prBody}
               readOnly={born}
               onChange={(e) => set("prBody", e.target.value)}
             />
           </div>
           {prUrl && existing && (
-            <a href={prUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+            <a href={prUrl} target="_blank" rel="noopener noreferrer" style={s.link}>
               {t("openPr", { repo: existing.meta.repo ?? "", number: existing.meta.pr_number ?? 0 })}
             </a>
           )}

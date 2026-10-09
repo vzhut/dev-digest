@@ -6,8 +6,8 @@ import { useTranslations } from "next-intl";
 import type { EvalSuiteRun } from "@devdigest/shared";
 import { Icon } from "@devdigest/ui";
 import { EvalMetricBar } from "@/components/eval-metric-bar";
+import { newestFirst } from "@/lib/eval-runs";
 import { EVAL_METRIC_COLOR, formatRunCost, formatRunStamp } from "@/lib/eval-format";
-import { newestFirst } from "./helpers";
 import { s } from "./styles";
 
 export function EvalRunHistory({

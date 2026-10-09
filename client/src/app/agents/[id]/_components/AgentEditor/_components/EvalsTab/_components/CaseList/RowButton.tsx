@@ -1,17 +1,7 @@
 "use client";
 
 import { Icon, type IconName } from "@devdigest/ui";
-
-const BASE = {
-  width: 30,
-  height: 30,
-  display: "inline-grid",
-  placeItems: "center",
-  borderRadius: 6,
-  border: "1px solid transparent",
-  background: "transparent",
-  color: "var(--text-secondary)",
-} as const;
+import { rb } from "./rowButtonStyles";
 
 /** An icon button that can be disabled (the vendored IconBtn cannot): the per-row run button. */
 export function RowButton({
@@ -33,7 +23,7 @@ export function RowButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      style={{ ...BASE, ...(disabled ? { opacity: 0.4, cursor: "not-allowed" } : { cursor: "pointer" }) }}
+      style={{ ...rb.base, ...(disabled ? rb.disabled : rb.enabled) }}
     >
       <I size={16} />
     </button>

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   deltaDirection,
-  formatDelta,
+  deltaParts,
   formatMetric,
   formatRunCost,
   formatRunStamp,
@@ -17,12 +17,12 @@ describe("eval formatting", () => {
     expect(formatMetric(1)).toBe("100%");
   });
 
-  it("gives every delta a sign and an arrow", () => {
-    expect(formatDelta(0.06)).toBe("▲ +6 pts");
-    expect(formatDelta(-0.123)).toBe("▼ −12.3 pts");
-    expect(formatDelta(0)).toBe("▬ 0 pts");
-    expect(formatDelta(0.0001)).toBe("▬ 0 pts");
-    expect(formatDelta(null)).toBe("—");
+  it("describes every delta as a direction and a magnitude (the wording is i18n)", () => {
+    expect(deltaParts(0.06)).toEqual({ direction: "up", points: 6 });
+    expect(deltaParts(-0.123)).toEqual({ direction: "down", points: 12.3 });
+    expect(deltaParts(0)).toEqual({ direction: "flat", points: 0 });
+    expect(deltaParts(0.0001)).toEqual({ direction: "flat", points: 0 });
+    expect(deltaParts(null)).toEqual({ direction: "unknown", points: null });
     expect(deltaDirection(-0.5)).toBe("down");
   });
 

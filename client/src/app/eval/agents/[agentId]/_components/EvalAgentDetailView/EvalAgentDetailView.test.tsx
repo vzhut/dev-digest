@@ -199,14 +199,23 @@ describe("EvalAgentDetailView", () => {
       expect(screen.getByRole("dialog")).toHaveTextContent("No prompt changes");
     });
 
-    it("closes on Escape and keeps Tab inside the dialog", async () => {
-      const dialog = await open();
-      const close = within(dialog).getAllByRole("button", { name: "Close" })[0]!;
-      close.focus();
-      fireEvent.keyDown(document, { key: "Tab" });
-      expect(dialog.contains(document.activeElement)).toBe(true);
+    it("closes on Escape", async () => {
+      await open();
       fireEvent.keyDown(document, { key: "Escape" });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("traps Tab: from the last control it wraps to the first, from the first Shift+Tab wraps to the last", async () => {
+      const dialog = await open();
+      const focusables = [...dialog.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")];
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      expect(first).not.toBe(last);
+      last.focus();
+      fireEvent.keyDown(document, { key: "Tab" });
+      expect(document.activeElement).toBe(first); // would stay on `last` / leave the dialog without the trap
+      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+      expect(document.activeElement).toBe(last);
     });
   });
 });

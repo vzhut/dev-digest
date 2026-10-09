@@ -247,7 +247,12 @@
         "fileNotInDiff": "That file is not in the diff.",
         "lineRange": "Lines must be whole numbers, start ≥ 1 and end ≥ start.",
         "outsideHunks": "These lines are outside every hunk of the diff."
-      }
+      },
+      "discardTitle": "Discard your changes?",
+      "discardBody": "The case has unsaved changes. Closing the editor throws them away.",
+      "discardConfirm": "Discard changes",
+      "keepEditing": "Keep editing",
+      "runFailed": "The case was saved, but the run could not be started."
     },
     "deleteFailed": "Could not delete the case.",
     "chip": {
@@ -360,5 +365,11 @@
     "subtitle": "Regression harness · {runs, plural, one {# run} other {# runs}} on the {cases}-case gold set",
     "recentRuns": "Recent runs",
     "selected": "{count} selected"
+  },
+  "delta": {
+    "up": "▲ +{points} pts",
+    "down": "▼ −{points} pts",
+    "flat": "▬ 0 pts",
+    "unknown": "—"
   }
 }

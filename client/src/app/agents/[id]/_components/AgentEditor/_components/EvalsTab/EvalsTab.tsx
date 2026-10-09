@@ -12,17 +12,15 @@ import { EvalMetricTiles } from "@/components/eval-metric-tiles";
 import { EvalRunHistory } from "@/components/eval-run-history";
 import { useAgentEvalCases, useAgentEvalRuns, useEvalRun } from "@/lib/hooks/eval";
 import { CaseList } from "./_components/CaseList";
+import { latestFinished, latestTwoCompleted } from "./helpers";
 import { s } from "./styles";
 
 export function EvalsTab({ agent }: { agent: Agent }) {
   const t = useTranslations("eval.tab");
   const cases = useAgentEvalCases(agent.id);
   const runs = useAgentEvalRuns(agent.id);
-  const latestFinished = runs.data?.find((r) => r.status !== "running");
-  const detail = useEvalRun(latestFinished?.id);
-  const completed = (runs.data ?? []).filter((r) => r.status === "completed"); // newest first
-  const latest = completed[0];
-  const previous = completed[1];
+  const detail = useEvalRun(latestFinished(runs.data ?? [])?.id);
+  const { latest, previous } = latestTwoCompleted(runs.data ?? []);
 
   if (cases.isError) {
     return (

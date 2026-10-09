@@ -19,14 +19,17 @@ export function deltaDirection(delta: number | null | undefined): DeltaDirection
   return points > 0 ? "up" : points < 0 ? "down" : "flat";
 }
 
-/** A change in percentage points with a sign AND an arrow, so colour is never the only cue. */
-export function formatDelta(delta: number | null | undefined): string {
+/** A change in percentage points as data: the component words it with i18n (arrow + sign, never colour alone). */
+export interface DeltaParts {
+  direction: DeltaDirection;
+  /** Absolute change in percentage points, one decimal (0 for flat, null when unknown). */
+  points: number | null;
+}
+
+export function deltaParts(delta: number | null | undefined): DeltaParts {
   const direction = deltaDirection(delta);
-  if (direction === "unknown") return UNKNOWN;
-  const points = Math.abs(Math.round((delta as number) * 1000) / 10);
-  if (direction === "up") return `▲ +${points} pts`;
-  if (direction === "down") return `▼ −${points} pts`;
-  return "▬ 0 pts";
+  if (direction === "unknown") return { direction, points: null };
+  return { direction, points: Math.abs(Math.round((delta as number) * 1000) / 10) };
 }
 
 /** Run cost: the sum of the known costs, prefixed "≥" when some were unknown; nothing known → "—". */

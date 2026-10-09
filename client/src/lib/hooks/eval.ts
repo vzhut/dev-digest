@@ -3,6 +3,7 @@
    Evals tab and the per-agent view show live "k / n cases" progress and survive a reload. */
 "use client";
 
+import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import type { EvalCaseWrite, EvalSuiteRun } from "@devdigest/shared";
@@ -10,7 +11,9 @@ import type { EvalCaseWrite, EvalSuiteRun } from "@devdigest/shared";
 export const EVAL_POLL_MS = 2000;
 
 export const evalKeys = {
-  links: (prId: string | null | undefined) => ["eval-case-links", prId] as const,
+  /** Prefix of every PR's case links (the FindingCard tags). */
+  linksAll: ["eval-case-links"] as const,
+  links: (prId: string | null | undefined) => [...evalKeys.linksAll, prId] as const,
   cases: (agentId: string | null | undefined) => ["eval-cases", agentId] as const,
   case: (caseId: string | null | undefined) => ["eval-case", caseId] as const,
   /** Prefix of every agent's runs list: invalidating it refreshes them all. */
@@ -70,6 +73,9 @@ export function useDeleteEvalCase(agentId: string | null | undefined) {
     mutationFn: (caseId: string) => api.deleteEvalCase(caseId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: evalKeys.cases(agentId) });
+      // a deleted case frees its finding: the FindingCard tag must flip back to "Turn into eval case"
+      qc.invalidateQueries({ queryKey: evalKeys.linksAll });
+      qc.invalidateQueries({ queryKey: evalKeys.agentDashboard(agentId) });
       qc.invalidateQueries({ queryKey: evalKeys.dashboard });
     },
   });
@@ -82,6 +88,7 @@ export function useCreateManualEvalCase(agentId: string | null | undefined) {
     mutationFn: (body: EvalCaseWrite) => api.createManualEvalCase(agentId as string, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: evalKeys.cases(agentId) });
+      qc.invalidateQueries({ queryKey: evalKeys.agentDashboard(agentId) });
       qc.invalidateQueries({ queryKey: evalKeys.dashboard });
     },
   });
@@ -95,6 +102,8 @@ export function useUpdateEvalCase(agentId: string | null | undefined) {
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: evalKeys.cases(agentId) });
       qc.invalidateQueries({ queryKey: evalKeys.case(vars.caseId) });
+      qc.invalidateQueries({ queryKey: evalKeys.agentDashboard(agentId) });
+      qc.invalidateQueries({ queryKey: evalKeys.dashboard });
     },
   });
 }
@@ -116,12 +125,26 @@ export function useStartEvalRun(agentId: string | null | undefined) {
 }
 
 export function useAgentEvalRuns(agentId: string | null | undefined) {
-  return useQuery({
+  const qc = useQueryClient();
+  const query = useQuery({
     queryKey: evalKeys.runs(agentId),
     queryFn: () => api.listAgentEvalRuns(agentId as string),
     enabled: !!agentId,
-    refetchInterval: (query) => evalRunsRefetchInterval(query.state.data),
+    refetchInterval: (q) => evalRunsRefetchInterval(q.state.data),
   });
+  // Polling stops by itself when the last run ends: on that running -> finished transition refresh everything
+  // a finished run changes (case rows' last result, dashboards), which nothing else would ever refetch.
+  const running = query.data?.some((r) => r.status === "running") ?? false;
+  const wasRunning = React.useRef(false);
+  React.useEffect(() => {
+    if (wasRunning.current && !running) {
+      qc.invalidateQueries({ queryKey: evalKeys.cases(agentId) });
+      qc.invalidateQueries({ queryKey: evalKeys.agentDashboard(agentId) });
+      qc.invalidateQueries({ queryKey: evalKeys.dashboard });
+    }
+    wasRunning.current = running;
+  }, [running, agentId, qc]);
+  return query;
 }
 
 export function useEvalRun(runId: string | null | undefined) {

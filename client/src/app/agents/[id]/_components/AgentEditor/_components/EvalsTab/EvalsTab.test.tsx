@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Agent, AgentEvalCase, AgentEvalCaseDetail, EvalSuiteRun, EvalSuiteRunDetail } from "@devdigest/shared";
 import evalMessages from "../../../../../../../../messages/en/eval.json";
 import commonMessages from "../../../../../../../../messages/en/common.json";
-import { ToastProvider } from "@/lib/toast";
+import { ToastProvider, notify } from "@/lib/toast";
 import { ApiError, api } from "@/lib/api";
 import { EvalsTab } from "./EvalsTab";
 
@@ -131,7 +131,7 @@ describe("Evals tab", () => {
     expect(spies.start).not.toHaveBeenCalled();
   });
 
-  it("deletes a case only after the confirm, with one API call; a failed delete says so", async () => {
+  it("deletes a case only after the confirm, with one API call", async () => {
     data.cases = [evalCase("a", "passed")];
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Delete must_find-a" }));
@@ -139,6 +139,22 @@ describe("Evals tab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete case" }));
     await waitFor(() => expect(spies.del).toHaveBeenCalledTimes(1));
     expect(spies.del.mock.calls[0]![0]).toBe("a");
+  });
+
+  it("a failed delete says so and keeps the confirm open; a failed run start says so too", async () => {
+    const toast = vi.spyOn(notify, "error");
+    data.cases = [evalCase("a", "passed")];
+    spies.del.mockRejectedValue(new Error("boom"));
+    spies.start.mockRejectedValue(new ApiError("provider key missing", 409, "eval_run_in_progress"));
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "Delete must_find-a" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete case" }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith("Could not delete the case."));
+    expect(screen.getByRole("button", { name: "Delete case" })).toBeInTheDocument(); // still open
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Cancel" })[0]!);
+    fireEvent.click(screen.getByRole("button", { name: "Run must_find-a" }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith("provider key missing"));
   });
 
   describe("case editor (AC-42, AC-45, AC-48)", () => {
@@ -261,6 +277,48 @@ describe("Evals tab", () => {
       fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
       expect(await within(dialog).findByRole("alert")).toHaveTextContent("expectation is outside the diff");
       expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("a failed run after Save still tells the user (the editor has closed by then)", async () => {
+      const toast = vi.spyOn(notify, "error");
+      spies.start.mockRejectedValue(new ApiError("an eval run for this agent is already running", 409, "eval_run_in_progress"));
+      await open();
+      fireEvent.click(screen.getByRole("button", { name: "New eval case" }));
+      fireEvent.click(screen.getByRole("switch", { name: "Run on save" }));
+      fill(/^Name/, "n");
+      fill("Diff", DIFF);
+      fill("File", "src/a.ts");
+      fill("Start line", "1");
+      fill("End line", "1");
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      await waitFor(() => expect(toast).toHaveBeenCalledWith("an eval run for this agent is already running"));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    });
+
+    it("Escape closes a pristine editor at once, but asks before discarding edits", async () => {
+      await open();
+      fireEvent.click(screen.getByRole("button", { name: "New eval case" }));
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "New eval case" }));
+      fill(/^Name/, "unsaved work");
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(screen.getByText("Discard your changes?")).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Name/)).toHaveValue("unsaved work"); // still there
+      fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+      await waitFor(() => expect(screen.queryByLabelText(/^Name/)).not.toBeInTheDocument());
+    });
+
+    it("keeps Tab inside the editor", async () => {
+      await open();
+      fireEvent.click(screen.getByRole("button", { name: "New eval case" }));
+      const dialog = screen.getByRole("dialog");
+      const focusables = [...dialog.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), input, select, textarea")];
+      const first = focusables[0]!;
+      focusables[focusables.length - 1]!.focus();
+      fireEvent.keyDown(document, { key: "Tab" });
+      expect(document.activeElement).toBe(first);
     });
   });
 });

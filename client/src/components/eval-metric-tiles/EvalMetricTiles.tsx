@@ -5,7 +5,8 @@
 import { useTranslations } from "next-intl";
 import type { EvalMetricKey, EvalSuiteRun, EvalSuiteTrendPoint } from "@devdigest/shared";
 import { sparklinePoints } from "@/lib/eval-chart";
-import { deltaColor, EVAL_METRIC_COLOR, formatDelta, formatMetric, progressLabel } from "@/lib/eval-format";
+import { useDeltaLabel } from "@/lib/use-delta-label";
+import { deltaColor, EVAL_METRIC_COLOR, formatMetric, progressLabel } from "@/lib/eval-format";
 import { s } from "./styles";
 
 const METRICS: { key: EvalMetricKey; label: "recall" | "precision" | "citation" }[] = [
@@ -27,6 +28,7 @@ export function EvalMetricTiles({
 }) {
   const m = useTranslations("eval.runDetail.metrics");
   const t = useTranslations("eval.agentView");
+  const deltaLabel = useDeltaLabel();
   return (
     <div style={s.row}>
       {METRICS.map(({ key, label }) => {
@@ -53,7 +55,7 @@ export function EvalMetricTiles({
               </span>
               {previous && (
                 <span style={s.delta(deltaColor(delta))} title={t("tiles.sinceLast")}>
-                  {formatDelta(delta)}
+                  {deltaLabel(delta)}
                 </span>
               )}
             </div>

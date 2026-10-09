@@ -35,7 +35,14 @@ export function useCaseSave({
         ? (await update.mutateAsync({ caseId: existing.id, body })).id
         : (await create.mutateAsync(body)).case.id;
       if (thenRun && !running) {
-        start.mutate([id], { onError: (e) => notify.error(apiErrorMessage(e, t("saveFailed"))) });
+        // Wait for the run request and report a failure through the app-wide notifier: the editor closes right
+        // after, and a per-call callback of an unmounted component would drop the error (the user would believe
+        // a paid run had started).
+        try {
+          await start.mutateAsync([id]);
+        } catch (e) {
+          notify.error(apiErrorMessage(e, t("runFailed")));
+        }
       }
       onDone();
     } catch (e) {

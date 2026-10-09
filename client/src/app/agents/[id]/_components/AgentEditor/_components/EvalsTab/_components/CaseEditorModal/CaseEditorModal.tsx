@@ -8,7 +8,9 @@ import { useTranslations } from "next-intl";
 import { Button, Icon, Modal, Skeleton, Toggle } from "@devdigest/ui";
 import type { Agent, AgentEvalCaseDetail } from "@devdigest/shared";
 import { formatDuration, formatRunCost } from "@/lib/eval-format";
+import { ConfirmModal } from "@/components/confirm-modal";
 import { useEvalCase } from "@/lib/hooks/eval";
+import { useDialogKeys } from "@/lib/use-dialog-keys";
 import { expectedFindings } from "../../helpers";
 import { ExpectationFields } from "./_components/ExpectationFields";
 import { InputTabs } from "./_components/InputTabs";
@@ -69,9 +71,17 @@ function EditorForm({
   onClose: () => void;
 }) {
   const t = useTranslations("eval.tab.editor");
-  const [form, setForm] = React.useState<CaseForm>(() => initialForm(existing));
+  const initial = React.useRef(initialForm(existing));
+  const [form, setForm] = React.useState<CaseForm>(initial.current);
+  const [discarding, setDiscarding] = React.useState(false);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
   const [runOnSave, setRunOnSave] = useRunOnSave();
   const { save, error: serverError, pending, born } = useCaseSave({ agentId: agent.id, existing, form, running, onDone: onClose });
+
+  // Closing with unsaved edits (X, backdrop, Escape, Cancel) asks first: a long pasted diff must not vanish on a stray click.
+  const dirty = JSON.stringify(form) !== JSON.stringify(initial.current);
+  const requestClose = () => (dirty && !pending ? setDiscarding(true) : onClose());
+  useDialogKeys(bodyRef, requestClose, !discarding);
 
   const errors = validateCase(form);
   const valid = errors.length === 0;
@@ -80,18 +90,19 @@ function EditorForm({
   const runDisabled = !valid || pending || running;
 
   return (
+    <>
     <Modal
       width={980}
       title={existing ? t("title", { name: existing.name }) : t("newTitle")}
       subtitle={t("subtitle", { agent: agent.name })}
-      onClose={onClose}
+      onClose={requestClose}
       footer={
         <div style={s.footer}>
           <label style={s.runOnSave}>
             <Toggle on={runOnSave} onChange={setRunOnSave} size={16} />
             {t("runOnSave")}
           </label>
-          <Button kind="secondary" onClick={onClose}>
+          <Button kind="secondary" onClick={requestClose}>
             {t("cancel")}
           </Button>
           <Button kind="secondary" icon="Play" disabled={runDisabled} onClick={() => void save(true)}>
@@ -103,7 +114,7 @@ function EditorForm({
         </div>
       }
     >
-      <div style={s.body}>
+      <div ref={bodyRef} style={s.body}>
         <div style={s.left}>
           <label style={s.label} htmlFor="eval-case-name">
             {t("name")} <span style={s.required}>*</span>
@@ -156,5 +167,15 @@ function EditorForm({
         </div>
       </div>
     </Modal>
+      {discarding && (
+        <ConfirmModal
+          title={t("discardTitle")}
+          body={t("discardBody")}
+          confirmLabel={t("discardConfirm")}
+          onConfirm={onClose}
+          onClose={() => setDiscarding(false)}
+        />
+      )}
+    </>
   );
 }
