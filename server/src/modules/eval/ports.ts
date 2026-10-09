@@ -42,7 +42,8 @@ export interface EvalRunFinish {
 
 /** Persistence the executor needs — the run row, nothing else. */
 export interface EvalRunStore {
-  markProgress(runId: string, progress: { casesDone: number; results: EvalCaseResult[] }): Promise<void>;
+  /** Progress is a counter only; the per-case results are written once, by `finish`. */
+  markProgress(runId: string, progress: { casesDone: number }): Promise<void>;
   finish(runId: string, outcome: EvalRunFinish): Promise<void>;
 }
 

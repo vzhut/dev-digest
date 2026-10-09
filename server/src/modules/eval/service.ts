@@ -25,7 +25,6 @@ import { resolveRunSkills, toPromptSkills } from '../_shared/run-skills.js';
 import { regressions } from './callout.js';
 import {
   AGENT_RUNS_LIMIT,
-  DASHBOARD_RUN_WINDOW,
   MAX_CASES_PER_AGENT,
   CASE_ERROR_REASON,
   ORPHANED_RUN_REASON,
@@ -67,6 +66,8 @@ export interface EvalServiceDeps {
     | 'agentExists'
     | 'pullExists'
     | 'listCasesForAgent'
+    | 'listCaseSummaries'
+    | 'completedRunsForAgents'
     | 'lastResultsForAgent'
     | 'getCase'
     | 'deleteCase'
@@ -130,8 +131,8 @@ export class EvalService {
       );
     }
 
-    await this.assertRoomForCase(workspaceId, agentId);
-    const { row, created } = await repo.insertCase({
+    const inserted = await repo.insertCase(
+      {
       workspaceId,
       agentId,
       sourceFindingId: finding.id,
@@ -149,8 +150,11 @@ export class EvalService {
         prBody: ctx.pull.body,
       }),
       expectedOutput: expectation,
-    });
-    return this.respond(workspaceId, row, created);
+    },
+      MAX_CASES_PER_AGENT,
+    );
+    if (inserted.kind === 'limit') throw this.limitError();
+    return this.respond(workspaceId, inserted.row, inserted.kind === 'created');
   }
 
   /** A case written by hand in the editor (AC-43): validated like a produced finding, no source finding. */
@@ -159,8 +163,8 @@ export class EvalService {
     if (!(await repo.agentExists(workspaceId, agentId))) throw new NotFoundError('Agent not found');
     const check = checkManualCase(body.input_diff, body.expectation, parseDiff);
     if (!check.ok) throw new EvalRequestError(check.code, check.reason);
-    await this.assertRoomForCase(workspaceId, agentId);
-    const row = await repo.insertManualCase({
+    const inserted = await repo.insertManualCase(
+      {
       workspaceId,
       agentId,
       name: body.name,
@@ -169,8 +173,11 @@ export class EvalService {
       inputMeta: { pr_title: body.pr_title?.trim() || body.name, pr_body: body.pr_body ?? null },
       expectedOutput: expectationFromInput(body.expectation),
       notes: body.notes ?? null,
-    });
-    return this.respond(workspaceId, row, true);
+    },
+      MAX_CASES_PER_AGENT,
+    );
+    if (inserted.kind === 'limit') throw this.limitError();
+    return this.respond(workspaceId, inserted.row, true);
   }
 
   /**
@@ -199,18 +206,15 @@ export class EvalService {
     return detail;
   }
 
-  /** One agent may own at most MAX_CASES_PER_AGENT cases (each is a paid call per run). */
-  private async assertRoomForCase(workspaceId: string, agentId: string): Promise<void> {
-    if ((await this.deps.repo.countCases(workspaceId, agentId)) >= MAX_CASES_PER_AGENT) {
-      throw new EvalRequestError('case_limit_reached', `An agent can own at most ${MAX_CASES_PER_AGENT} eval cases`);
-    }
+  private limitError(): EvalRequestError {
+    return new EvalRequestError('case_limit_reached', `An agent can own at most ${MAX_CASES_PER_AGENT} eval cases`);
   }
 
   async listCases(workspaceId: string, agentId: string): Promise<AgentEvalCase[]> {
     const { repo } = this.deps;
     if (!(await repo.agentExists(workspaceId, agentId))) throw new NotFoundError('Agent not found');
     const [rows, last] = await Promise.all([
-      repo.listCasesForAgent(workspaceId, agentId),
+      repo.listCaseSummaries(workspaceId, agentId),
       repo.lastResultsForAgent(workspaceId, agentId),
     ]);
     return rows.flatMap((row) => toAgentEvalCase(row, last.get(row.id)) ?? []);
@@ -340,16 +344,18 @@ export class EvalService {
 
   async workspaceDashboard(workspaceId: string): Promise<EvalWorkspaceDashboard> {
     const { repo } = this.deps;
-    const [agents, window] = await Promise.all([
-      repo.agentsWithCases(workspaceId),
-      repo.recentRuns(workspaceId, DASHBOARD_RUN_WINDOW),
+    const agents = await repo.agentsWithCases(workspaceId);
+    // each agent's card comes from ITS OWN newest completed runs, so a busy agent cannot push another one's runs out
+    const [completed, recent] = await Promise.all([
+      repo.completedRunsForAgents(workspaceId, agents.map((a) => a.id), TREND_POINTS),
+      repo.recentRuns(workspaceId, RECENT_RUNS_LIMIT),
     ]);
     const finishedByAgent = new Map<string, EvalSuiteRun[]>();
-    for (const row of window) {
+    for (const row of completed) {
       const run = toEvalSuiteRun(row);
-      if (!run || run.status !== 'completed') continue;
-      finishedByAgent.set(run.agent_id, [...(finishedByAgent.get(run.agent_id) ?? []), run]); // newest first
+      if (run) finishedByAgent.set(run.agent_id, [...(finishedByAgent.get(run.agent_id) ?? []), run]);
     }
+    for (const runs of finishedByAgent.values()) runs.sort((a, b) => Date.parse(b.ran_at) - Date.parse(a.ran_at)); // newest first
     const cards: EvalAgentCard[] = agents.map((agent) => {
       const finished = finishedByAgent.get(agent.id) ?? [];
       return {
@@ -361,7 +367,7 @@ export class EvalService {
         trend: finished.slice(0, TREND_POINTS).reverse().map(toTrendPoint),
       };
     });
-    const recent_runs: EvalRecentRun[] = window.slice(0, RECENT_RUNS_LIMIT).flatMap((row) => {
+    const recent_runs: EvalRecentRun[] = recent.flatMap((row) => {
       const run = toEvalSuiteRun(row);
       return run ? [{ ...run, agent_name: row.agentName }] : [];
     });

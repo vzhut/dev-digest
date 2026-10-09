@@ -168,10 +168,10 @@ describe('case cap (1a5b)', () => {
     expectation: { type: 'must_find' as const, file: 'x.ts', start_line: 1, end_line: 1 },
   };
 
-  it('refuses a manual case past MAX_CASES_PER_AGENT with 422 case_limit_reached and inserts nothing', async () => {
-    const insertManualCase = vi.fn();
+  it('maps the repository\'s "limit" result of a manual create to 422 case_limit_reached', async () => {
+    const insertManualCase = vi.fn(async () => ({ kind: 'limit' as const })); // the repository enforces the cap atomically
     const { service } = build(
-      { agentExists: vi.fn(async () => true), countCases: vi.fn(async () => 200), insertManualCase } as never,
+      { agentExists: vi.fn(async () => true), insertManualCase } as never,
       async () => ({}) as LLMProvider,
       () => ({
         raw: diff,
@@ -179,6 +179,6 @@ describe('case cap (1a5b)', () => {
       }),
     );
     await expect(service.createManual('ws', 'a1', body)).rejects.toMatchObject({ code: 'case_limit_reached', statusCode: 422 });
-    expect(insertManualCase).not.toHaveBeenCalled();
+    expect(insertManualCase).toHaveBeenCalledWith(expect.anything(), 200);
   });
 });

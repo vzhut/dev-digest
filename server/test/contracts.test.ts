@@ -590,6 +590,11 @@ describe('eval pipeline contracts', () => {
     expect(EvalCaseWrite.safeParse({ ...ok, name: '  ' }).success).toBe(false);
     expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, start_line: 0 } }).success).toBe(false);
     expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, type: 'maybe' } }).success).toBe(false);
+    // bounded lines (a hostile range must never reach a per-line loop) and start <= end
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, end_line: 9e15 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, end_line: 1_000_001 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, start_line: 5, end_line: 2 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, end_line: 1_000_000 } }).success).toBe(true);
   });
 
   it('StartEvalRunBody: case_ids optional uuids; EvalCaseMeta allows a hand-written case with no PR', () => {

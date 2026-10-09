@@ -172,4 +172,22 @@ describe('checkManualCase / expectationFromInput (case editor)', () => {
     expect(expectationFromInput(exp(), prev).label).toEqual(prev);
     expect(expectationFromInput(exp({ title: 'New' }), prev).label).toEqual({ ...prev, title: 'New' });
   });
+
+  it('refuses an absurd range or hunk header instantly instead of letting the grounding loop spin (DoS guard)', () => {
+    const started = performance.now();
+    const code = (d: string, e: Parameters<typeof checkManualCase>[1]) => {
+      const r = checkManualCase(d, e, parseUnifiedDiff);
+      return r.ok ? 'ok' : r.code;
+    };
+    expect(code(diff, exp({ start_line: 2, end_line: 9e15 }))).toBe('expectation_not_grounded');
+    expect(code(diff, exp({ start_line: 1, end_line: 5_000_000 }))).toBe('expectation_not_grounded');
+    expect(code(diff, exp({ start_line: 1, end_line: 200_000 }))).toBe('expectation_not_grounded'); // span > MAX
+    const hostile = ['--- a/src/x.ts', '+++ b/src/x.ts', '@@ -1 +1,999999999999 @@'].join('\n');
+    expect(code(hostile, exp({ start_line: 1, end_line: 1 }))).toBe('diff_unavailable');
+    expect(isExpectationGrounded(parseUnifiedDiff(hostile), { type: 'must_find', file: 'src/x.ts', start_line: 1, end_line: 2 })).toBe(false);
+    expect(
+      isExpectationGrounded(parseUnifiedDiff(diff), { type: 'must_find', file: 'src/x.ts', start_line: 2, end_line: 9e15 }),
+    ).toBe(false);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
 });

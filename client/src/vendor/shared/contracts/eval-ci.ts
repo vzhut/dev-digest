@@ -173,14 +173,19 @@ export const AgentEvalCaseDetail = AgentEvalCase.extend({
 });
 export type AgentEvalCaseDetail = z.infer<typeof AgentEvalCaseDetail>;
 
+/** Largest line number an expectation may name (a bound, so a hostile range can never reach a per-line loop). */
+const EVAL_MAX_LINE = 1_000_000;
+
 /** The expectation as typed in the case editor: structured fields, optional title. */
-export const EvalExpectationInput = z.object({
-  type: EvalExpectationType,
-  file: z.string().trim().min(1).max(500),
-  start_line: z.number().int().min(1),
-  end_line: z.number().int().min(1),
-  title: z.string().trim().max(200).nullish(),
-});
+export const EvalExpectationInput = z
+  .object({
+    type: EvalExpectationType,
+    file: z.string().trim().min(1).max(500),
+    start_line: z.number().int().min(1).max(EVAL_MAX_LINE),
+    end_line: z.number().int().min(1).max(EVAL_MAX_LINE),
+    title: z.string().trim().max(200).nullish(),
+  })
+  .refine((v) => v.start_line <= v.end_line, { message: 'start_line must not be after end_line', path: ['end_line'] });
 export type EvalExpectationInput = z.infer<typeof EvalExpectationInput>;
 
 /** Body of `POST /agents/:id/eval-cases` and `PUT /eval-cases/:id` (the case editor). */

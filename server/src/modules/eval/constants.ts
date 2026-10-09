@@ -23,8 +23,6 @@ export const TASK_TITLE_MAX_CHARS = 200;
 export const AGENT_RUNS_LIMIT = 50;
 /** Points on a sparkline / trend chart (newest runs, oldest first). */
 export const TREND_POINTS = 20;
-/** Newest runs scanned to build the workspace dashboard cards. */
-export const DASHBOARD_RUN_WINDOW = 200;
 /** Rows in the dashboard's recent-runs table. */
 export const RECENT_RUNS_LIMIT = 20;
 /** `error_reason` of a run whose process died while it was running. */
@@ -40,3 +38,8 @@ export const CASE_ERROR_REASON = {
   invalidOutput: 'invalid structured output',
   runFailed: 'run failed',
 } as const;
+
+/** Defensive bounds for hand-written cases: grounding walks a range / hunk line by line, so nothing unbounded may reach it. */
+export const MAX_EXPECTATION_LINE = 1_000_000;
+export const MAX_EXPECTATION_SPAN = 100_000;
+export const MAX_HUNK_LINES = 100_000;

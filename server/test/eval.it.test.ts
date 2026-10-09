@@ -660,7 +660,7 @@ d('eval cases (Testcontainers pg)', () => {
     };
     expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 40, end_line: 41 } }))).toBe('expectation_not_grounded');
     expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/other.ts', start_line: 1, end_line: 1 } }))).toBe('expectation_not_grounded');
-    expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 3, end_line: 1 } }))).toBe('expectation_not_grounded');
+    expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 3, end_line: 1 } }))).toBe('validation_error');
     expect(await code(manualBody({ input_diff: '   ' }))).toBe('diff_unavailable');
     expect(await code(manualBody({ input_diff: 'just some text, not a diff' }))).toBe('diff_unavailable');
     expect(await code(manualBody({ name: '  ' }))).toBe('validation_error');
@@ -745,6 +745,64 @@ d('eval cases (Testcontainers pg)', () => {
     expect(mustFind.last_run!.duration_ms).toBeGreaterThanOrEqual(0);
     expect(noise.last_run).toMatchObject({ status: 'failed', findings_total: 1, findings_matched: 1 });
     expect(noise.last_result).toBe('failed');
+    await app.close();
+  });
+
+  it('a hostile line range cannot freeze the API: end_line 9e15 is a fast 422 on create and update', async () => {
+    const app = await makeApp();
+    const agent = await newAgent();
+    const created = CreateEvalCaseResponse.parse(
+      (await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody() })).json(),
+    ).case;
+    const started = performance.now();
+    for (const end_line of [9e15, 9007199254740991, 5_000_000]) {
+      const body = manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 2, end_line } });
+      const post = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: body });
+      expect(post.statusCode).toBe(422);
+      expect((await app.inject({ method: 'PUT', url: `/eval-cases/${created.id}`, payload: body })).statusCode).toBe(422);
+    }
+    // a hostile hunk header in the diff itself
+    const hostileDiff = ['--- a/src/x.ts', '+++ b/src/x.ts', '@@ -1 +1,999999999999 @@'].join('\n');
+    const hostile = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody({ input_diff: hostileDiff }) });
+    expect(hostile.statusCode).toBe(422);
+    expect(hostile.json().error.code).toBe('diff_unavailable');
+    expect(performance.now() - started).toBeLessThan(2000);
+    await app.close();
+  });
+
+  it('the 200-case cap is atomic: concurrent creates at 199 cases let exactly one through', async () => {
+    const app = await makeApp();
+    const agent = await newAgent();
+    const meta = { pr_title: 'x' };
+    const expectation = { type: 'must_find' as const, file: 'src/x.ts', start_line: 1, end_line: 1 };
+    await db().insert(t.evalCases).values(
+      Array.from({ length: 199 }, (_, i) => ({
+        workspaceId, ownerKind: 'agent' as const, ownerId: agent.id, agentId: agent.id, name: `c${i}`, inputDiff: MANUAL_DIFF, inputMeta: meta, expectedOutput: expectation,
+      })),
+    );
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody() })),
+    );
+    expect(results.filter((r) => r.statusCode === 201)).toHaveLength(1);
+    const refused = results.filter((r) => r.statusCode === 422);
+    expect(refused).toHaveLength(5);
+    expect(refused.every((r) => r.json().error.code === 'case_limit_reached')).toBe(true);
+    expect(await db().select().from(t.evalCases).where(eq(t.evalCases.agentId, agent.id))).toHaveLength(200);
+    await app.close();
+  });
+
+  it('each agent card on the dashboard comes from its own runs: a busy agent cannot push another one out of a shared window', async () => {
+    const app = await makeApp();
+    const quiet = await agentWithTwoCases(app);
+    const busy = await agentWithTwoCases(app);
+    const base = { workspaceId, agentVersion: 1, provider: 'openrouter', model: 'm', systemPrompt: 'p', skills: [], caseIds: [], status: 'completed' as const, results: [], tracesTotal: 2, tracesPassed: 2, casesDone: 2 };
+    await db().insert(t.evalRuns).values({ ...base, agentId: quiet.agent.id, ranAt: new Date('2025-01-01T00:00:00Z'), recall: 0.5, precision: 1, citationAccuracy: 1 });
+    await db().insert(t.evalRuns).values(
+      Array.from({ length: 250 }, (_, i) => ({ ...base, agentId: busy.agent.id, ranAt: new Date(Date.UTC(2026, 0, 1, 0, i)), recall: 1, precision: 1, citationAccuracy: 1 })),
+    );
+    const ws = EvalWorkspaceDashboard.parse((await app.inject({ method: 'GET', url: '/eval/dashboard' })).json());
+    expect(ws.cards.find((c) => c.agent_id === quiet.agent.id)?.latest_run?.recall).toBe(0.5);
+    expect(ws.cards.find((c) => c.agent_id === busy.agent.id)?.trend.length).toBeLessThanOrEqual(20);
     await app.close();
   });
 });

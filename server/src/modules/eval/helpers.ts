@@ -9,13 +9,14 @@ import type {
 } from '@devdigest/shared';
 import type { EvalCaseRow, EvalRunRow } from '../../db/rows.js';
 import type { EvalRunnableCase } from './ports.js';
+import type { CaseListRow, RunSummaryRow } from './repository.js';
 
 /**
  * Pure row → DTO mappers for the eval module. A case row whose jsonb columns are missing
  * (legacy / hand-inserted rows) maps to null so the caller can skip it instead of crashing.
  */
 
-export function toAgentEvalCase(row: EvalCaseRow, last: EvalCaseLastRun | undefined): AgentEvalCase | null {
+export function toAgentEvalCase(row: CaseListRow, last: EvalCaseLastRun | undefined): AgentEvalCase | null {
   if (!row.agentId || !row.expectedOutput || !row.inputMeta) return null;
   return {
     id: row.id,
@@ -48,7 +49,7 @@ export function toFindingLink(link: {
 }
 
 /** A suite-level run row (status set) → list/summary DTO; legacy per-case rows map to null. */
-export function toEvalSuiteRun(row: EvalRunRow): EvalSuiteRun | null {
+export function toEvalSuiteRun(row: RunSummaryRow): EvalSuiteRun | null {
   if (!row.status || !row.agentId) return null;
   return {
     id: row.id,

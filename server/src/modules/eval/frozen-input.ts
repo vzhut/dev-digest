@@ -7,7 +7,13 @@ import type {
   UnifiedDiff,
 } from '@devdigest/shared';
 import { groundFindings } from '@devdigest/reviewer-core';
-import { CASE_NAME_SLUG_MAX, FROZEN_DIFF_MAX_CHANGED_LINES } from './constants.js';
+import {
+  CASE_NAME_SLUG_MAX,
+  FROZEN_DIFF_MAX_CHANGED_LINES,
+  MAX_EXPECTATION_LINE,
+  MAX_EXPECTATION_SPAN,
+  MAX_HUNK_LINES,
+} from './constants.js';
 
 /**
  * Frozen case input — pure helpers that turn a decided finding and its file's stored patch into the
@@ -99,11 +105,25 @@ export function synthesizeFrozenDiff(
   return { ok: true, diff, trimmed };
 }
 
+const inBounds = (n: number) => Number.isSafeInteger(n) && n >= 1 && n <= MAX_EXPECTATION_LINE;
+
+/** Both lines are sane integers and the range is not absurdly wide. */
+function boundedExpectation(e: { start_line: number; end_line: number }): boolean {
+  return inBounds(e.start_line) && inBounds(e.end_line) && Math.abs(e.end_line - e.start_line) <= MAX_EXPECTATION_SPAN;
+}
+
+/** A hunk header declaring an enormous new-side length (`@@ -1 +1,999999999 @@`). */
+function hasOversizedHunk(diff: UnifiedDiff): boolean {
+  return diff.files.some((f) => f.hunks.some((h) => !(h.newLines <= MAX_HUNK_LINES)));
+}
+
 /**
  * Whether the expectation's lines fall inside a frozen hunk. Reuses the engine's grounding gate with
  * a synthetic finding so an expectation is accepted by exactly the rule a produced finding must pass.
  */
 export function isExpectationGrounded(diff: UnifiedDiff, expectation: EvalExpectation): boolean {
+  // The engine's gate walks the range (and a hunk's declared lines) one by one: refuse anything unbounded first.
+  if (!boundedExpectation(expectation) || hasOversizedHunk(diff)) return false;
   const probe: Finding = {
     id: 'expectation',
     severity: 'SUGGESTION',
@@ -204,6 +224,12 @@ export function checkManualCase(
   }
   if (expectation.end_line < expectation.start_line) {
     return { ok: false, code: 'expectation_not_grounded', reason: 'end_line is before start_line' };
+  }
+  if (hasOversizedHunk(diff)) {
+    return { ok: false, code: 'diff_unavailable', reason: 'a hunk header declares an unreasonable number of lines' };
+  }
+  if (!boundedExpectation(expectation)) {
+    return { ok: false, code: 'expectation_not_grounded', reason: 'the line range is out of bounds' };
   }
   const grounded = isExpectationGrounded(diff, {
     type: expectation.type,

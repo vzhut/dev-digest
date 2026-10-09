@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import type { AgentRow, EvalCaseRow, EvalRunRow } from '../../db/rows.js';
 import * as t from '../../db/schema.js';
@@ -67,7 +67,52 @@ export interface AgentWithCases {
   casesTotal: number;
 }
 
-export type RunWithAgent = EvalRunRow & { agentName: string };
+/** The columns a run list / dashboard row needs. Everything wide (`results`, `system_prompt`, `skills`, `case_ids`) stays out. */
+const RUN_SUMMARY = {
+  id: t.evalRuns.id,
+  agentId: t.evalRuns.agentId,
+  agentVersion: t.evalRuns.agentVersion,
+  status: t.evalRuns.status,
+  ranAt: t.evalRuns.ranAt,
+  finishedAt: t.evalRuns.finishedAt,
+  casesDone: t.evalRuns.casesDone,
+  tracesPassed: t.evalRuns.tracesPassed,
+  tracesTotal: t.evalRuns.tracesTotal,
+  casesErrored: t.evalRuns.casesErrored,
+  unlabeled: t.evalRuns.unlabeled,
+  recall: t.evalRuns.recall,
+  precision: t.evalRuns.precision,
+  citationAccuracy: t.evalRuns.citationAccuracy,
+  costUsd: t.evalRuns.costUsd,
+  costPartial: t.evalRuns.costPartial,
+  durationMs: t.evalRuns.durationMs,
+  errorReason: t.evalRuns.errorReason,
+} as const;
+
+export type RunSummaryRow = Pick<EvalRunRow, keyof typeof RUN_SUMMARY>;
+export type RunWithAgent = RunSummaryRow & { agentName: string };
+
+/** The columns of a case LIST row: no `input_diff` (up to 400k chars per case) and no notes. */
+const CASE_LIST = {
+  id: t.evalCases.id,
+  workspaceId: t.evalCases.workspaceId,
+  ownerKind: t.evalCases.ownerKind,
+  ownerId: t.evalCases.ownerId,
+  agentId: t.evalCases.agentId,
+  sourceFindingId: t.evalCases.sourceFindingId,
+  name: t.evalCases.name,
+  inputFiles: t.evalCases.inputFiles,
+  inputMeta: t.evalCases.inputMeta,
+  expectedOutput: t.evalCases.expectedOutput,
+  createdAt: t.evalCases.createdAt,
+} as const;
+
+export type CaseListRow = Pick<EvalCaseRow, keyof typeof CASE_LIST>;
+
+/** Outcome of an insert that enforces the per-agent case cap. */
+export type CaseInsertResult =
+  | { kind: 'created' | 'existing'; row: EvalCaseRow }
+  | { kind: 'limit' };
 
 /** The partial unique index that allows one `running` suite per agent (AC-18). */
 const ONE_RUNNING_INDEX = 'eval_runs_one_running_per_agent';
@@ -162,30 +207,52 @@ export class EvalRepository {
   }
 
   /**
-   * Insert a case; the unique (source finding, owner) index makes a concurrent duplicate a no-op,
-   * in which case the existing row is returned with `created: false`.
+   * Run `fn` in a transaction holding a per-agent advisory lock: concurrent creates for one agent are
+   * serialised, so "count, then insert" cannot let the cap be overshot.
    */
-  async insertCase(v: InsertEvalCase): Promise<{ row: EvalCaseRow; created: boolean }> {
-    const [inserted] = await this.db
-      .insert(t.evalCases)
-      .values({
-        workspaceId: v.workspaceId,
-        ownerKind: 'agent',
-        ownerId: v.agentId,
-        agentId: v.agentId,
-        sourceFindingId: v.sourceFindingId,
-        name: v.name,
-        inputDiff: v.inputDiff,
-        inputFiles: v.inputFiles,
-        inputMeta: v.inputMeta,
-        expectedOutput: v.expectedOutput,
-      })
-      .onConflictDoNothing({ target: [t.evalCases.sourceFindingId, t.evalCases.ownerKind, t.evalCases.ownerId] })
-      .returning();
-    if (inserted) return { row: inserted, created: true };
-    const existing = await this.findCaseBySource(v.workspaceId, v.sourceFindingId, v.agentId);
-    if (!existing) throw new Error('eval case insert conflicted but no existing row was found');
-    return { row: existing, created: false };
+  private withAgentLock<T>(agentId: string, fn: (tx: Parameters<Parameters<Db['transaction']>[0]>[0]) => Promise<T>): Promise<T> {
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${agentId}))`);
+      return fn(tx);
+    });
+  }
+
+  /**
+   * Insert a case frozen from a finding, unless the agent is at `cap` cases. A second create for the same
+   * (finding, agent) returns the existing row; the unique index backs that for any concurrent race.
+   */
+  async insertCase(v: InsertEvalCase, cap: number): Promise<CaseInsertResult> {
+    return this.withAgentLock(v.agentId, async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(t.evalCases)
+        .where(
+          and(
+            eq(t.evalCases.workspaceId, v.workspaceId),
+            eq(t.evalCases.sourceFindingId, v.sourceFindingId),
+            eq(t.evalCases.ownerKind, 'agent'),
+            eq(t.evalCases.ownerId, v.agentId),
+          ),
+        );
+      if (existing) return { kind: 'existing', row: existing } as const;
+      if ((await this.countCasesIn(tx, v.workspaceId, v.agentId)) >= cap) return { kind: 'limit' } as const;
+      const [inserted] = await tx
+        .insert(t.evalCases)
+        .values({
+          workspaceId: v.workspaceId,
+          ownerKind: 'agent',
+          ownerId: v.agentId,
+          agentId: v.agentId,
+          sourceFindingId: v.sourceFindingId,
+          name: v.name,
+          inputDiff: v.inputDiff,
+          inputFiles: v.inputFiles,
+          inputMeta: v.inputMeta,
+          expectedOutput: v.expectedOutput,
+        })
+        .returning();
+      return { kind: 'created', row: inserted! } as const;
+    });
   }
 
   async agentExists(workspaceId: string, agentId: string): Promise<boolean> {
@@ -204,6 +271,22 @@ export class EvalRepository {
     return Boolean(row);
   }
 
+  /** Case rows for the list view: no diffs. */
+  async listCaseSummaries(workspaceId: string, agentId: string): Promise<CaseListRow[]> {
+    return this.db
+      .select(CASE_LIST)
+      .from(t.evalCases)
+      .where(
+        and(
+          eq(t.evalCases.workspaceId, workspaceId),
+          eq(t.evalCases.ownerKind, 'agent'),
+          eq(t.evalCases.ownerId, agentId),
+        ),
+      )
+      .orderBy(desc(t.evalCases.createdAt), desc(t.evalCases.id));
+  }
+
+  /** Full case rows (with diffs): what a run needs. */
   async listCasesForAgent(workspaceId: string, agentId: string): Promise<EvalCaseRow[]> {
     return this.db
       .select()
@@ -265,25 +348,28 @@ export class EvalRepository {
     return last;
   }
 
-  /** A hand-written case: no source finding, so it is never deduplicated. */
-  async insertManualCase(v: InsertManualCase): Promise<EvalCaseRow> {
-    const [row] = await this.db
-      .insert(t.evalCases)
-      .values({
-        workspaceId: v.workspaceId,
-        ownerKind: 'agent',
-        ownerId: v.agentId,
-        agentId: v.agentId,
-        sourceFindingId: null,
-        name: v.name,
-        inputDiff: v.inputDiff,
-        inputFiles: v.inputFiles,
-        inputMeta: v.inputMeta,
-        expectedOutput: v.expectedOutput,
-        notes: v.notes,
-      })
-      .returning();
-    return row!;
+  /** A hand-written case (no source finding, never deduplicated), unless the agent is at `cap` cases. */
+  async insertManualCase(v: InsertManualCase, cap: number): Promise<CaseInsertResult> {
+    return this.withAgentLock(v.agentId, async (tx) => {
+      if ((await this.countCasesIn(tx, v.workspaceId, v.agentId)) >= cap) return { kind: 'limit' } as const;
+      const [row] = await tx
+        .insert(t.evalCases)
+        .values({
+          workspaceId: v.workspaceId,
+          ownerKind: 'agent',
+          ownerId: v.agentId,
+          agentId: v.agentId,
+          sourceFindingId: null,
+          name: v.name,
+          inputDiff: v.inputDiff,
+          inputFiles: v.inputFiles,
+          inputMeta: v.inputMeta,
+          expectedOutput: v.expectedOutput,
+          notes: v.notes,
+        })
+        .returning();
+      return { kind: 'created', row: row! } as const;
+    });
   }
 
   /** Update the editable parts of a case; stored run results are untouched. Undefined when not in the workspace. */
@@ -374,7 +460,15 @@ export class EvalRepository {
   }
 
   async countCases(workspaceId: string, agentId: string): Promise<number> {
-    const [row] = await this.db
+    return this.countCasesIn(this.db, workspaceId, agentId);
+  }
+
+  private async countCasesIn(
+    db: Pick<Db, 'select'>,
+    workspaceId: string,
+    agentId: string,
+  ): Promise<number> {
+    const [row] = await db
       .select({ n: count() })
       .from(t.evalCases)
       .where(
@@ -417,10 +511,11 @@ export class EvalRepository {
     }
   }
 
-  async markProgress(runId: string, progress: { casesDone: number; results: EvalRunRow['results'] }): Promise<void> {
+  /** Progress is just a counter: the (wide) results are written once, by `finishRun`. */
+  async markProgress(runId: string, progress: { casesDone: number }): Promise<void> {
     await this.db
       .update(t.evalRuns)
-      .set({ casesDone: progress.casesDone, results: progress.results })
+      .set({ casesDone: progress.casesDone })
       .where(eq(t.evalRuns.id, runId));
   }
 
@@ -466,9 +561,9 @@ export class EvalRepository {
   }
 
   /** Suite-level runs of an agent, newest first (legacy per-case rows have no status and are skipped). */
-  async listRunsForAgent(workspaceId: string, agentId: string, limit: number): Promise<EvalRunRow[]> {
+  async listRunsForAgent(workspaceId: string, agentId: string, limit: number): Promise<RunSummaryRow[]> {
     return this.db
-      .select()
+      .select(RUN_SUMMARY)
       .from(t.evalRuns)
       .where(
         and(eq(t.evalRuns.workspaceId, workspaceId), eq(t.evalRuns.agentId, agentId), isNotNull(t.evalRuns.status)),
@@ -487,16 +582,35 @@ export class EvalRepository {
     return row;
   }
 
-  /** Newest suite runs across the workspace's agents, with the agent name. */
+  /** Newest suite runs across the workspace's agents, with the agent name (summary columns only). */
   async recentRuns(workspaceId: string, limit: number): Promise<RunWithAgent[]> {
     const rows = await this.db
-      .select({ run: t.evalRuns, agentName: t.agents.name })
+      .select({ ...RUN_SUMMARY, agentName: t.agents.name })
       .from(t.evalRuns)
       .innerJoin(t.agents, eq(t.agents.id, t.evalRuns.agentId))
       .where(and(eq(t.evalRuns.workspaceId, workspaceId), isNotNull(t.evalRuns.status)))
       .orderBy(desc(t.evalRuns.ranAt), desc(t.evalRuns.id))
       .limit(limit);
-    return rows.map((r) => ({ ...r.run, agentName: r.agentName }));
+    return rows;
+  }
+
+  /** The newest `perAgent` COMPLETED runs of each listed agent (a window per agent, not one global window). */
+  async completedRunsForAgents(workspaceId: string, agentIds: string[], perAgent: number): Promise<RunSummaryRow[]> {
+    if (agentIds.length === 0) return [];
+    const rn = sql<number>`row_number() over (partition by ${t.evalRuns.agentId} order by ${t.evalRuns.ranAt} desc, ${t.evalRuns.id} desc)`.as('rn');
+    const ranked = this.db
+      .select({ ...RUN_SUMMARY, rn })
+      .from(t.evalRuns)
+      .where(
+        and(
+          eq(t.evalRuns.workspaceId, workspaceId),
+          eq(t.evalRuns.status, 'completed'),
+          inArray(t.evalRuns.agentId, agentIds),
+        ),
+      )
+      .as('ranked');
+    const rows = await this.db.select().from(ranked).where(lte(ranked.rn, perAgent));
+    return rows.map(({ rn: _rn, ...run }) => run);
   }
 
   /** Agents that own at least one agent-case, with their case count. */

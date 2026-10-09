@@ -63,7 +63,10 @@ export default async function evalRoutes(appBase: FastifyInstance) {
 
   app.post(
     '/findings/:id/eval-case',
-    { schema: { params: IdParams, response: { 200: CreateEvalCaseResponse, 201: CreateEvalCaseResponse } } },
+    {
+      schema: { params: IdParams, response: { 200: CreateEvalCaseResponse, 201: CreateEvalCaseResponse } },
+      config: { rateLimit: WRITE_RATE_LIMIT },
+    },
     async (req, reply): Promise<CreateEvalCaseResponse> => {
       const { workspaceId } = await getContext(container, req);
       const result = await service.createFromFinding(workspaceId, req.params.id);

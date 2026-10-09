@@ -71,7 +71,7 @@ export class EvalExecutor {
         },
         `eval case ${result.status}`,
       );
-      await store.markProgress(snapshot.runId, { casesDone: results.length, results });
+      await store.markProgress(snapshot.runId, { casesDone: results.length });
     }
 
     const score = scoreRun(results);
