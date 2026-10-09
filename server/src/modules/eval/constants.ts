@@ -43,3 +43,5 @@ export const CASE_ERROR_REASON = {
 export const MAX_EXPECTATION_LINE = 1_000_000;
 export const MAX_EXPECTATION_SPAN = 100_000;
 export const MAX_HUNK_LINES = 100_000;
+/** Total new-side lines ALL hunks of one diff may declare: a header-only hunk costs the grounding gate its declared length. */
+export const MAX_DIFF_DECLARED_LINES = 100_000;

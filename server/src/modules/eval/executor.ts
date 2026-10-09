@@ -4,6 +4,7 @@ import { AppError } from '../../platform/errors.js';
 import { redactSecrets } from '../_shared/redact.js';
 import { CASE_ERROR_REASON, CASE_TIMEOUT_MS, TASK_TITLE_MAX_CHARS } from './constants.js';
 import type { EvalExecutorDeps, EvalRunSnapshot, EvalRunnableCase } from './ports.js';
+import { diffBoundsViolation } from './frozen-input.js';
 import { errorCaseOutcome, scoreCase, scoreRun } from './scoring.js';
 
 /**
@@ -105,6 +106,8 @@ export class EvalExecutor {
   ): Promise<EvalCaseResult> {
     const diff = this.deps.parseDiff(c.inputDiff);
     if (diff.files.length === 0) throw new CaseError('the frozen diff has no files');
+    // a stored diff is validated at creation; this keeps a hand-edited row from reaching the grounding gate unbounded
+    if (diffBoundsViolation(diff)) throw new CaseError('the frozen diff is not valid');
     const title = c.meta.pr_title.replace(/\s+/g, ' ').trim().slice(0, TASK_TITLE_MAX_CHARS);
     const budgetMs = this.deps.caseTimeoutMs ?? CASE_TIMEOUT_MS;
     const label = formatBudget(budgetMs);

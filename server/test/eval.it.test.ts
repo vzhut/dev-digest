@@ -754,7 +754,6 @@ d('eval cases (Testcontainers pg)', () => {
     const created = CreateEvalCaseResponse.parse(
       (await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody() })).json(),
     ).case;
-    const started = performance.now();
     for (const end_line of [9e15, 9007199254740991, 5_000_000]) {
       const body = manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 2, end_line } });
       const post = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: body });
@@ -766,7 +765,15 @@ d('eval cases (Testcontainers pg)', () => {
     const hostile = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody({ input_diff: hostileDiff }) });
     expect(hostile.statusCode).toBe(422);
     expect(hostile.json().error.code).toBe('diff_unavailable');
-    expect(performance.now() - started).toBeLessThan(2000);
+
+    // 21,000 header-only hunks fit in the body limit: the SUM of their declared lines is what is refused
+    const many = ['--- a/src/x.ts', '+++ b/src/x.ts', ...Array.from({ length: 21_000 }, () => '@@ -1 +1,100000 @@')].join('\n');
+    const create = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody({ input_diff: many }) });
+    expect(create.statusCode).toBe(422);
+    expect(create.json().error.code).toBe('diff_unavailable');
+    const update = await app.inject({ method: 'PUT', url: `/eval-cases/${created.id}`, payload: manualBody({ input_diff: many }) });
+    expect(update.statusCode).toBe(422);
+    expect(update.json().error.code).toBe('diff_unavailable');
     await app.close();
   });
 

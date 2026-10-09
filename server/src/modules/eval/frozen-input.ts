@@ -10,6 +10,7 @@ import { groundFindings } from '@devdigest/reviewer-core';
 import {
   CASE_NAME_SLUG_MAX,
   FROZEN_DIFF_MAX_CHANGED_LINES,
+  MAX_DIFF_DECLARED_LINES,
   MAX_EXPECTATION_LINE,
   MAX_EXPECTATION_SPAN,
   MAX_HUNK_LINES,
@@ -112,9 +113,29 @@ function boundedExpectation(e: { start_line: number; end_line: number }): boolea
   return inBounds(e.start_line) && inBounds(e.end_line) && Math.abs(e.end_line - e.start_line) <= MAX_EXPECTATION_SPAN;
 }
 
-/** A hunk header declaring an enormous new-side length (`@@ -1 +1,999999999 @@`). */
-function hasOversizedHunk(diff: UnifiedDiff): boolean {
-  return diff.files.some((f) => f.hunks.some((h) => !(h.newLines <= MAX_HUNK_LINES)));
+const safeInt = (n: number) => Number.isSafeInteger(n) && n >= 0;
+
+/**
+ * Why a parsed diff may not reach the grounding gate, or null when it is fine. Hunk headers are untrusted
+ * (`@@ -1 +1,999999999 @@` with no body) and the gate walks a header-only hunk's declared range line by line,
+ * so every header number must be a small non-negative integer AND the declared new lines of the whole diff
+ * (not just each hunk) must stay under MAX_DIFF_DECLARED_LINES. Real diffs are far below it.
+ */
+export function diffBoundsViolation(diff: UnifiedDiff): string | null {
+  let declared = 0;
+  for (const f of diff.files) {
+    for (const h of f.hunks) {
+      const numbers = [h.newStart, h.newLines, h.oldStart, h.oldLines];
+      if (!numbers.every(safeInt)) return 'a hunk header has an invalid line number';
+      if (h.newStart + Math.max(h.newLines, 1) > MAX_EXPECTATION_LINE || h.oldStart + h.oldLines > MAX_EXPECTATION_LINE) {
+        return 'a hunk header points past the supported line range';
+      }
+      if (h.newLines > MAX_HUNK_LINES) return 'a hunk header declares an unreasonable number of lines';
+      declared += Math.max(h.newLines, 1);
+      if (declared > MAX_DIFF_DECLARED_LINES) return 'the hunk headers declare an unreasonable number of lines in total';
+    }
+  }
+  return null;
 }
 
 /**
@@ -123,7 +144,7 @@ function hasOversizedHunk(diff: UnifiedDiff): boolean {
  */
 export function isExpectationGrounded(diff: UnifiedDiff, expectation: EvalExpectation): boolean {
   // The engine's gate walks the range (and a hunk's declared lines) one by one: refuse anything unbounded first.
-  if (!boundedExpectation(expectation) || hasOversizedHunk(diff)) return false;
+  if (!boundedExpectation(expectation) || diffBoundsViolation(diff)) return false;
   const probe: Finding = {
     id: 'expectation',
     severity: 'SUGGESTION',
@@ -225,9 +246,8 @@ export function checkManualCase(
   if (expectation.end_line < expectation.start_line) {
     return { ok: false, code: 'expectation_not_grounded', reason: 'end_line is before start_line' };
   }
-  if (hasOversizedHunk(diff)) {
-    return { ok: false, code: 'diff_unavailable', reason: 'a hunk header declares an unreasonable number of lines' };
-  }
+  const violation = diffBoundsViolation(diff);
+  if (violation) return { ok: false, code: 'diff_unavailable', reason: violation };
   if (!boundedExpectation(expectation)) {
     return { ok: false, code: 'expectation_not_grounded', reason: 'the line range is out of bounds' };
   }

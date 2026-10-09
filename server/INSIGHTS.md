@@ -391,6 +391,14 @@ The body has `</untrusted>` neutralised, but the label (a spec document's repo-r
 
 `failOrphanedRunning` marks all `eval_runs` with `status = 'running'` as `errored` (`server_restarted`) when the eval plugin registers, so a run abandoned by a dead process does not return 409 forever (the partial unique index allows one running run per agent). It cannot tell "abandoned" from "owned by another live process": in a test that builds two apps over one database, building the second one errors the first app's in-flight run. Each `it` in `eval.it.test.ts` therefore finishes (or awaits) its runs before building another app. In production this is only safe because there is a single API process; two API instances on one database would need an owner/heartbeat column.
 
+### A diff full of header-only hunks hangs the grounding gate, and a run keeps its per-case results in memory until the end
+
+`reviewer-core/src/grounding.ts:24` · `server/src/modules/eval/frozen-input.ts` (`diffBoundsViolation`) · 2026-10-09
+
+`buildLineIndex` falls back to a hunk's DECLARED new range when the hunk has no body lines, so `@@ -1 +1,100000 @@` with no body costs 100,000 Set inserts (about 2.2 ms). A per-hunk cap does not help: a 400,000-char diff holds about 21,000 such hunks (about 46 s of blocked event loop), and `end_line: 9e15` on a finding looped `lo..hi` the same way. Both are now bounded in the engine (fallback clamped per hunk and budgeted per diff, `rangeIntersects` never walks more than the set size) and the eval module refuses a diff whose headers declare more than `MAX_DIFF_DECLARED_LINES` in total before it reaches the gate. Header numbers are untrusted input; bound the SUM, not each one.
+
+Also by design: since `markProgress` only writes a counter, `eval_runs.results` is written once by `finishRun`, so a run that crashes mid-way keeps no per-case results (the orphan sweep marks it `errored`); the run is simply re-run.
+
 ## Recurring Errors & Fixes
 
 

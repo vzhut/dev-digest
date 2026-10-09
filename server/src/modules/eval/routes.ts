@@ -38,10 +38,11 @@ import { EvalService } from './service.js';
 /** The body is optional (no body = every case): a missing body parses as `{}`. */
 const OptionalRunBody = z.preprocess((v) => v ?? {}, StartEvalRunBody);
 const CompareQuery = z.object({ a: z.string().uuid(), b: z.string().uuid() });
-/** Tight per-route limit: every run is a batch of paid LLM calls. */
 /** Writes that grow the paid surface (each case is one LLM call per run). */
 const WRITE_RATE_LIMIT = { max: 60, timeWindow: '1 minute' } as const;
+/** Tight per-route limit: every run is a batch of paid LLM calls. */
 const PAID_RATE_LIMIT = { max: 10, timeWindow: '1 minute' } as const;
+
 export default async function evalRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
   const { container } = app;
@@ -130,7 +131,7 @@ export default async function evalRoutes(appBase: FastifyInstance) {
 
   app.delete(
     '/eval-cases/:id',
-    { schema: { params: IdParams } },
+    { schema: { params: IdParams }, config: { rateLimit: WRITE_RATE_LIMIT } },
     async (req, reply): Promise<void> => {
       const { workspaceId } = await getContext(container, req);
       await service.deleteCase(workspaceId, req.params.id);

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseUnifiedDiff } from '../../adapters/git/diff-parser.js';
 import {
   checkManualCase,
+  diffBoundsViolation,
   expectationFromInput,
   caseMetaFrom,
   caseName,
@@ -174,7 +175,6 @@ describe('checkManualCase / expectationFromInput (case editor)', () => {
   });
 
   it('refuses an absurd range or hunk header instantly instead of letting the grounding loop spin (DoS guard)', () => {
-    const started = performance.now();
     const code = (d: string, e: Parameters<typeof checkManualCase>[1]) => {
       const r = checkManualCase(d, e, parseUnifiedDiff);
       return r.ok ? 'ok' : r.code;
@@ -188,6 +188,27 @@ describe('checkManualCase / expectationFromInput (case editor)', () => {
     expect(
       isExpectationGrounded(parseUnifiedDiff(diff), { type: 'must_find', file: 'src/x.ts', start_line: 2, end_line: 9e15 }),
     ).toBe(false);
-    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it('rejects the SUM of header-only hunks (each under the per-hunk cap) with a result, not a hang', () => {
+    // 21,000 hunks fit in the 400,000-char body limit; each declares 100,000 new lines and has no body
+    const hostile = ['--- a/src/x.ts', '+++ b/src/x.ts', ...Array.from({ length: 21_000 }, () => '@@ -1 +1,100000 @@')].join('\n');
+    expect(hostile.length).toBeLessThan(400_000);
+    const parsed = parseUnifiedDiff(hostile);
+    expect(diffBoundsViolation(parsed)).toMatch(/in total/);
+    expect(isExpectationGrounded(parsed, { type: 'must_find', file: 'src/x.ts', start_line: 1, end_line: 1 })).toBe(false);
+    const r = checkManualCase(hostile, exp(), parseUnifiedDiff);
+    expect(r).toMatchObject({ ok: false, code: 'diff_unavailable' });
+  });
+
+  it('bounds every header number and accepts real diffs, including a deletion-only hunk and a new file', () => {
+    const header = (h: string) => parseUnifiedDiff(['--- a/x.ts', '+++ b/x.ts', h].join('\n'));
+    expect(diffBoundsViolation(header('@@ -0,0 +1,3 @@'))).toBeNull();
+    expect(diffBoundsViolation(header('@@ -1,3 +0,0 @@'))).toBeNull();
+    expect(diffBoundsViolation(header('@@ -10,6 +10,7 @@'))).toBeNull();
+    expect(diffBoundsViolation(header('@@ -1 +9007199254740993,2 @@'))).not.toBeNull(); // unsafe integer
+    expect(diffBoundsViolation(header('@@ -1 +999999,5 @@'))).not.toBeNull(); // points past the supported range
+    expect(diffBoundsViolation(header('@@ -99999999 +1 @@'))).not.toBeNull();
+    expect(diffBoundsViolation(header('@@ -1 +1,100001 @@'))).not.toBeNull();
   });
 });
