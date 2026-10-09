@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { parseUnifiedDiff } from '../../adapters/git/diff-parser.js';
 import {
+  checkManualCase,
+  expectationFromInput,
   caseMetaFrom,
   caseName,
   expectationFromFinding,
@@ -134,5 +136,40 @@ describe('expectation, name and meta', () => {
       pr_title: 'T',
       pr_body: null,
     });
+  });
+});
+
+describe('checkManualCase / expectationFromInput (case editor)', () => {
+  const diff = ['--- a/src/x.ts', '+++ b/src/x.ts', '@@ -0,0 +1,3 @@', '+a', '+b', '+c'].join('\n');
+  const exp = (over: Partial<Parameters<typeof checkManualCase>[1]> = {}) => ({
+    type: 'must_find' as const,
+    file: 'src/x.ts',
+    start_line: 1,
+    end_line: 2,
+    ...over,
+  });
+
+  it('accepts a grounded expectation on a header-less diff and lists its files', () => {
+    expect(checkManualCase(diff, exp(), parseUnifiedDiff)).toEqual({ ok: true, files: ['src/x.ts'] });
+  });
+
+  it('rejects an empty or unparsable diff, an ungrounded range, another file and a reversed range', () => {
+    const code = (d: string, e = exp()) => {
+      const r = checkManualCase(d, e, parseUnifiedDiff);
+      return r.ok ? 'ok' : r.code;
+    };
+    expect(code('')).toBe('diff_unavailable');
+    expect(code('not a diff at all')).toBe('diff_unavailable');
+    expect(code(diff, exp({ start_line: 50, end_line: 51 }))).toBe('expectation_not_grounded');
+    expect(code(diff, exp({ file: 'src/y.ts' }))).toBe('expectation_not_grounded');
+    expect(code(diff, exp({ start_line: 3, end_line: 1 }))).toBe('expectation_not_grounded');
+  });
+
+  it('builds the stored expectation, keeping a finding-born label when the title is not retyped', () => {
+    expect(expectationFromInput(exp({ title: ' Leak ' })).label).toEqual({ title: 'Leak', category: '', severity: '' });
+    expect(expectationFromInput(exp()).label).toBeNull();
+    const prev = { title: 'Old', category: 'security', severity: 'CRITICAL' };
+    expect(expectationFromInput(exp(), prev).label).toEqual(prev);
+    expect(expectationFromInput(exp({ title: 'New' }), prev).label).toEqual({ ...prev, title: 'New' });
   });
 });

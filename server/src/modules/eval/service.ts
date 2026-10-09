@@ -4,6 +4,7 @@ import type {
   CreateEvalCaseResponse,
   EvalAgentCard,
   EvalAgentDashboard,
+  EvalCaseWrite,
   EvalFindingLink,
   EvalRecentRun,
   EvalRunCompare,
@@ -31,7 +32,15 @@ import {
 } from './constants.js';
 import { EvalRequestError } from './errors.js';
 import { EvalExecutor } from './executor.js';
-import { caseMetaFrom, caseName, expectationFromFinding, isExpectationGrounded, synthesizeFrozenDiff } from './frozen-input.js';
+import {
+  caseMetaFrom,
+  caseName,
+  checkManualCase,
+  expectationFromFinding,
+  expectationFromInput,
+  isExpectationGrounded,
+  synthesizeFrozenDiff,
+} from './frozen-input.js';
 import {
   toAgentEvalCase,
   toAgentEvalCaseDetail,
@@ -51,6 +60,8 @@ export interface EvalServiceDeps {
     | 'findFindingContext'
     | 'findCaseBySource'
     | 'insertCase'
+    | 'insertManualCase'
+    | 'updateCase'
     | 'agentExists'
     | 'pullExists'
     | 'listCasesForAgent'
@@ -139,6 +150,51 @@ export class EvalService {
     return this.respond(workspaceId, row, created);
   }
 
+  /** A case written by hand in the editor (AC-43): validated like a produced finding, no source finding. */
+  async createManual(workspaceId: string, agentId: string, body: EvalCaseWrite): Promise<CreateEvalCaseResponse> {
+    const { repo, parseDiff } = this.deps;
+    if (!(await repo.agentExists(workspaceId, agentId))) throw new NotFoundError('Agent not found');
+    const check = checkManualCase(body.input_diff, body.expectation, parseDiff);
+    if (!check.ok) throw new EvalRequestError(check.code, check.reason);
+    const row = await repo.insertManualCase({
+      workspaceId,
+      agentId,
+      name: body.name,
+      inputDiff: body.input_diff,
+      inputFiles: check.files,
+      inputMeta: { pr_title: body.pr_title?.trim() || body.name, pr_body: body.pr_body ?? null },
+      expectedOutput: expectationFromInput(body.expectation),
+      notes: body.notes ?? null,
+    });
+    return this.respond(workspaceId, row, true);
+  }
+
+  /**
+   * Edit a case (AC-44): same validation as creating one. Earlier runs keep their stored results; a case frozen
+   * from a finding keeps its provenance (and its PR meta), a hand-written one may change its PR title/body.
+   */
+  async updateCase(workspaceId: string, caseId: string, body: EvalCaseWrite): Promise<AgentEvalCaseDetail> {
+    const { repo, parseDiff } = this.deps;
+    const existing = await repo.getCase(workspaceId, caseId);
+    if (!existing || !existing.agentId) throw new NotFoundError('Eval case not found');
+    const check = checkManualCase(body.input_diff, body.expectation, parseDiff);
+    if (!check.ok) throw new EvalRequestError(check.code, check.reason);
+    const born = existing.sourceFindingId != null;
+    const meta = existing.inputMeta ?? { pr_title: body.name };
+    const row = await repo.updateCase(workspaceId, caseId, {
+      name: body.name,
+      inputDiff: body.input_diff,
+      inputFiles: check.files,
+      inputMeta: born ? meta : { ...meta, pr_title: body.pr_title?.trim() || body.name, pr_body: body.pr_body ?? null },
+      expectedOutput: expectationFromInput(body.expectation, existing.expectedOutput?.label),
+      notes: body.notes ?? null,
+    });
+    const last = (await repo.lastResultsForAgent(workspaceId, existing.agentId)).get(caseId);
+    const detail = row ? toAgentEvalCaseDetail(row, last) : null;
+    if (!detail) throw new NotFoundError('Eval case not found');
+    return detail;
+  }
+
   async listCases(workspaceId: string, agentId: string): Promise<AgentEvalCase[]> {
     const { repo } = this.deps;
     if (!(await repo.agentExists(workspaceId, agentId))) throw new NotFoundError('Agent not found');
@@ -176,11 +232,21 @@ export class EvalService {
    * once: the cases run in the background (AC-14). The run row is persisted `running` first, so a
    * reload sees it (AC-17) and a second start is a 409 (AC-18).
    */
-  async startRun(workspaceId: string, agentId: string, opts: { correlationId: string }): Promise<StartEvalRunResponse> {
+  async startRun(
+    workspaceId: string,
+    agentId: string,
+    opts: { correlationId: string; caseIds?: string[] },
+  ): Promise<StartEvalRunResponse> {
     const { repo, parseDiff, llm, log } = this.deps;
     const snap = await repo.agentSnapshot(workspaceId, agentId);
     if (!snap) throw new NotFoundError('Agent not found');
-    const cases = (await repo.listCasesForAgent(workspaceId, agentId)).flatMap((row) => toRunnableCase(row) ?? []);
+    const all = (await repo.listCasesForAgent(workspaceId, agentId)).flatMap((row) => toRunnableCase(row) ?? []);
+    // A subset run (AC-46): every id must be one of THIS agent's cases (a foreign or unknown id is a 422).
+    const wanted = opts.caseIds ? [...new Set(opts.caseIds)] : null;
+    if (wanted && wanted.some((id) => !all.some((c) => c.id === id))) {
+      throw new EvalRequestError('unknown_case', 'One or more case ids do not belong to this agent');
+    }
+    const cases = wanted ? all.filter((c) => wanted.includes(c.id)) : all;
     if (cases.length === 0) throw new EvalRequestError('no_eval_cases', 'This agent has no eval cases yet');
 
     const skills = resolveRunSkills(snap.skillLinks);

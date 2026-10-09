@@ -117,21 +117,39 @@ export const EvalExpectation = z.object({
 });
 export type EvalExpectation = z.infer<typeof EvalExpectation>;
 
-/** Stored in `eval_cases.input_meta` — provenance frozen at creation. */
+/**
+ * Stored in `eval_cases.input_meta` — provenance frozen at creation. A case written by hand (case editor)
+ * has no source finding, review or PR: those fields are then null.
+ */
 export const EvalCaseMeta = z.object({
-  source_finding_id: z.string(),
-  source_review_id: z.string(),
+  source_finding_id: z.string().nullish(),
+  source_review_id: z.string().nullish(),
   source_run_id: z.string().nullish(),
-  repo: z.string(),
-  pr_number: z.number().int(),
-  head_sha: z.string(),
+  repo: z.string().nullish(),
+  pr_number: z.number().int().nullish(),
+  head_sha: z.string().nullish(),
   pr_title: z.string(),
   pr_body: z.string().nullish(),
 });
 export type EvalCaseMeta = z.infer<typeof EvalCaseMeta>;
 
+export const EvalCaseResultStatus = z.enum(['passed', 'failed', 'error']);
+export type EvalCaseResultStatus = z.infer<typeof EvalCaseResultStatus>;
+
 export const EvalCaseLastResult = z.enum(['passed', 'failed', 'error', 'never_run']);
 export type EvalCaseLastResult = z.infer<typeof EvalCaseLastResult>;
+
+/** The result of a case in the latest run that covered it (AC-49). */
+export const EvalCaseLastRun = z.object({
+  status: EvalCaseResultStatus,
+  /** Kept findings the agent produced for the case. */
+  findings_total: z.number().int(),
+  /** Of those, the findings that matched the case's expectation. */
+  findings_matched: z.number().int(),
+  duration_ms: z.number().int(),
+  cost_usd: z.number().nullable(),
+});
+export type EvalCaseLastRun = z.infer<typeof EvalCaseLastRun>;
 
 /** An agent-owned eval case as listed in the Evals tab. */
 export const AgentEvalCase = z.object({
@@ -143,14 +161,45 @@ export const AgentEvalCase = z.object({
   input_files: z.array(z.string()),
   created_at: z.string(),
   last_result: EvalCaseLastResult,
+  /** Detail of the last run of this case; null when it never ran. */
+  last_run: EvalCaseLastRun.nullish(),
 });
 export type AgentEvalCase = z.infer<typeof AgentEvalCase>;
 
-/** Case detail — adds the frozen single-file diff. */
+/** Case detail — adds the frozen single-file diff and the free-text notes. */
 export const AgentEvalCaseDetail = AgentEvalCase.extend({
   input_diff: z.string(),
+  notes: z.string().nullish(),
 });
 export type AgentEvalCaseDetail = z.infer<typeof AgentEvalCaseDetail>;
+
+/** The expectation as typed in the case editor: structured fields, optional title. */
+export const EvalExpectationInput = z.object({
+  type: EvalExpectationType,
+  file: z.string().trim().min(1).max(500),
+  start_line: z.number().int().min(1),
+  end_line: z.number().int().min(1),
+  title: z.string().trim().max(200).nullish(),
+});
+export type EvalExpectationInput = z.infer<typeof EvalExpectationInput>;
+
+/** Body of `POST /agents/:id/eval-cases` and `PUT /eval-cases/:id` (the case editor). */
+export const EvalCaseWrite = z.object({
+  name: z.string().trim().min(1).max(120),
+  input_diff: z.string().max(400_000),
+  expectation: EvalExpectationInput,
+  notes: z.string().max(2000).nullish(),
+  /** PR title / body of a hand-written case (ignored for cases frozen from a finding). */
+  pr_title: z.string().max(300).nullish(),
+  pr_body: z.string().max(20_000).nullish(),
+});
+export type EvalCaseWrite = z.infer<typeof EvalCaseWrite>;
+
+/** Optional body of `POST /agents/:id/eval-runs`: run only these cases (default: all). */
+export const StartEvalRunBody = z.object({
+  case_ids: z.array(z.string().uuid()).min(1).max(200).optional(),
+});
+export type StartEvalRunBody = z.infer<typeof StartEvalRunBody>;
 
 /** `POST /findings/:id/eval-case` — 201 when created, 200 when it already existed. */
 export const CreateEvalCaseResponse = z.object({
@@ -166,9 +215,6 @@ export const EvalFindingLink = z.object({
   type: EvalExpectationType,
 });
 export type EvalFindingLink = z.infer<typeof EvalFindingLink>;
-
-export const EvalCaseResultStatus = z.enum(['passed', 'failed', 'error']);
-export type EvalCaseResultStatus = z.infer<typeof EvalCaseResultStatus>;
 
 /** How a produced finding or expectation is labelled in a case result. */
 export const EvalOutcomeLabel = z.enum(['matched', 'missed', 'noise', 'unlabeled', 'dropped']);
@@ -388,6 +434,7 @@ export const EvalErrorCode = z.enum([
   'eval_run_in_progress',
   'no_eval_cases',
   'compare_different_agents',
+  'unknown_case',
 ]);
 export type EvalErrorCode = z.infer<typeof EvalErrorCode>;
 

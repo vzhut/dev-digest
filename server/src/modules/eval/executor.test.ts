@@ -221,6 +221,15 @@ describe('EvalExecutor', () => {
     expect(llm.requests).toHaveLength(0);
   });
 
+  it('a hand-written case (no PR number) gets a task line without a PR number', async () => {
+    const llm = new FakeLLM(() => ({ findings: [], cost: 0 }));
+    const manual = makeCase('m1', { meta: { pr_title: 'stripe-key-leak', pr_body: null } });
+    await new EvalExecutor(harness(llm).deps).runSuite(snapshot, [manual]);
+    const prompt = llm.requests[0]!.messages.map((m) => m.content).join('\n');
+    expect(prompt).toContain('Review: stripe-key-leak');
+    expect(prompt).not.toContain('Review PR #');
+  });
+
   it('takes no git, GitHub or repo-intel dependency', async () => {
     const llm = new FakeLLM(() => ({ findings: [], cost: null }));
     const h = harness(llm);

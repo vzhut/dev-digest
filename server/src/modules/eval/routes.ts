@@ -6,12 +6,14 @@ import {
   AgentEvalCaseDetail,
   CreateEvalCaseResponse,
   EvalAgentDashboard,
+  EvalCaseWrite,
   EvalFindingLink,
   EvalRunCompare,
   EvalSuiteRun,
   EvalSuiteRunDetail,
   EvalWorkspaceDashboard,
   RunAllEvalResponse,
+  StartEvalRunBody,
   StartEvalRunResponse,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from '../../adapters/git/diff-parser.js';
@@ -25,13 +27,16 @@ import { EvalService } from './service.js';
  *   POST   /findings/:id/eval-case      → freeze a case from a decided finding (201 / 200 existing / 422 …)
  *   GET    /pulls/:id/eval-case-links   → which findings of a PR already have a case
  *   GET    /agents/:id/eval-cases       → an agent's cases with their last result
- *   GET    /eval-cases/:id · DELETE /eval-cases/:id
- *   POST   /agents/:id/eval-runs        → 202 {eval_run_id, status:'running'}; 409 eval_run_in_progress; 422 no_eval_cases
+ *   POST   /agents/:id/eval-cases       → write a case by hand (201; 422 expectation_not_grounded | diff_unavailable)
+ *   GET    /eval-cases/:id · PUT /eval-cases/:id (same validation) · DELETE /eval-cases/:id
+ *   POST   /agents/:id/eval-runs        → optional body {case_ids}; 202 {eval_run_id, status:'running'}; 409 eval_run_in_progress; 422 no_eval_cases | unknown_case
  *   GET    /agents/:id/eval-runs        → suite runs, newest first
  *   GET    /eval-runs/:id · GET /eval-runs/compare?a=&b=  (422 compare_different_agents)
  *   GET    /eval/dashboard · GET /agents/:id/eval-dashboard · POST /eval/run-all
  */
 
+/** The body is optional (no body = every case): a missing body parses as `{}`. */
+const OptionalRunBody = z.preprocess((v) => v ?? {}, StartEvalRunBody);
 const CompareQuery = z.object({ a: z.string().uuid(), b: z.string().uuid() });
 /** Tight per-route limit: every run is a batch of paid LLM calls. */
 const PAID_RATE_LIMIT = { max: 10, timeWindow: '1 minute' } as const;
@@ -83,6 +88,26 @@ export default async function evalRoutes(appBase: FastifyInstance) {
     },
   );
 
+  app.post(
+    '/agents/:id/eval-cases',
+    { schema: { params: IdParams, body: EvalCaseWrite, response: { 201: CreateEvalCaseResponse } } },
+    async (req, reply): Promise<CreateEvalCaseResponse> => {
+      const { workspaceId } = await getContext(container, req);
+      const created = await service.createManual(workspaceId, req.params.id, req.body);
+      reply.code(201);
+      return created;
+    },
+  );
+
+  app.put(
+    '/eval-cases/:id',
+    { schema: { params: IdParams, body: EvalCaseWrite, response: { 200: AgentEvalCaseDetail } } },
+    async (req): Promise<AgentEvalCaseDetail> => {
+      const { workspaceId } = await getContext(container, req);
+      return service.updateCase(workspaceId, req.params.id, req.body);
+    },
+  );
+
   app.get(
     '/eval-cases/:id',
     { schema: { params: IdParams, response: { 200: AgentEvalCaseDetail } } },
@@ -104,10 +129,13 @@ export default async function evalRoutes(appBase: FastifyInstance) {
 
   app.post(
     '/agents/:id/eval-runs',
-    { schema: { params: IdParams, response: { 202: StartEvalRunResponse } }, config: { rateLimit: PAID_RATE_LIMIT } },
+    { schema: { params: IdParams, body: OptionalRunBody, response: { 202: StartEvalRunResponse } }, config: { rateLimit: PAID_RATE_LIMIT } },
     async (req, reply): Promise<StartEvalRunResponse> => {
       const { workspaceId } = await getContext(container, req);
-      const started = await service.startRun(workspaceId, req.params.id, { correlationId: req.id });
+      const started = await service.startRun(workspaceId, req.params.id, {
+        correlationId: req.id,
+        caseIds: req.body.case_ids,
+      });
       reply.code(202);
       return started;
     },

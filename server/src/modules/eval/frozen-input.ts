@@ -1,4 +1,11 @@
-import type { EvalCaseMeta, EvalExpectation, EvalExpectationType, Finding, UnifiedDiff } from '@devdigest/shared';
+import type {
+  EvalCaseMeta,
+  EvalExpectation,
+  EvalExpectationInput,
+  EvalExpectationType,
+  Finding,
+  UnifiedDiff,
+} from '@devdigest/shared';
 import { groundFindings } from '@devdigest/reviewer-core';
 import { CASE_NAME_SLUG_MAX, FROZEN_DIFF_MAX_CHANGED_LINES } from './constants.js';
 
@@ -170,5 +177,61 @@ export function caseMetaFrom(s: CaseMetaSources): EvalCaseMeta {
     head_sha: s.headSha,
     pr_title: s.prTitle,
     pr_body: s.prBody,
+  };
+}
+
+export type ManualCaseCheck =
+  | { ok: true; files: string[] }
+  | { ok: false; code: 'diff_unavailable' | 'expectation_not_grounded'; reason: string };
+
+/**
+ * Validate a hand-written case (case editor): the diff must parse into at least one file, the expectation
+ * must name one of those files with a sane line range, and its lines must fall inside a hunk of the
+ * supplied diff (the same grounding rule a produced finding must pass). Paths are compared as strings only.
+ */
+export function checkManualCase(
+  inputDiff: string,
+  expectation: EvalExpectationInput,
+  parseDiff: (raw: string) => UnifiedDiff,
+): ManualCaseCheck {
+  if (!inputDiff.trim()) return { ok: false, code: 'diff_unavailable', reason: 'the diff is empty' };
+  const diff = parseDiff(inputDiff);
+  if (diff.files.length === 0 || diff.files.every((f) => f.hunks.length === 0)) {
+    return { ok: false, code: 'diff_unavailable', reason: 'the diff has no files or hunks' };
+  }
+  if (diff.files.some((f) => CONTROL_CHARS.test(f.path))) {
+    return { ok: false, code: 'diff_unavailable', reason: 'a file path contains control characters' };
+  }
+  if (expectation.end_line < expectation.start_line) {
+    return { ok: false, code: 'expectation_not_grounded', reason: 'end_line is before start_line' };
+  }
+  const grounded = isExpectationGrounded(diff, {
+    type: expectation.type,
+    file: expectation.file,
+    start_line: expectation.start_line,
+    end_line: expectation.end_line,
+  });
+  if (!grounded) {
+    return {
+      ok: false,
+      code: 'expectation_not_grounded',
+      reason: 'the expectation file and lines are not inside a hunk of the supplied diff',
+    };
+  }
+  return { ok: true, files: diff.files.map((f) => f.path) };
+}
+
+/** Expectation stored for a hand-written case; the title (optional) is the only label we know. */
+export function expectationFromInput(
+  input: EvalExpectationInput,
+  previous?: EvalExpectation['label'],
+): EvalExpectation {
+  const title = input.title?.trim() || previous?.title || '';
+  return {
+    type: input.type,
+    file: input.file,
+    start_line: input.start_line,
+    end_line: input.end_line,
+    label: title || previous ? { title, category: previous?.category ?? '', severity: previous?.severity ?? '' } : null,
   };
 }

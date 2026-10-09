@@ -30,6 +30,9 @@ import {
   EvalRunCompare,
   EvalErrorCode,
   StartEvalRunResponse,
+  EvalCaseWrite,
+  StartEvalRunBody,
+  EvalCaseMeta,
 } from '@devdigest/shared';
 
 /**
@@ -579,5 +582,20 @@ describe('eval pipeline contracts', () => {
       ]),
     );
     expect(StartEvalRunResponse.parse({ eval_run_id: 'r', status: 'running' }).status).toBe('running');
+  });
+
+  it('EvalCaseWrite (case editor): trims the name, needs a positive line range, title and notes optional', () => {
+    const ok = { name: ' n ', input_diff: 'd', expectation: { type: 'must_find', file: 'a.ts', start_line: 1, end_line: 2 } };
+    expect(EvalCaseWrite.parse(ok).name).toBe('n');
+    expect(EvalCaseWrite.safeParse({ ...ok, name: '  ' }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, start_line: 0 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, type: 'maybe' } }).success).toBe(false);
+  });
+
+  it('StartEvalRunBody: case_ids optional uuids; EvalCaseMeta allows a hand-written case with no PR', () => {
+    expect(StartEvalRunBody.parse({})).toEqual({});
+    expect(StartEvalRunBody.safeParse({ case_ids: ['nope'] }).success).toBe(false);
+    expect(StartEvalRunBody.safeParse({ case_ids: [] }).success).toBe(false);
+    expect(EvalCaseMeta.parse({ pr_title: 'x' }).repo).toBeUndefined();
   });
 });

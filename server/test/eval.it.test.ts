@@ -618,4 +618,133 @@ d('eval cases (Testcontainers pg)', () => {
     }
     await app.close();
   });
+
+  // ---- Amendment 2: case editor, subset runs, last-run detail ---------------
+
+  const MANUAL_DIFF = ['--- a/src/x.ts', '+++ b/src/x.ts', '@@ -0,0 +1,3 @@', '+const a = 1;', '+const b = 2;', '+const c = 3;'].join('\n');
+  const manualBody = (over: Record<string, unknown> = {}) => ({
+    name: 'stripe-key-leak',
+    input_diff: MANUAL_DIFF,
+    expectation: { type: 'must_find', file: 'src/x.ts', start_line: 1, end_line: 2, title: 'Leaked key' },
+    notes: 'by hand',
+    ...over,
+  });
+
+  it('AC-43: POST /agents/:id/eval-cases writes a manual case (no source finding, never deduplicated) and validates it', async () => {
+    const app = await makeApp();
+    const agent = await newAgent();
+    const post = (body: unknown, id = agent.id) =>
+      app.inject({ method: 'POST', url: `/agents/${id}/eval-cases`, payload: body as object });
+
+    const ok = await post(manualBody());
+    expect(ok.statusCode).toBe(201);
+    const made = CreateEvalCaseResponse.parse(ok.json());
+    expect(made.created).toBe(true);
+    expect(made.case).toMatchObject({
+      agent_id: agent.id,
+      name: 'stripe-key-leak',
+      input_files: ['src/x.ts'],
+      notes: 'by hand',
+      last_result: 'never_run',
+      expectation: { type: 'must_find', file: 'src/x.ts', start_line: 1, end_line: 2, label: { title: 'Leaked key' } },
+    });
+    const [row] = await db().select().from(t.evalCases).where(eq(t.evalCases.id, made.case.id));
+    expect(row).toMatchObject({ sourceFindingId: null, ownerKind: 'agent', ownerId: agent.id });
+    expect((await post(manualBody())).statusCode).toBe(201); // same payload again: a second case
+    expect(await db().select().from(t.evalCases).where(eq(t.evalCases.agentId, agent.id))).toHaveLength(2);
+
+    const code = async (body: unknown) => {
+      const res = await post(body);
+      expect(res.statusCode).toBe(422);
+      return res.json().error.code as string;
+    };
+    expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 40, end_line: 41 } }))).toBe('expectation_not_grounded');
+    expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/other.ts', start_line: 1, end_line: 1 } }))).toBe('expectation_not_grounded');
+    expect(await code(manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 3, end_line: 1 } }))).toBe('expectation_not_grounded');
+    expect(await code(manualBody({ input_diff: '   ' }))).toBe('diff_unavailable');
+    expect(await code(manualBody({ input_diff: 'just some text, not a diff' }))).toBe('diff_unavailable');
+    expect(await code(manualBody({ name: '  ' }))).toBe('validation_error');
+    expect(await db().select().from(t.evalCases).where(eq(t.evalCases.agentId, agent.id))).toHaveLength(2);
+
+    const [other] = await db().insert(t.workspaces).values({ name: 'other-manual' }).returning();
+    const foreign = await newAgent(other!.id);
+    expect((await post(manualBody(), foreign.id)).statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('AC-44: PUT /eval-cases/:id edits a case with the same validation, keeps provenance and earlier run results', async () => {
+    const app = await makeApp(new FakeLlm());
+    const agent = await newAgent();
+    const { review } = await newPullWithReview({ agentId: agent.id });
+    const finding = await newFinding(review.id);
+    const born = CreateEvalCaseResponse.parse((await create(app, finding.id)).json()).case;
+    const put = (id: string, body: unknown) => app.inject({ method: 'PUT', url: `/eval-cases/${id}`, payload: body as object });
+
+    const run = (await startRun(app, agent.id)).json().eval_run_id as string;
+    await untilTerminal(app, run);
+    const before = (await db().select().from(t.evalRuns).where(eq(t.evalRuns.id, run)))[0]!.results;
+
+    const res = await put(born.id, manualBody({ name: 'renamed', expectation: { type: 'must_not_flag', file: 'src/x.ts', start_line: 2, end_line: 3 } }));
+    expect(res.statusCode).toBe(200);
+    const edited = AgentEvalCaseDetail.parse(res.json());
+    expect(edited).toMatchObject({ name: 'renamed', input_diff: MANUAL_DIFF, expectation: { type: 'must_not_flag', start_line: 2 } });
+    expect(edited.meta.source_finding_id).toBe(finding.id); // provenance kept
+    expect(edited.meta.pr_title).toBe('Add payments'); // PR meta of a finding-born case is read-only
+    const [row] = await db().select().from(t.evalCases).where(eq(t.evalCases.id, born.id));
+    expect(row!.sourceFindingId).toBe(finding.id);
+    expect((await db().select().from(t.evalRuns).where(eq(t.evalRuns.id, run)))[0]!.results).toEqual(before);
+
+    expect((await put(born.id, manualBody({ input_diff: '' }))).json().error.code).toBe('diff_unavailable');
+    expect((await put(born.id, manualBody({ expectation: { type: 'must_find', file: 'src/x.ts', start_line: 99, end_line: 99 } }))).json().error.code).toBe('expectation_not_grounded');
+    expect((await app.inject({ method: 'PUT', url: `/eval-cases/${crypto.randomUUID()}`, payload: manualBody() })).statusCode).toBe(404);
+
+    const manual = CreateEvalCaseResponse.parse(
+      (await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-cases`, payload: manualBody() })).json(),
+    ).case;
+    const m = AgentEvalCaseDetail.parse((await put(manual.id, manualBody({ pr_title: 'My PR', pr_body: 'body' }))).json());
+    expect(m.meta).toMatchObject({ pr_title: 'My PR', pr_body: 'body' });
+
+    const [other] = await db().insert(t.workspaces).values({ name: 'other-put' }).returning();
+    const foreignAgent = await newAgent(other!.id);
+    const [fc] = await db().insert(t.evalCases).values({
+      workspaceId: other!.id, ownerKind: 'agent', ownerId: foreignAgent.id, agentId: foreignAgent.id, name: 'f', inputDiff: MANUAL_DIFF,
+      inputMeta: { pr_title: 'x' }, expectedOutput: { type: 'must_find', file: 'src/x.ts', start_line: 1, end_line: 1 },
+    }).returning();
+    expect((await put(fc!.id, manualBody())).statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('AC-46/AC-49: a subset run covers only the chosen cases, unknown ids are 422, and each case reports its own last run', async () => {
+    const llm = new FakeLlm();
+    const app = await makeApp(llm);
+    const { agent, cases } = await agentWithTwoCases(app);
+    const other = await agentWithTwoCases(app);
+
+    const unknown = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-runs`, payload: { case_ids: [crypto.randomUUID()] } });
+    expect(unknown.statusCode).toBe(422);
+    expect(unknown.json().error.code).toBe('unknown_case');
+    const foreign = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-runs`, payload: { case_ids: [other.cases[0]!.id] } });
+    expect(foreign.json().error.code).toBe('unknown_case');
+    expect((await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-runs`, payload: { case_ids: ['nope'] } })).statusCode).toBe(422);
+    expect(await db().select().from(t.evalRuns).where(eq(t.evalRuns.agentId, agent.id))).toHaveLength(0);
+
+    const all = await untilTerminal(app, (await startRun(app, agent.id)).json().eval_run_id);
+    expect(all.case_ids).toHaveLength(2);
+    const callsAfterAll = llm.calls;
+
+    const sub = await app.inject({ method: 'POST', url: `/agents/${agent.id}/eval-runs`, payload: { case_ids: [cases[1]!.id] } });
+    expect(sub.statusCode).toBe(202);
+    const subRun = await untilTerminal(app, sub.json().eval_run_id);
+    expect(subRun).toMatchObject({ case_ids: [cases[1]!.id], traces_total: 1, status: 'completed' });
+    expect(llm.calls - callsAfterAll).toBe(1);
+
+    const listed = (await app.inject({ method: 'GET', url: `/agents/${agent.id}/eval-cases` })).json().map((c: unknown) => AgentEvalCase.parse(c));
+    const mustFind = listed.find((c: AgentEvalCase) => c.id === cases[0]!.id)!;
+    const noise = listed.find((c: AgentEvalCase) => c.id === cases[1]!.id)!;
+    expect(mustFind.last_run).toMatchObject({ status: 'passed', findings_total: 1, findings_matched: 1, cost_usd: 0.01 });
+    expect(mustFind.last_run!.duration_ms).toBeGreaterThanOrEqual(0);
+    expect(noise.last_run).toMatchObject({ status: 'failed', findings_total: 1, findings_matched: 1 });
+    expect(noise.last_result).toBe('failed');
+    await app.close();
+  });
 });

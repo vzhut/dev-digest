@@ -1,7 +1,8 @@
 import type {
   AgentEvalCase,
   AgentEvalCaseDetail,
-  EvalCaseResultStatus,
+  EvalCaseLastRun,
+  EvalCaseResult,
   EvalFindingLink,
   EvalSuiteRun,
   EvalSuiteRunDetail,
@@ -15,10 +16,18 @@ import type { EvalRunnableCase } from './ports.js';
  * (legacy / hand-inserted rows) maps to null so the caller can skip it instead of crashing.
  */
 
-export function toAgentEvalCase(
-  row: EvalCaseRow,
-  lastResult: EvalCaseResultStatus | undefined,
-): AgentEvalCase | null {
+/** Last-run summary of one case from its stored per-case result. */
+export function toCaseLastRun(r: EvalCaseResult): EvalCaseLastRun {
+  return {
+    status: r.status,
+    findings_total: r.produced.length,
+    findings_matched: new Set(r.outcomes.flatMap((o) => o.matched_by)).size,
+    duration_ms: r.duration_ms,
+    cost_usd: r.cost_usd,
+  };
+}
+
+export function toAgentEvalCase(row: EvalCaseRow, last: EvalCaseLastRun | undefined): AgentEvalCase | null {
   if (!row.agentId || !row.expectedOutput || !row.inputMeta) return null;
   return {
     id: row.id,
@@ -28,16 +37,17 @@ export function toAgentEvalCase(
     meta: row.inputMeta,
     input_files: row.inputFiles ?? [],
     created_at: row.createdAt.toISOString(),
-    last_result: lastResult ?? 'never_run',
+    last_result: last?.status ?? 'never_run',
+    last_run: last ?? null,
   };
 }
 
 export function toAgentEvalCaseDetail(
   row: EvalCaseRow,
-  lastResult: EvalCaseResultStatus | undefined,
+  last: EvalCaseLastRun | undefined,
 ): AgentEvalCaseDetail | null {
-  const base = toAgentEvalCase(row, lastResult);
-  return base ? { ...base, input_diff: row.inputDiff ?? '' } : null;
+  const base = toAgentEvalCase(row, last);
+  return base ? { ...base, input_diff: row.inputDiff ?? '', notes: row.notes } : null;
 }
 
 export function toFindingLink(link: {

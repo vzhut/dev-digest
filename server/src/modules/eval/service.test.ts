@@ -89,6 +89,24 @@ describe('EvalService.startRun', () => {
   });
 });
 
+describe('EvalService.startRun with case_ids (AC-46)', () => {
+  it('runs only the chosen subset and rejects an id that is not the agent’s', async () => {
+    const insertRunningRun = vi.fn(async (v: { caseIds: string[] }) => ({ id: 'run-1', caseIds: v.caseIds }) as unknown as EvalRunRow);
+    const { service } = build({
+      listCasesForAgent: vi.fn(async () => [caseRow('c1'), caseRow('c2'), caseRow('c3')]),
+      insertRunningRun,
+    });
+    await service.startRun('ws', 'a1', { correlationId: 'r', caseIds: ['c3', 'c1', 'c3'] });
+    expect(insertRunningRun.mock.calls[0]![0].caseIds).toEqual(['c1', 'c3']);
+
+    await expect(service.startRun('ws', 'a1', { correlationId: 'r', caseIds: ['c1', 'zzz'] })).rejects.toMatchObject({
+      code: 'unknown_case',
+      statusCode: 422,
+    });
+    expect(insertRunningRun).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('EvalService.runAll', () => {
   it('reports started and skipped (a conflict or no cases) without throwing', async () => {
     const { service } = build({

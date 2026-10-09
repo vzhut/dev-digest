@@ -107,7 +107,7 @@ export class EvalExecutor {
         ...(snapshot.strategy ? { strategy: snapshot.strategy } : {}),
         ...(snapshot.skills.length > 0 ? { skills: snapshot.skills } : {}),
         ...(c.meta.pr_body ? { prDescription: c.meta.pr_body } : {}),
-        task: `Review PR #${c.meta.pr_number}: ${title}`,
+        task: c.meta.pr_number != null ? `Review PR #${c.meta.pr_number}: ${title}` : `Review: ${title}`,
         correlationId: this.deps.correlationId,
       }),
       budgetMs,

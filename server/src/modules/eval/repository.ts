@@ -2,7 +2,8 @@ import { and, count, desc, eq, isNotNull } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import type { AgentRow, EvalCaseRow, EvalRunRow } from '../../db/rows.js';
 import * as t from '../../db/schema.js';
-import type { EvalCaseMeta, EvalCaseResultStatus, EvalExpectation, EvalSkillRef } from '@devdigest/shared';
+import type { EvalCaseLastRun, EvalCaseMeta, EvalExpectation, EvalSkillRef } from '@devdigest/shared';
+import { toCaseLastRun } from './helpers.js';
 import { EvalRequestError } from './errors.js';
 import type { EvalRunFinish } from './ports.js';
 
@@ -79,6 +80,19 @@ function isOneRunningViolation(err: unknown): boolean {
   if (e.code === '23505' && e.constraint_name === ONE_RUNNING_INDEX) return true;
   return e.cause ? isOneRunningViolation(e.cause) : false;
 }
+
+export interface InsertManualCase {
+  workspaceId: string;
+  agentId: string;
+  name: string;
+  inputDiff: string;
+  inputFiles: string[];
+  inputMeta: EvalCaseMeta;
+  expectedOutput: EvalExpectation;
+  notes: string | null;
+}
+
+export type UpdateEvalCase = Omit<InsertManualCase, 'workspaceId' | 'agentId'>;
 
 /** How many of the newest finished runs are scanned for a case's last result. */
 const LAST_RESULT_RUN_WINDOW = 20;
@@ -207,10 +221,11 @@ export class EvalRepository {
   }
 
   /**
-   * Last result per case: the newest finished run (of the last LAST_RESULT_RUN_WINDOW) that holds a
-   * result for it. A case no scanned run mentions is simply absent from the map (= never run).
+   * Last run per case: the newest finished run (of the last LAST_RESULT_RUN_WINDOW) that holds a
+   * result for it, so a subset run only refreshes the cases it covered. A case no scanned run
+   * mentions is simply absent from the map (= never run).
    */
-  async lastResultsForAgent(workspaceId: string, agentId: string): Promise<Map<string, EvalCaseResultStatus>> {
+  async lastResultsForAgent(workspaceId: string, agentId: string): Promise<Map<string, EvalCaseLastRun>> {
     const runs = await this.db
       .select({ results: t.evalRuns.results })
       .from(t.evalRuns)
@@ -223,11 +238,49 @@ export class EvalRepository {
       )
       .orderBy(desc(t.evalRuns.ranAt))
       .limit(LAST_RESULT_RUN_WINDOW);
-    const last = new Map<string, EvalCaseResultStatus>();
+    const last = new Map<string, EvalCaseLastRun>();
     for (const run of runs) {
-      for (const r of run.results ?? []) if (!last.has(r.case_id)) last.set(r.case_id, r.status);
+      for (const r of run.results ?? []) if (!last.has(r.case_id)) last.set(r.case_id, toCaseLastRun(r));
     }
     return last;
+  }
+
+  /** A hand-written case: no source finding, so it is never deduplicated. */
+  async insertManualCase(v: InsertManualCase): Promise<EvalCaseRow> {
+    const [row] = await this.db
+      .insert(t.evalCases)
+      .values({
+        workspaceId: v.workspaceId,
+        ownerKind: 'agent',
+        ownerId: v.agentId,
+        agentId: v.agentId,
+        sourceFindingId: null,
+        name: v.name,
+        inputDiff: v.inputDiff,
+        inputFiles: v.inputFiles,
+        inputMeta: v.inputMeta,
+        expectedOutput: v.expectedOutput,
+        notes: v.notes,
+      })
+      .returning();
+    return row!;
+  }
+
+  /** Update the editable parts of a case; stored run results are untouched. Undefined when not in the workspace. */
+  async updateCase(workspaceId: string, caseId: string, v: UpdateEvalCase): Promise<EvalCaseRow | undefined> {
+    const [row] = await this.db
+      .update(t.evalCases)
+      .set({
+        name: v.name,
+        inputDiff: v.inputDiff,
+        inputFiles: v.inputFiles,
+        inputMeta: v.inputMeta,
+        expectedOutput: v.expectedOutput,
+        notes: v.notes,
+      })
+      .where(and(eq(t.evalCases.id, caseId), eq(t.evalCases.workspaceId, workspaceId)))
+      .returning();
+    return row;
   }
 
   async getCase(workspaceId: string, caseId: string): Promise<EvalCaseRow | undefined> {
