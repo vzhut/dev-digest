@@ -2,40 +2,313 @@
   "name": "Eval pipeline — turn an accepted finding into an eval case, then find it on the Eval Dashboard and the agent's Evals tab",
   "description": "Uses the seeded decided findings of PR #482 (server/src/db/seed.ts: an OLDER General Reviewer review with 11 findings, 6 accepted, 4 dismissed, 1 undecided; the 2-finding agent-less review stays the newest, so flows 02/04 are unaffected). Opens that older run, expands its first card (always a CRITICAL, and both seeded CRITICAL findings are accepted), clicks 'Turn into eval case' once and sees the must_find tag replace the button. Then opens the Eval Dashboard from the sidebar, opens the General Reviewer card (a case but no runs yet: the 'No eval runs yet' empty state) and finally Agents -> General Reviewer -> Evals tab, which lists the new case ('0 / 1 passing'). NEVER presses Run eval or Run all agents: those make paid LLM calls (scripts/e2e.sh does not isolate secrets, e2e/INSIGHTS.md). The sidebar highlight is not asserted here (the item has no ARIA state); it is covered by client RTL (nav.test.ts).",
   "steps": [
-    { "cmd": ["set", "viewport", "1280", "577"], "label": "use the CI window (1280x577) locally too, so below-the-fold clicks fail here exactly as they do in CI" },
-    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
-    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
-    { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
-    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
-    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
-    { "cmd": ["find", "role", "button", "click", "--name", "Agent runs"], "label": "switch to the Agent runs tab" },
-    { "cmd": ["wait", "--url", "tab=findings"], "label": "findings tab is active in the URL" },
-    { "cmd": ["wait", "--text", "11 findings"], "label": "the older General Reviewer run is listed with its 11 seeded findings" },
-    { "cmd": ["scrollintoview", "button:has-text(\"General Reviewer\"):has-text(\"11 findings\")"], "label": "scroll the older run's HEADER into view (it must name both the agent and '11 findings': the timeline chips above only say 'N findings in this run'; a click on a below-the-fold header silently no-ops in CI)" },
-    { "cmd": ["find", "role", "button", "click", "--name", "General Reviewer"], "label": "open the older General Reviewer run (its header is in view after the step above)" },
-    { "cmd": ["wait", "--fn", "document.querySelector('button[data-eval-case-action]:not([disabled])') !== null"], "label": "the opened run's first (expanded, decided) finding offers an ENABLED Turn into eval case" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "findings and eval links settle" },
-    { "cmd": ["scrollintoview", "button[data-eval-case-action]:not([disabled])"], "label": "scroll the first ENABLED Turn into eval case button into view (the newest run's undecided finding renders a disabled twin above it; an off-screen click silently no-ops in CI, e2e/INSIGHTS.md)" },
-    { "cmd": ["find", "first", "button[data-eval-case-action]:not([disabled])", "click"], "label": "turn the accepted finding of the older run into an eval case (one click, no dialog)" },
-    { "cmd": ["wait", "--text", "must_find"], "label": "the must_find tag replaces the button" },
-    { "cmd": ["find", "text", "Eval Dashboard", "click"], "label": "open Eval Dashboard from the sidebar" },
-    { "cmd": ["wait", "--url", "/eval"], "label": "eval dashboard route reached" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "dashboard data settles" },
-    { "cmd": ["wait", "--text", "General Reviewer"], "label": "the General Reviewer card is listed (it now has a case)" },
-    { "cmd": ["find", "role", "link", "click", "--name", "General Reviewer"], "label": "open the General Reviewer card" },
-    { "cmd": ["wait", "--url", "/eval/agents/"], "label": "per-agent eval route reached" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "per-agent data settles" },
-    { "cmd": ["wait", "--text", "No eval runs yet"], "label": "a case but no runs: explicit next-step empty state (no chart, no zeros)" },
-    { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
-    { "cmd": ["wait", "--text", "General Reviewer"], "label": "seeded General Reviewer card is visible" },
-    { "cmd": ["find", "text", "General Reviewer", "click"], "label": "open the General Reviewer editor" },
-    { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor route reached" },
-    { "cmd": ["find", "role", "button", "click", "--name", "Evals", "--exact"], "label": "switch to the Evals tab" },
-    { "cmd": ["wait", "--url", "tab=evals"], "label": "evals tab is active in the URL" },
-    { "cmd": ["wait", "--load", "networkidle"], "label": "eval cases fetch settles" },
-    { "cmd": ["wait", "--text", "0 / 1 passing"], "label": "the Evals tab lists the new case (never run: 0 of 1 passing)" },
-    { "cmd": ["wait", "--text", "must_find-"], "label": "the case is named <type>-<slug of the finding title>" }
+    {
+      "cmd": [
+        "set",
+        "viewport",
+        "1280",
+        "577"
+      ],
+      "label": "use the CI window (1280x577) locally too, so below-the-fold clicks fail here exactly as they do in CI"
+    },
+    {
+      "cmd": [
+        "open",
+        "{BASE}/"
+      ],
+      "label": "load the app root"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/pulls"
+      ],
+      "label": "land on the PR list"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "Add rate limiting to public API endpoints"
+      ],
+      "label": "seeded PR title row is visible"
+    },
+    {
+      "cmd": [
+        "find",
+        "text",
+        "Add rate limiting to public API endpoints",
+        "click"
+      ],
+      "label": "open the PR row"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/pulls/482"
+      ],
+      "label": "navigate to the PR detail route"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "PR detail data settles"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Agent runs"
+      ],
+      "label": "switch to the Agent runs tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "tab=findings"
+      ],
+      "label": "findings tab is active in the URL"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "11 findings"
+      ],
+      "label": "the older General Reviewer run is listed with its 11 seeded findings"
+    },
+    {
+      "cmd": [
+        "scrollintoview",
+        "button:has-text(\"General Reviewer\"):has-text(\"11 findings\")"
+      ],
+      "label": "scroll the older run's HEADER into view (it must name both the agent and '11 findings': the timeline chips above only say 'N findings in this run'; a click on a below-the-fold header silently no-ops in CI)"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "General Reviewer"
+      ],
+      "label": "open the older General Reviewer run (its header is in view after the step above)"
+    },
+    {
+      "cmd": [
+        "wait",
+        "3000"
+      ],
+      "label": "DIAG (temporary): let the opened run settle"
+    },
+    {
+      "cmd": [
+        "eval",
+        "(()=>{const q=s=>document.querySelectorAll(s);const btns=[...q('button')];const t=document.body.innerText;const o={y:Math.round(scrollY),vh:innerHeight,total:q('button[data-eval-case-action]').length,enabled:q('button[data-eval-case-action]:not([disabled])').length,needsDecision:t.includes('Accept or dismiss this finding first'),noAgent:t.toLowerCase().includes('no agent produced'),hdr:btns.filter(b=>b.innerText.includes('11 findings')).map(b=>b.innerText.slice(0,48).replace(/\\n/g,' ')+'|exp='+b.getAttribute('aria-expanded')),accept:btns.filter(b=>b.innerText.trim()==='Accept').length,reject:btns.filter(b=>b.innerText.trim()==='Reject').length,turn:btns.filter(b=>b.innerText.includes('Turn into eval case')).length,expandedAll:q('[aria-expanded=\"true\"]').length,mustFindText:t.includes('must_find')};document.body.insertAdjacentHTML('afterbegin','<pre style=\"position:fixed;z-index:99999;top:0;left:0;right:0;background:#fff;color:#000;font:13px monospace;padding:8px;white-space:pre-wrap\">DIAG '+JSON.stringify(o)+'</pre>');return 1})()"
+      ],
+      "label": "DIAG (temporary): print DOM state into the page so the CI failure screenshot shows it"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--fn",
+        "document.querySelector('button[data-eval-case-action]:not([disabled])') !== null"
+      ],
+      "label": "the opened run's first (expanded, decided) finding offers an ENABLED Turn into eval case"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "findings and eval links settle"
+    },
+    {
+      "cmd": [
+        "scrollintoview",
+        "button[data-eval-case-action]:not([disabled])"
+      ],
+      "label": "scroll the first ENABLED Turn into eval case button into view (the newest run's undecided finding renders a disabled twin above it; an off-screen click silently no-ops in CI, e2e/INSIGHTS.md)"
+    },
+    {
+      "cmd": [
+        "find",
+        "first",
+        "button[data-eval-case-action]:not([disabled])",
+        "click"
+      ],
+      "label": "turn the accepted finding of the older run into an eval case (one click, no dialog)"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "must_find"
+      ],
+      "label": "the must_find tag replaces the button"
+    },
+    {
+      "cmd": [
+        "find",
+        "text",
+        "Eval Dashboard",
+        "click"
+      ],
+      "label": "open Eval Dashboard from the sidebar"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/eval"
+      ],
+      "label": "eval dashboard route reached"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "dashboard data settles"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "General Reviewer"
+      ],
+      "label": "the General Reviewer card is listed (it now has a case)"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "link",
+        "click",
+        "--name",
+        "General Reviewer"
+      ],
+      "label": "open the General Reviewer card"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/eval/agents/"
+      ],
+      "label": "per-agent eval route reached"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "per-agent data settles"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "No eval runs yet"
+      ],
+      "label": "a case but no runs: explicit next-step empty state (no chart, no zeros)"
+    },
+    {
+      "cmd": [
+        "open",
+        "{BASE}/agents"
+      ],
+      "label": "load the agents page"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "agents fetch settles"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "General Reviewer"
+      ],
+      "label": "seeded General Reviewer card is visible"
+    },
+    {
+      "cmd": [
+        "find",
+        "text",
+        "General Reviewer",
+        "click"
+      ],
+      "label": "open the General Reviewer editor"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "/agents/"
+      ],
+      "label": "agent editor route reached"
+    },
+    {
+      "cmd": [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Evals",
+        "--exact"
+      ],
+      "label": "switch to the Evals tab"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--url",
+        "tab=evals"
+      ],
+      "label": "evals tab is active in the URL"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--load",
+        "networkidle"
+      ],
+      "label": "eval cases fetch settles"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "0 / 1 passing"
+      ],
+      "label": "the Evals tab lists the new case (never run: 0 of 1 passing)"
+    },
+    {
+      "cmd": [
+        "wait",
+        "--text",
+        "must_find-"
+      ],
+      "label": "the case is named <type>-<slug of the finding title>"
+    }
   ]
 }
