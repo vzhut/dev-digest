@@ -92,6 +92,8 @@ Flow 15 passed locally and failed in CI on `wait --text must_find` right after a
 
 Correction (2026-10-10, same day): that fix was incomplete. The next CI run failed one step earlier, on `scrollintoview "button[data-eval-case-action]:not([disabled])"`, because NO enabled button existed: the step before it, `find role button click --name "General Reviewer"` (opening the older run, whose header is also below the fold), had silently no-opped too, so only the newest run's disabled button was in the DOM. The `wait --text "Turn into eval case"` after it passed on that disabled twin and hid the problem. Final form: `set viewport 1280 577` as the first step (local runs now fail the way CI does), `scrollintoview 'button:has-text("11 findings")'` before opening the run, `wait --fn` for an ENABLED button before scrolling to it. Prefer `wait --fn`/state assertions over `wait --text` when a disabled duplicate can satisfy the text.
 
+Second correction (same day): scrolling to `button:has-text("11 findings")` was still the wrong element. The timeline above the run cards has chips named "N findings in this run", and they come first in the DOM, so the selector scrolled to a chip, not to the run header. The scroll target must name both the agent and the count: `button:has-text("General Reviewer"):has-text("11 findings")`. Also: `scrollintoview` understands Playwright pseudo-selectors such as `:has-text`, but `find first <selector> click` does not (it fails with "Command failed"); use `scrollintoview` with the precise selector, then the usual `find role button click --name ...` while the element is on screen.
+
 ## Session Notes
 
 _No entries yet._
