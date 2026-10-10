@@ -100,9 +100,9 @@
         "button",
         "click",
         "--name",
-        "General Reviewer"
+        "General Reviewer comment 11 findings"
       ],
-      "label": "open the older General Reviewer run (its header is in view after the step above)"
+      "label": "open the older General Reviewer run. The accessible name must be unique: the newest run is also named 'General Reviewer ...', and a role click takes the FIRST match, which toggled the wrong run in CI"
     },
     {
       "cmd": [
