@@ -84,6 +84,12 @@ For a new page assert what is plain text in the DOM (`wait --text "specs,docs,in
 
 Flow 15 failed at `wait --text must_find` (and the failure screenshot showed an untouched, disabled "Turn into eval case" button). PR #482's Agent runs tab lists the newest 2-finding run first, expanded, whose undecided finding renders the same button disabled; both the `scrollintoview` and the role/name `click` resolved to that one, not to the older General Reviewer run's accepted finding below. Target the right instance by position instead: `find last "button[data-eval-case-action]" hover` (scrolls it in) then `find last ... click`. Run only `./scripts/e2e.sh`; rewording the expected text was a red herring (the tag renders `must_find`).
 
+### `find ... hover` does not scroll a target into view in CI; `scrollintoview` with an exact selector does
+
+`e2e/specs/15-eval-pipeline.flow.json:17-18` · 2026-10-10
+
+Flow 15 passed locally and failed in CI on `wait --text must_find` right after a "successful" `find last "button[data-eval-case-action]" click`. The failure screenshot (CI artifact `e2e-failure`) showed PR #482 scrolled to the top with no finding in view: the CI viewport is 1280x577, the button sat below the fold, `hover` did not scroll it and the click silently did nothing (same mechanism as the 2026-09-25 entry on flow 04). Fix: `scrollintoview "button[data-eval-case-action]:not([disabled])"` (the newest run's undecided finding renders a disabled twin above the one we want, so the selector skips it), then `find first "<same selector>" click`, then keep asserting the state change (`must_find` tag). Lesson repeated: read this file before writing a flow, and never treat a green `find ... click` as proof; a pass on a developer machine says nothing about the 577 px CI window.
+
 ## Session Notes
 
 _No entries yet._
