@@ -9,6 +9,7 @@ import type {
   StructuredResult,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from '../../adapters/git/diff-parser.js';
+import { EVAL_MAX_OUTPUT_TOKENS } from './constants.js';
 import { EvalExecutor } from './executor.js';
 import { synthesizeFrozenDiff } from './frozen-input.js';
 import type { EvalExecutorDeps, EvalRunFinish, EvalRunSnapshot, EvalRunnableCase } from './ports.js';
@@ -232,6 +233,34 @@ describe('EvalExecutor', () => {
     });
     const [b] = await new EvalExecutor(harness(llm).deps).runSuite(snapshot, [makeCase('c1')]);
     expect(b?.error).toBe('invalid structured output');
+  });
+
+  it('every eval review request carries a bounded max_tokens (an unset one makes OpenRouter reserve the full output window)', async () => {
+    const llm = new FakeLLM(() => ({ findings: [], cost: 0 }));
+    await new EvalExecutor(harness(llm).deps).runSuite(snapshot, [makeCase('c1')]);
+    expect(llm.requests[0]!.maxTokens).toBe(EVAL_MAX_OUTPUT_TOKENS);
+    expect(EVAL_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(16_384);
+  });
+
+  it('maps credit, key and rate-limit provider errors to stable actionable reasons; the raw text is only logged', async () => {
+    const reasonFor = async (err: Error) => {
+      const llm = new FakeLLM(() => {
+        throw err;
+      });
+      const h = harness(llm);
+      const [r] = await new EvalExecutor(h.deps).runSuite(snapshot, [makeCase('c1')]);
+      return { reason: r?.error, logged: JSON.stringify(h.logs) };
+    };
+    const http = (status: number, message: string) => Object.assign(new Error(message), { status });
+    const credits = await reasonFor(http(402, '402 This request requires more credits, or fewer max_tokens. You requested up to 65536 tokens'));
+    expect(credits.reason).toBe('provider out of credits');
+    expect(credits.logged).toContain('requires more credits'); // detail stays in the server log
+    expect((await reasonFor(new Error('402 Insufficient credits'))).reason).toBe('provider out of credits'); // no status property
+    expect((await reasonFor(new Error('You have insufficient credits'))).reason).toBe('provider out of credits');
+    expect((await reasonFor(http(401, 'No auth credentials found'))).reason).toBe('provider key rejected');
+    expect((await reasonFor(http(403, 'forbidden'))).reason).toBe('provider key rejected');
+    expect((await reasonFor(http(429, 'slow down'))).reason).toBe('provider rate limited');
+    expect((await reasonFor(http(500, 'boom'))).reason).toBe('provider error');
   });
 
   it('a frozen diff with no files is an error case, not a silent pass', async () => {

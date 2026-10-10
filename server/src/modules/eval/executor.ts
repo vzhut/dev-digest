@@ -2,7 +2,7 @@ import type { EvalCaseResult, LLMProvider } from '@devdigest/shared';
 import { reviewPullRequest } from '@devdigest/reviewer-core';
 import { AppError } from '../../platform/errors.js';
 import { redactSecrets } from '../_shared/redact.js';
-import { CASE_ERROR_REASON, CASE_TIMEOUT_MS, TASK_TITLE_MAX_CHARS } from './constants.js';
+import { CASE_ERROR_REASON, CASE_TIMEOUT_MS, EVAL_MAX_OUTPUT_TOKENS, TASK_TITLE_MAX_CHARS } from './constants.js';
 import type { EvalExecutorDeps, EvalRunSnapshot, EvalRunnableCase } from './ports.js';
 import { diffBoundsViolation } from './frozen-input.js';
 import { errorCaseOutcome, scoreCase, scoreRun } from './scoring.js';
@@ -152,6 +152,12 @@ function classifyError(err: unknown): string {
   if (err instanceof CaseError) return err.message;
   const text = errorMessage(err);
   if (/failed schema validation|not valid JSON/i.test(text)) return CASE_ERROR_REASON.invalidOutput;
+  // OpenAI-compatible SDK errors carry the HTTP status; the message is the fallback ("402 This request requires more credits…")
+  const status = (err as { status?: unknown } | null)?.status;
+  const code = typeof status === 'number' ? status : Number(/^(\d{3})\b/.exec(text)?.[1]);
+  if (code === 402 || /requires more credits|insufficient (credits|funds|quota)/i.test(text)) return CASE_ERROR_REASON.outOfCredits;
+  if (code === 401 || code === 403) return CASE_ERROR_REASON.keyRejected;
+  if (code === 429) return CASE_ERROR_REASON.rateLimited;
   return CASE_ERROR_REASON.provider;
 }
 
@@ -173,7 +179,13 @@ function boundedLlm(llm: LLMProvider, budgetMs: number): LLMProvider {
     complete: (req) => llm.complete(req),
     embed: (texts) => llm.embed(texts),
     completeStructured: (req) =>
-      llm.completeStructured({ ...req, singleAttempt: true, timeoutMs: Math.min(req.timeoutMs ?? budgetMs, budgetMs) }),
+      llm.completeStructured({
+        ...req,
+        singleAttempt: true,
+        timeoutMs: Math.min(req.timeoutMs ?? budgetMs, budgetMs),
+        // always bounded: an unset max_tokens makes the provider reserve credit for the model's whole output window
+        maxTokens: Math.min(req.maxTokens ?? EVAL_MAX_OUTPUT_TOKENS, EVAL_MAX_OUTPUT_TOKENS),
+      }),
   };
 }
 

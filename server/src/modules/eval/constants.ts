@@ -36,6 +36,9 @@ export const CASE_ERROR_REASON = {
   provider: 'provider error',
   providerUnavailable: 'provider unavailable',
   invalidOutput: 'invalid structured output',
+  outOfCredits: 'provider out of credits',
+  keyRejected: 'provider key rejected',
+  rateLimited: 'provider rate limited',
   runFailed: 'run failed',
 } as const;
 
@@ -45,3 +48,11 @@ export const MAX_EXPECTATION_SPAN = 100_000;
 export const MAX_HUNK_LINES = 100_000;
 /** Total new-side lines ALL hunks of one diff may declare: a header-only hunk costs the grounding gate its declared length. */
 export const MAX_DIFF_DECLARED_LINES = 100_000;
+
+/**
+ * Output-token ceiling of one eval review call. Without a `max_tokens` OpenRouter reserves credit for the model's
+ * FULL output window (65,536 for claude-sonnet-4.6) and answers 402 when the balance cannot cover that reservation,
+ * even though a review is a few thousand tokens. A findings list (a handful of findings with rationales) is well
+ * under 16k tokens; a response that did hit the cap would be truncated JSON and fail as "invalid structured output".
+ */
+export const EVAL_MAX_OUTPUT_TOKENS = 16_384;
