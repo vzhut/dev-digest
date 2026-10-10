@@ -2,6 +2,7 @@
   "name": "Eval pipeline — turn an accepted finding into an eval case, then find it on the Eval Dashboard and the agent's Evals tab",
   "description": "Uses the seeded decided findings of PR #482 (server/src/db/seed.ts: an OLDER General Reviewer review with 11 findings, 6 accepted, 4 dismissed, 1 undecided; the 2-finding agent-less review stays the newest, so flows 02/04 are unaffected). Opens that older run, expands its first card (always a CRITICAL, and both seeded CRITICAL findings are accepted), clicks 'Turn into eval case' once and sees the must_find tag replace the button. Then opens the Eval Dashboard from the sidebar, opens the General Reviewer card (a case but no runs yet: the 'No eval runs yet' empty state) and finally Agents -> General Reviewer -> Evals tab, which lists the new case ('0 / 1 passing'). NEVER presses Run eval or Run all agents: those make paid LLM calls (scripts/e2e.sh does not isolate secrets, e2e/INSIGHTS.md). The sidebar highlight is not asserted here (the item has no ARIA state); it is covered by client RTL (nav.test.ts).",
   "steps": [
+    { "cmd": ["set", "viewport", "1280", "577"], "label": "use the CI window (1280x577) locally too, so below-the-fold clicks fail here exactly as they do in CI" },
     { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
     { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
     { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
@@ -11,8 +12,9 @@
     { "cmd": ["find", "role", "button", "click", "--name", "Agent runs"], "label": "switch to the Agent runs tab" },
     { "cmd": ["wait", "--url", "tab=findings"], "label": "findings tab is active in the URL" },
     { "cmd": ["wait", "--text", "11 findings"], "label": "the older General Reviewer run is listed with its 11 seeded findings" },
+    { "cmd": ["scrollintoview", "button:has-text(\"11 findings\")"], "label": "scroll the older run's header into view (a click on a below-the-fold header silently no-ops in CI and the run never opens)" },
     { "cmd": ["find", "role", "button", "click", "--name", "General Reviewer"], "label": "open the older General Reviewer run" },
-    { "cmd": ["wait", "--text", "Turn into eval case"], "label": "the first (expanded) finding offers Turn into eval case" },
+    { "cmd": ["wait", "--fn", "document.querySelector('button[data-eval-case-action]:not([disabled])') !== null"], "label": "the opened run's first (expanded, decided) finding offers an ENABLED Turn into eval case" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "findings and eval links settle" },
     { "cmd": ["scrollintoview", "button[data-eval-case-action]:not([disabled])"], "label": "scroll the first ENABLED Turn into eval case button into view (the newest run's undecided finding renders a disabled twin above it; an off-screen click silently no-ops in CI, e2e/INSIGHTS.md)" },
     { "cmd": ["find", "first", "button[data-eval-case-action]:not([disabled])", "click"], "label": "turn the accepted finding of the older run into an eval case (one click, no dialog)" },
