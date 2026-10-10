@@ -89,9 +89,9 @@
     {
       "cmd": [
         "scrollintoview",
-        "button:has-text(\"General Reviewer\"):has-text(\"11 findings\")"
+        "[role=\"button\"]:has-text(\"General Reviewer\"):has-text(\"11 findings\")"
       ],
-      "label": "scroll the older run's HEADER into view (it must name both the agent and '11 findings': the timeline chips above only say 'N findings in this run'; a click on a below-the-fold header silently no-ops in CI)"
+      "label": "scroll the older run's HEADER into view: it is a div[role=button], not a <button> (so a `button:` selector matches nothing), and it must name both the agent and '11 findings' because the timeline chips above only say 'N findings in this run'; a click on a below-the-fold header silently no-ops in CI"
     },
     {
       "cmd": [
@@ -114,7 +114,7 @@
     {
       "cmd": [
         "eval",
-        "(()=>{const btns=[...document.querySelectorAll('button')];const runs=btns.filter(b=>/General|Security|Performance|Reviewer|findings/i.test(b.innerText)).map(b=>b.innerText.slice(0,64).replace(/\\s+/g,' ')+'|exp='+b.getAttribute('aria-expanded'));const gen=[...document.querySelectorAll('*')].filter(e=>e.children.length===0&&/11 findings/.test(e.textContent)).map(e=>e.tagName+':'+e.textContent.slice(0,40));document.body.insertAdjacentHTML('afterbegin','<pre style=\"position:fixed;z-index:99999;top:0;left:0;right:0;background:#fff;color:#000;font:12px monospace;padding:8px;white-space:pre-wrap\">DIAG2 runs='+JSON.stringify(runs)+' leaf11='+JSON.stringify(gen)+'</pre>');return 1})()"
+        "(()=>{const rb=[...document.querySelectorAll('[role=\"button\"],button')];const hdr=rb.filter(b=>/11 findings/.test(b.innerText));const o={n:rb.length,hdr:hdr.map(b=>b.tagName+'|exp='+b.getAttribute('aria-expanded')+'|'+b.innerText.slice(0,40).replace(/\\s+/g,' ')),turnTotal:document.querySelectorAll('button[data-eval-case-action]').length,turnEnabled:document.querySelectorAll('button[data-eval-case-action]:not([disabled])').length,acceptBtns:rb.filter(b=>b.innerText.trim()==='Accept').length};document.body.insertAdjacentHTML('afterbegin','<pre style=\"position:fixed;z-index:99999;top:0;left:0;right:0;background:#fff;color:#000;font:12px monospace;padding:8px;white-space:pre-wrap\">DIAG3 '+JSON.stringify(o)+'</pre>');return 1})()"
       ],
       "label": "DIAG (temporary): print DOM state into the page so the CI failure screenshot shows it"
     },
