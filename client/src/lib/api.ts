@@ -2,7 +2,24 @@
    All hooks build on `apiFetch`. Errors are normalized to ApiError so the
    error-UX taxonomy (toast/inline/full-screen) can branch on status. */
 
-import type { OnboardingTourResponse, PrBrief, PrBriefResponse, Tour } from "@devdigest/shared";
+import type {
+  AgentEvalCase,
+  AgentEvalCaseDetail,
+  CreateEvalCaseResponse,
+  EvalCaseWrite,
+  EvalAgentDashboard,
+  EvalFindingLink,
+  EvalRunCompare,
+  EvalSuiteRun,
+  EvalSuiteRunDetail,
+  EvalWorkspaceDashboard,
+  OnboardingTourResponse,
+  PrBrief,
+  PrBriefResponse,
+  RunAllEvalResponse,
+  StartEvalRunResponse,
+  Tour,
+} from "@devdigest/shared";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001";
@@ -93,4 +110,33 @@ export const api = {
   /** One LLM call. Answers with the stored brief (or the full read response). */
   generatePrBrief: (prId: string) =>
     apiFetch<PrBriefResponse | PrBrief>(`/pulls/${prId}/brief`, { method: "POST" }),
+
+  // ---- eval pipeline (specs/eval-pipeline.md) ----
+  /** One click, no body: 201 created / 200 already existed. */
+  createEvalCase: (findingId: string) =>
+    apiFetch<CreateEvalCaseResponse>(`/findings/${encodeURIComponent(findingId)}/eval-case`, { method: "POST" }),
+  getEvalCaseLinks: (prId: string) => apiFetch<EvalFindingLink[]>(`/pulls/${encodeURIComponent(prId)}/eval-case-links`),
+  listAgentEvalCases: (agentId: string) => apiFetch<AgentEvalCase[]>(`/agents/${encodeURIComponent(agentId)}/eval-cases`),
+  getEvalCase: (caseId: string) => apiFetch<AgentEvalCaseDetail>(`/eval-cases/${encodeURIComponent(caseId)}`),
+  deleteEvalCase: (caseId: string) => apiFetch<void>(`/eval-cases/${encodeURIComponent(caseId)}`, { method: "DELETE" }),
+  /** A case written by hand in the editor (201). */
+  createManualEvalCase: (agentId: string, body: EvalCaseWrite) =>
+    apiFetch<CreateEvalCaseResponse>(`/agents/${encodeURIComponent(agentId)}/eval-cases`, { method: "POST", body: JSON.stringify(body) }),
+  updateEvalCase: (caseId: string, body: EvalCaseWrite) =>
+    apiFetch<AgentEvalCaseDetail>(`/eval-cases/${encodeURIComponent(caseId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  /** Paid: starts the agent's eval run in the background (202). Without `caseIds`: every case, and no body is sent. */
+  startEvalRun: (agentId: string, caseIds?: string[]) =>
+    apiFetch<StartEvalRunResponse>(`/agents/${encodeURIComponent(agentId)}/eval-runs`, {
+      method: "POST",
+      ...(caseIds ? { body: JSON.stringify({ case_ids: caseIds }) } : {}),
+    }),
+  listAgentEvalRuns: (agentId: string) => apiFetch<EvalSuiteRun[]>(`/agents/${encodeURIComponent(agentId)}/eval-runs`),
+  getEvalRun: (runId: string) => apiFetch<EvalSuiteRunDetail>(`/eval-runs/${encodeURIComponent(runId)}`),
+  compareEvalRuns: (a: string, b: string) =>
+    apiFetch<EvalRunCompare>(`/eval-runs/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
+  getEvalDashboard: () => apiFetch<EvalWorkspaceDashboard>("/eval/dashboard"),
+  getAgentEvalDashboard: (agentId: string) =>
+    apiFetch<EvalAgentDashboard>(`/agents/${encodeURIComponent(agentId)}/eval-dashboard`),
+  /** Paid: one run per agent that has cases. */
+  runAllEvals: () => apiFetch<RunAllEvalResponse>("/eval/run-all", { method: "POST" }),
 };

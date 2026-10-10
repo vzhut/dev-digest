@@ -34,6 +34,8 @@ export const NAV: NavGroup[] = [
       { key: "agents", label: "Agents", icon: "Cpu", href: "/agents", gKey: "a" },
       // Homework (L02): conventions extractor — repo-scoped, so :repoId comes from the active repo.
       { key: "conventions", label: "Conventions", icon: "FileText", href: "/repos/:repoId/conventions", gKey: "c" },
+      // Homework (L06): eval dashboard — workspace-wide, regression evals per agent.
+      { key: "eval", label: "Eval Dashboard", icon: "BarChart", href: "/eval", gKey: "e" },
     ],
   },
 ];
@@ -65,6 +67,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   { keys: "g a", label: "Go to Agents", group: "Navigation" },
   { keys: "g s", label: "Go to Skills", group: "Navigation" },
   { keys: "g c", label: "Go to Conventions", group: "Navigation" },
+  { keys: "g e", label: "Go to Eval Dashboard", group: "Navigation" },
   { keys: "j / k", label: "Next / previous finding", group: "Findings" },
   { keys: "a", label: "Accept finding", group: "Findings" },
   { keys: "d", label: "Dismiss finding", group: "Findings" },

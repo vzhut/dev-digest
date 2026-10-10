@@ -22,6 +22,17 @@ import {
   ContextPathList,
   SearchRoots,
   SetContextPathsBody,
+  EvalExpectation,
+  EvalCaseResult,
+  EvalSuiteRun,
+  EvalSuiteRunDetail,
+  CreateEvalCaseResponse,
+  EvalRunCompare,
+  EvalErrorCode,
+  StartEvalRunResponse,
+  EvalCaseWrite,
+  StartEvalRunBody,
+  EvalCaseMeta,
 } from '@devdigest/shared';
 
 /**
@@ -466,5 +477,130 @@ describe('project context contracts', () => {
     expect(SearchRoots.safeParse(['/etc/*.md']).success).toBe(false);
     expect(SearchRoots.safeParse(['../x/*.md']).success).toBe(false);
     expect(SearchRoots.safeParse(['']).success).toBe(false);
+  });
+});
+
+describe('eval pipeline contracts', () => {
+  const expectation = { type: 'must_find', file: 'src/config.ts', start_line: 12, end_line: 14 } as const;
+  const meta = {
+    source_finding_id: 'f1',
+    source_review_id: 'r1',
+    repo: 'acme/api',
+    pr_number: 482,
+    head_sha: 'abc123',
+    pr_title: 'Add payments',
+  };
+  const run = {
+    id: 'run1',
+    agent_id: 'a1',
+    agent_version: 3,
+    status: 'completed',
+    ran_at: '2026-10-08T09:14:00.000Z',
+    finished_at: '2026-10-08T09:15:00.000Z',
+    cases_done: 2,
+    traces_passed: 1,
+    traces_total: 2,
+    cases_errored: 0,
+    unlabeled: 0,
+    recall: null,
+    precision: 0.5,
+    citation_accuracy: 1,
+    cost_usd: null,
+    cost_partial: true,
+    duration_ms: 60000,
+  };
+
+  it('EvalExpectation: label is optional, bad type and missing lines are rejected', () => {
+    expect(EvalExpectation.parse(expectation).label).toBeUndefined();
+    expect(
+      EvalExpectation.parse({ ...expectation, label: { title: 't', category: 'bug', severity: 'WARNING' } }).label?.title,
+    ).toBe('t');
+    expect(EvalExpectation.safeParse({ ...expectation, type: 'should_find' }).success).toBe(false);
+    expect(EvalExpectation.safeParse({ type: 'must_find', file: 'a.ts' }).success).toBe(false);
+  });
+
+  it('CreateEvalCaseResponse round-trips a case with a frozen diff', () => {
+    const body = {
+      created: true,
+      case: {
+        id: 'c1',
+        agent_id: 'a1',
+        name: 'must_find-hardcoded-stripe-secret-key',
+        expectation,
+        meta,
+        input_files: ['src/config.ts'],
+        created_at: '2026-10-08T09:00:00.000Z',
+        last_result: 'never_run',
+        input_diff: 'diff --git a/src/config.ts b/src/config.ts\n',
+      },
+    };
+    expect(CreateEvalCaseResponse.parse(body)).toEqual(body);
+    expect(CreateEvalCaseResponse.safeParse({ ...body, case: { ...body.case, last_result: 'weird' } }).success).toBe(false);
+  });
+
+  it('EvalSuiteRun allows null metrics (never 0) and the legacy-free traces_* names', () => {
+    const parsed = EvalSuiteRun.parse(run);
+    expect(parsed.recall).toBeNull();
+    expect(EvalSuiteRun.safeParse({ ...run, status: 'failed' }).success).toBe(false);
+    expect(EvalSuiteRun.safeParse({ ...run, cases_errored: undefined }).success).toBe(false);
+  });
+
+  it('EvalSuiteRunDetail parses a stored run whose results predate optional fields', () => {
+    const result = {
+      case_id: 'c1',
+      status: 'error',
+      produced: [],
+      dropped: [],
+      outcomes: [{ expectation, matched_by: [] }],
+      noise: [],
+      unlabeled: [],
+      cost_usd: null,
+      duration_ms: 12,
+    };
+    expect(EvalCaseResult.parse(result).error).toBeUndefined();
+    const detail = EvalSuiteRunDetail.parse({
+      ...run,
+      provider: 'openrouter',
+      model: 'x/y',
+      system_prompt: 'p',
+      strategy: null,
+      skills: [{ id: 's1', name: 'skill' }],
+      case_ids: ['c1'],
+      results: [result],
+    });
+    expect(detail.skills[0]?.version).toBeUndefined();
+  });
+
+  it('EvalRunCompare requires old/new details, prompt diff ops and case-set counts', () => {
+    expect(EvalRunCompare.safeParse({}).success).toBe(false);
+    expect(EvalErrorCode.options).toEqual(
+      expect.arrayContaining([
+        'finding_not_triaged',
+        'finding_has_no_agent',
+        'expectation_not_grounded',
+        'diff_unavailable',
+      ]),
+    );
+    expect(StartEvalRunResponse.parse({ eval_run_id: 'r', status: 'running' }).status).toBe('running');
+  });
+
+  it('EvalCaseWrite (case editor): trims the name, needs a positive line range, title and notes optional', () => {
+    const ok = { name: ' n ', input_diff: 'd', expectation: { type: 'must_find', file: 'a.ts', start_line: 1, end_line: 2 } };
+    expect(EvalCaseWrite.parse(ok).name).toBe('n');
+    expect(EvalCaseWrite.safeParse({ ...ok, name: '  ' }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, start_line: 0 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, type: 'maybe' } }).success).toBe(false);
+    // bounded lines (a hostile range must never reach a per-line loop) and start <= end
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, end_line: 9e15 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, end_line: 1_000_001 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, start_line: 5, end_line: 2 } }).success).toBe(false);
+    expect(EvalCaseWrite.safeParse({ ...ok, expectation: { ...ok.expectation, end_line: 1_000_000 } }).success).toBe(true);
+  });
+
+  it('StartEvalRunBody: case_ids optional uuids; EvalCaseMeta allows a hand-written case with no PR', () => {
+    expect(StartEvalRunBody.parse({})).toEqual({});
+    expect(StartEvalRunBody.safeParse({ case_ids: ['nope'] }).success).toBe(false);
+    expect(StartEvalRunBody.safeParse({ case_ids: [] }).success).toBe(false);
+    expect(EvalCaseMeta.parse({ pr_title: 'x' }).repo).toBeUndefined();
   });
 });
