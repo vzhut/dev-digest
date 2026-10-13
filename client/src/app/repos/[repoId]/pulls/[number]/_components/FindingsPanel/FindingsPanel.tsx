@@ -103,6 +103,7 @@ export function FindingsPanel({
                 pending={action.isPending}
                 repoFullName={repoFullName}
                 headSha={headSha}
+                prId={prId}
                 onAction={(act) => action.mutate({ findingId: f.id, action: act, prId })}
               />
             </div>

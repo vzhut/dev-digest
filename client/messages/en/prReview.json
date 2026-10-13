@@ -11,7 +11,16 @@
     "sendReply": "Send reply",
     "cancel": "Cancel",
     "outOfScope": "Out of scope",
-    "downgradedFrom": "downgraded from {severity}"
+    "downgradedFrom": "downgraded from {severity}",
+    "evalCase": {
+      "turn": "Turn into eval case",
+      "needsDecision": "Accept or dismiss this finding first",
+      "noAgent": "This finding has no producing agent",
+      "created": "Eval case created",
+      "exists": "An eval case already exists for this finding",
+      "failed": "Could not create the eval case",
+      "tagLabel": "Eval case: {type}"
+    }
   },
   "trifecta": {
     "lethal": "LETHAL TRIFECTA — ALL 3 PRESENT",
