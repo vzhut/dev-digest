@@ -18,12 +18,12 @@ export const cases: WorkflowCase[] = [
     kind: "trace",
     // Endpoint must NOT already exist, or the model reviews the existing code inline instead of
     // planning-then-dispatching. GET /reviews/:id/export is genuinely absent from routes.ts.
-    name: "API-route task reads api-contracts AND pulls the architecture-reviewer",
+    name: "API-route task reads the server run-lifecycle doc AND pulls the architecture-reviewer",
     prompt:
       "Я планую додати НОВИЙ, ще не реалізований ендпоінт GET /reviews/:id/export (віддає ревʼю як " +
-      "markdown). Спершу звірся з конвенціями API цього репо. Потім ОБОВʼЯЗКОВО запусти сабагента " +
+      "markdown). Спершу звірся з документацією сервера про життєвий цикл review-run (server/docs). Потім ОБОВʼЯЗКОВО запусти сабагента " +
       "architecture-reviewer, щоб він оцінив мій план на відповідність onion-шарам — не рецензуй сам.",
-    expectFilesRead: ["server/docs/api-contracts.md"],
+    expectFilesRead: ["server/docs/review-run-lifecycle.md"],
     expectSubagents: ["architecture-reviewer"],
     maxTurns: 8,
   },
@@ -43,17 +43,17 @@ export const cases: WorkflowCase[] = [
     maxTurns: 8,
   },
 
-  // --- trace (1 session): CLAUDE.md "Hit unexpected behavior" routing -> gotchas ----------------
+  // --- trace (1 session): AGENTS.md "search INSIGHTS.md first" routing -> the package INSIGHTS.md ----------------
   // Was a contrast case, but the control run (empty tmpdir) could still reach the real repo by
   // absolute path and read gotchas.md, making the negative flaky. As a single-session trace it
-  // reliably checks the same routing rule: in the real repo, the discovery prompt reads gotchas.md.
+  // reliably checks the same routing rule: in the real repo, the discovery prompt reads reviewer-core/INSIGHTS.md.
   {
     kind: "trace",
-    name: "CLAUDE.md routes a gotchas lookup to reviewer-core/insights",
+    name: "AGENTS.md routes a gotchas lookup to reviewer-core/INSIGHTS.md",
     prompt:
       "У reviewer-core я стикнувся з несподіваною поведінкою — щось працює не так, як я очікував. " +
       "За настановами цього репо, де це вже могло бути задокументовано? Прочитай той файл.",
-    expectFilesRead: ["reviewer-core/insights/gotchas.md"],
+    expectFilesRead: ["reviewer-core/INSIGHTS.md"],
     maxTurns: 5,
   },
 

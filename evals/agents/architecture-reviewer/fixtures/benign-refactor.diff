@@ -1,7 +1,7 @@
-diff --git a/server/src/modules/blast/score.ts b/server/src/modules/blast/score.ts
+diff --git a/server/src/modules/blast/helpers.ts b/server/src/modules/blast/helpers.ts
 index eeeeeee..fffffff 100644
---- a/server/src/modules/blast/score.ts
-+++ b/server/src/modules/blast/score.ts
+--- a/server/src/modules/blast/helpers.ts
++++ b/server/src/modules/blast/helpers.ts
 @@ -1,10 +1,12 @@
  export interface BlastRow {
    id: string;

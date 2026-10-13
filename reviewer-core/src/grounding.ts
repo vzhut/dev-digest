@@ -20,9 +20,18 @@ export interface GroundingResult {
   dropped: { finding: Finding; reason: string }[];
 }
 
+/**
+ * A hunk with no parsed body lines falls back to its DECLARED new range. The header is untrusted (a hostile or
+ * truncated diff can declare `+1,999999999`), so the fallback is clamped per hunk and budgeted per diff: normal
+ * diffs (a deletion-only hunk declares 0 new lines) are unaffected.
+ */
+const FALLBACK_MAX_LINES_PER_HUNK = 1_000;
+const FALLBACK_MAX_LINES_PER_DIFF = 100_000;
+
 /** Build a quick lookup of file → set of new-side line numbers covered by hunks. */
 export function buildLineIndex(diff: UnifiedDiff): Map<string, Set<number>> {
   const idx = new Map<string, Set<number>>();
+  let fallbackBudget = FALLBACK_MAX_LINES_PER_DIFF;
   for (const f of diff.files) {
     const set = new Set<number>();
     for (const h of f.hunks) {
@@ -30,7 +39,10 @@ export function buildLineIndex(diff: UnifiedDiff): Map<string, Set<number>> {
         for (const n of h.newLineNumbers) set.add(n);
       } else {
         // fall back to the hunk's declared new range
-        for (let n = h.newStart; n < h.newStart + Math.max(h.newLines, 1); n++) set.add(n);
+        if (!Number.isSafeInteger(h.newStart)) continue;
+        const count = Math.min(Math.max(h.newLines, 1), FALLBACK_MAX_LINES_PER_HUNK, fallbackBudget);
+        fallbackBudget -= count;
+        for (let n = h.newStart; n < h.newStart + count; n++) set.add(n);
       }
     }
     idx.set(f.path, set);
@@ -41,7 +53,12 @@ export function buildLineIndex(diff: UnifiedDiff): Map<string, Set<number>> {
 function rangeIntersects(lines: Set<number>, start: number, end: number): boolean {
   const lo = Math.min(start, end);
   const hi = Math.max(start, end);
-  for (let n = lo; n <= hi; n++) if (lines.has(n)) return true;
+  // `start` / `end` come from the model: never walk a range wider than the set it is tested against.
+  if (hi - lo + 1 <= lines.size) {
+    for (let n = lo; n <= hi; n++) if (lines.has(n)) return true;
+    return false;
+  }
+  for (const n of lines) if (n >= lo && n <= hi) return true;
   return false;
 }
 

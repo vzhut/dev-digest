@@ -113,6 +113,20 @@
       "when": 1790853024184,
       "tag": "0015_fair_hitman",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791457340798,
+      "tag": "0016_keen_hobgoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791553382034,
+      "tag": "0017_spooky_doctor_doom",
+      "breakpoints": true
     }
   ]
 }

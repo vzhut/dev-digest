@@ -27,10 +27,17 @@ const changed = (process.env.CHANGED_FILES ?? "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-/** Does evals/<tier>/<name>/ contain at least one *.eval.ts? */
+/** Does the artifact under test still exist? (an eval whose skill/agent was removed is skipped) */
+function artifactExists(tier, name) {
+  return tier === "skills"
+    ? existsSync(join(REPO_ROOT, ".claude", "skills", name, "SKILL.md"))
+    : existsSync(join(REPO_ROOT, ".claude", "agents", `${name}.md`));
+}
+
+/** Does evals/<tier>/<name>/ contain at least one *.eval.ts for an existing artifact? */
 function hasEvals(tier, name) {
   const dir = join(EVALS_DIR, tier, name);
-  if (!existsSync(dir)) return false;
+  if (!existsSync(dir) || !artifactExists(tier, name)) return false;
   return readdirSync(dir).some((f) => f.endsWith(".eval.ts"));
 }
 
@@ -84,5 +91,5 @@ console.error(`changed files : ${changed.length}`);
 console.error(`skills → run  : ${skills.join(", ") || "(none)"}`);
 console.error(`agents → run  : ${agents.join(", ") || "(none)"}`);
 console.error(`workflow tier : ${runWorkflow ? "run" : "skip"}`);
-if (skippedSkills.length) console.error(`SKIP skills (no evals): ${skippedSkills.join(", ")}`);
-if (skippedAgents.length) console.error(`SKIP agents (no evals): ${skippedAgents.join(", ")}`);
+if (skippedSkills.length) console.error(`SKIP skills (no evals / artifact missing): ${skippedSkills.join(", ")}`);
+if (skippedAgents.length) console.error(`SKIP agents (no evals / artifact missing): ${skippedAgents.join(", ")}`);

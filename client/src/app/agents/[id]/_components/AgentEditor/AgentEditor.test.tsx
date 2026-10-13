@@ -94,3 +94,11 @@ describe("A2 Agent Editor (smoke)", () => {
     });
   });
 });
+
+describe("Evals tab entry", () => {
+  it("offers an Evals tab right after Context (its content has its own test next to EvalsTab)", () => {
+    renderWithIntl(<AgentEditor agent={AGENT} tab="config" onTab={() => {}} />);
+    const labels = screen.getAllByRole("button").map((el) => el.textContent?.trim());
+    expect(labels.indexOf("Evals")).toBe(labels.indexOf("Context") + 1);
+  });
+});
