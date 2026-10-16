@@ -4,9 +4,6 @@ Purpose: one place with everything needed to continue or analyse this run in a n
 re-collected from the repo, GitHub (`vzhut/conventions-demo`) and the local studio DB on 2026-10-14; where
 something is an inference or unverified it says so. Companion files in this folder:
 
-> **`logs/` is not committed** (the repository is public). The files named below were collected on 2026-10-14 and live only in the author's
-> working copy of this folder; the numbers quoted in this document are the evidence. `screenshots/` and `check-token.sh` are committed.
-
 | File | What it is |
 |---|---|
 | `logs/ci-runner-step-excerpts.txt` | "Run the DevDigest agent" step + runner lines of three real Actions runs (secrets are masked `***` by GitHub) |
