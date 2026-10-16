@@ -503,3 +503,6 @@ On Docker Desktop with ~7.7 GiB, the 24 `.it` files start ~10 `pgvector` contain
 
 ## 2026-10-16 — rows inserted in one transaction share `now()`, so `ran_at` ordering ties
 Moving the parent + child `agent_runs` inserts into one transaction made every `ran_at` (`defaultNow()`) identical, and the multi-agent columns came back in arbitrary order (`test/multi-agent-review.it.test.ts` "runs three agents at once": expected Alpha/Bravo/Charlie, got Bravo first). Fixed by inserting `ran_at` as `clock_timestamp()` in `modules/reviews/repository/run.repo.ts` `createAgentRun`. Anything that orders siblings by a `defaultNow()` column must not be created inside one transaction.
+
+## 2026-10-16 — a second API server on the same Postgres reaps your running runs
+`reapStaleRunningRuns` (`modules/reviews/repository/run.repo.ts`) marks EVERY `agent_runs.status='running'` row `failed` when any server boots. Two worktrees sharing one dev DB therefore kill each other's live runs when one restarts (symptom: a child `failed` with null error/duration/tokens and a parent without `finished_at`; seen in the 1-vs-3 measurement, parent `1ac93669…`). Measure or demo on an isolated DB, or don't restart the other server during a run.
