@@ -210,3 +210,83 @@ Mode: default · Agents: 19 spawns (13 plan run, 2 fix round, 1 user-requested r
 - **Make the plan-verifier trust the parent's last green run.** Evidence: the verifier re-ran 458 + 110 + 380 tests the parent had just run; the previous retro (same ledger, onboarding tour) already proposed this and it was not adopted. Next run, pass "parent ran full suites at <sha>, output saved at <file>" and let the verifier re-run only a named subset.
 - **Classify a fix agent's "the code cannot satisfy the AC" as a production fix at once.** Evidence: round 1 spent agent #14 on tests and agent #15 on the code. Next run, tell fix agents they may change production code when the AC requires it, so one agent closes both.
 - **Tighten two `gates.sh` rules.** Evidence: `gate-findings.tsv` listed R6 and R7 on this change and both were false positives. Next run, make R6 fire only when added seed lines touch `system_prompt`, and let R7 allow `new <Name>Repository(container.db` inside `routes.ts` (blast, onboarding, project-context do the same).
+
+### Export to CI (worktree B): spec → plan → implement → review → fix loop, `specs/2026-10-13-export-to-ci.*` — 2026-10-14
+
+Mode: default · Agents: 12 spawns (11 completed + 1 failed) · Total tokens: ~1.82M (completed agents; the failed run reported no usage) · Wall time: not measurable from context (session crossed two rate-limit resets); sum of agent durations ≈ 70 min · Fix-loop rounds: 1 (2 fix agents, cap set by the user)
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | spec-creator | not stated | 188k | 34 | 7m05s | done (spec written to the MAIN checkout, not the worktree) |
+| 2 | implementation-planner v1 (10 tasks, single-agent) | not stated | 249k | 37 | 28m28s | done, then superseded |
+| 3 | implementation-planner v2 (first try) | not stated | n/a | n/a | n/a | failed: API rate limit (HTTP 429) before writing |
+| 4 | implementation-planner v2 (simple, 6 tasks) | not stated | 193k | 33 | 9m17s | done |
+| 5 | implementer A (T1 contracts → T3 runner) | not stated | 165k | 26 | 2m59s | done |
+| 6 | implementer B (T2 server export) | not stated | 187k | 32 | 5m47s | done |
+| 7 | implementer D (T5 → T6 client) | not stated | 226k | 38 | 8m16s | done |
+| 8 | implementer E (T4 ingest, ran alongside D) | not stated | 118k | 14 | 2m12s | done |
+| 9 | architecture-reviewer | sonnet (per run-plan) | 153k | 16 | 1m10s | done: 0 CRITICAL / 0 HIGH / 1 MEDIUM / 3 LOW |
+| 10 | plan-verifier | sonnet (per run-plan) | 165k | 32 | 3m50s | done: PASS 68 / PARTIAL 2 / MISSING 0 / UNVERIFIED 1 |
+| 11 | fix F1 (AC-20 note) | not stated | 84k | 3 | 19s | done |
+| 12 | fix F2 (AC-35 log redaction) | not stated | 91k | 6 | 33s | done |
+
+**Went easily:** all four implementers returned `Status: done` on the first pass; B and E touched different files of `modules/ci/` in sequence and D worked in `client/` in parallel with no path clash (`git status` showed only owned paths). Both fix agents were tiny (19 s, 33 s) and closed their findings in one pass. The T3 execution gate caught the ESM bundle problem (`dist/index.js` fails on Node < 22.7) in wave 1, before T2 hard-coded a runner path.
+**Had difficulty:** (1) The first spec went to the main checkout, because my spec-creator prompt named no worktree path (spec-creator report: "I saved both files in the main checkout"); it was copied by hand later. (2) The v1 plan (692 lines, 10 tasks, 249k tokens, 28 min) was thrown away after the user asked for a simple version; it had been written before that scope decision. (3) One planner run died on a rate limit (`task-notification` status `failed`, HTTP 429) and the whole prompt was re-sent. (4) Environment friction: no `node_modules` in the fresh worktree, `timeout` does not exist on macOS (first baseline run printed nothing), and agent-runner typecheck was already red at baseline (`run.ts:124`, `string[]` vs `PromptSkill[]`). (5) The v1 planner's report said the mode and instructions were "chosen by the user" when the user had never been asked, so a plan was produced on unconfirmed premises.
+**Duplicated:** spec-creator, planner v1 and planner v2 each re-verified the same repo facts (`GitHubClient` methods, `fflate` in server deps, `run_traces` jsonb, `ci_installations` columns). The design-review gaps appear in the spec and again in the plan's Deviations table. Both reviewers separately noted that the new code has no tests (architecture MEDIUM, verifier "UNVERIFIED by design").
+**Missed / caught late:** AC-35 (raw error object logged by the runner's fatal handler, `agent-runner/src/index.ts`) passed T3's acceptance and was caught only by plan-verifier (PARTIAL), because the card said "never print env values" but its acceptance did not test it. AC-20 (the "REQUEST_CHANGES alone does not block merge" clause) was in the spec but not named in the T5 card, again caught only by plan-verifier. The earlier spec-creator claim that `post_as` never reaches the runner was stale; planner v2 found the runner already reads `DEVDIGEST_POST_AS`. Still unconfirmed by anyone: whether GitHub's `run.path` matches the exact workflow path that ingest requires (`ingest.ts:43-45`).
+
+**Proposals:**
+- Next run, put the absolute worktree path and "write only under it" in every spec-creator / planner / implementer prompt. Evidence: spec-creator wrote to the main checkout (`~/Documents/AI Course/dev-digest/specs/`).
+- Next run, settle scope ("full or simple?", test policy, agent cap) with the user BEFORE spawning implementation-planner. Evidence: the v1 plan cost 249k tokens and 28 min and was fully replaced (v2: 193k, 9 min).
+- Next run, give each security-relevant acceptance an executable check in the task card. For runner logging, ship the sentinel-env run (`OPENROUTER_API_KEY=sentinel… node index.mjs | grep sentinel` must be empty) in the T3 card. Evidence: AC-35 PARTIAL; the same gate was run in the fix task and passed in 33 s.
+- Next run, even in a "no tests by the implementer" workflow, schedule one `test-writer` pass for the three security-critical pure files (`workflow.ts` validator, `ingest.ts` verification, runner artifact/log). Evidence: architecture MEDIUM and the verifier's "no PASS is backed by a feature-specific test"; cost estimate about one implementer spawn (~100–190k tokens).
+- Next run, do the environment preflight once in one command and cache it for all agents: install dependencies, record baseline typecheck + tests per touched package, no `timeout`. Evidence: empty baseline output on macOS; pre-existing agent-runner typecheck failure discovered only at wave 1.
+- Next run, mark waves in the plan by true dependencies: T4 depended only on T2, so E started alongside D and wave 3 added no wall time. Evidence: E finished (2m12s) while D was still running (8m16s).
+- Keep the fix-loop shape (1 round, ≤2 agents, one file area each): both fixes closed in under a minute with disjoint files.
+- Next run, have each agent's hand-back state its model; this retro could not fill the Model column for 10 of 12 rows.
+
+### Export to CI: test phase and final review — 2026-10-14
+
+Mode: default · Agents: 6 (4 with reported usage) · Total tokens: ~537k + verifier (usage not reported) · Fix-loop rounds: 0
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | test-writer (server ci) | not stated | 166k | 34 | 5m40s | done: 89 unit + 7 `.it` tests |
+| 2 | test-writer (agent-runner) | not stated | 130k | 32 | 4m18s | done: 76 tests |
+| 3 | test-writer (client) | not stated | 151k | 28 | 6m24s | done: 106 tests |
+| 4 | architecture-reviewer (final) | sonnet (per run-plan) | 89k | 23 | 1m42s | done: 0 CRITICAL / 0 HIGH / 0 MEDIUM / 5 LOW |
+| 5 | plan-verifier (final) | sonnet (per run-plan) | n/a | n/a | n/a | done: PASS 66 / PARTIAL 4 / MISSING 0 / UNVERIFIED 1 |
+
+**Went easily:** all three test-writers finished first pass with disjoint paths; none changed production code; the parent's own
+re-run matched their numbers (server 616, client 573, runner 99). The `.it` file ran on its own testcontainers DB.
+**Had difficulty:** none blocking. The client test-writer reported using `sed -i` (a forbidden command) on its own new files; no
+other file was touched. The server run hit the known `project-docs-fs` timing flake once.
+**Duplicated:** the final reviewers re-read nearly the whole 9k-line diff again (89k tokens for the architecture pass).
+**Missed / caught late:** nothing new at functional level; the verifier flagged only AC-10 (`editable` flag), NFR observability (success log) and
+missing security/perf NFR evidence, all of which the earlier round had accepted or not covered.
+
+**Proposals:**
+- Next run, hand the final architecture-reviewer only the files changed since the previous review plus its previous findings (as `run-plan` step C.4 already says); this pass re-read everything and cost 89k tokens for 2 new LOW.
+- Next run, add the `.it` token-sentinel check on the export path and a timing test for the 200-row render to the test-writer brief; the verifier's remaining PARTIAL/UNVERIFIED rows are exactly the NFRs nobody was asked to test.
+- Next run, tell test-writers "never run sed -i, use the Edit tool" in the brief; one agent broke the bash-scope rule even on its own files.
+
+*Correction (same day, to the entry above):* the final plan-verifier's usage arrived after the entry was written: 171k tokens, 35 tool uses, 4m53s. Totals for the test phase and final review are therefore 6 agents, ~707k tokens.
+
+### Export to CI: cleanup round and final reviews — 2026-10-16
+
+Mode: default · Agents: 3 completed + 1 failed (rate limit) · Total tokens: ~353k (failed run reported none) · Fix-loop rounds: 0 (the cleanup was done inline by the parent)
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | architecture-reviewer (incremental, round 3) | sonnet (per run-plan) | 80k | 8 | 35s | done: 0 / 0 / 0 / 0 |
+| 2 | plan-verifier (round 3, first try) | sonnet (per run-plan) | n/a | n/a | n/a | failed: API rate limit (HTTP 429) |
+| 3 | plan-verifier (round 3, retry) | sonnet (per run-plan) | 193k | 50 | 20m12s | done: PASS 70 / PARTIAL 3 / MISSING 0 / UNVERIFIED 1 |
+
+**Went easily:** the incremental architecture pass over only the touched files took 35 s and 80k tokens (the first full re-read took 89k and 102 s for a larger diff); the parent's own edits kept every suite green on the first re-run.
+**Had difficulty:** the plan-verifier hit the session rate limit once and had to be re-run from scratch; its retry took 20 minutes (50 tool uses, three package suites plus `.it`).
+**Duplicated:** the verifier re-ran all suites that the parent had just run; both reviewers read the same shared-contract hunks.
+**Missed / caught late:** the verifier noticed that `getDefaultBranch` is not mirrored into the client copy of `shared/adapters.ts` (accepted: client has no GitHub client); AC-57 was rated PARTIAL on a stricter reading of its Verify clause, never flagged before.
+
+**Proposals:**
+- Next run, give the plan-verifier the parent's fresh suite results and tell it to re-run only the suites it needs for evidence of changed items; the retry spent most of its 20 minutes re-running everything.
+- Next run, write the tests for the stricter Verify clauses (AC-57 PR-cost-after-ingest, NFR-Sec `.it` sentinel) in the test-writer brief; two rounds of verification reported them as the only recurring gaps.

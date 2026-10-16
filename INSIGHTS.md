@@ -169,6 +169,18 @@ cd "$(git rev-parse --show-toplevel)"
 The general rule for anything that gates a publish: a script that cannot do its job must exit
 non-zero. Silence has to mean "checked and clean", never "did not run".
 
+### `/pr-self-review` scripts fail inside a git worktree — they assume `.git` is a directory
+
+`.claude/skills/pr-self-review/scripts/collect.sh:68` (`WORK=".git/pr-self-review/work"`), also `gates.sh:36`, `route.sh:16`, `check-marker.sh:33` · 2026-10-16
+
+In a worktree `.git` is a one-line file (`gitdir: …/.git/worktrees/<name>`), so `bash …/collect.sh` stops at
+`mkdir: .git: Not a directory` before producing anything. Every Emdash/`git worktree` checkout hits this. Workaround that
+needs no change to the skill: copy `scripts/` to a scratch dir, `sed -i '' "s#\.git/pr-self-review#$(git rev-parse --git-dir)/pr-self-review#g"`
+on the copies and run those from the worktree (the git dir path may contain spaces; the scripts still ran). The proper fix
+is to resolve `$(git rev-parse --git-dir)` in the four scripts; that is a skill change, so per `AGENTS.md` it needs
+`cd evals && pnpm eval:quality` and a recorded result, and is not done yet. A marker written to the real git dir is also what
+`check-marker.sh` would read, so the hooks (currently disabled) would find it only if they use the same resolved path.
+
 ## Recurring Errors & Fixes
 
 _No entries yet._
