@@ -101,6 +101,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# Export to CI embeds agent-runner/dist/index.js; build it once with
+# `cd agent-runner && pnpm install && pnpm build` (git-ignored, not built here).
 log "starting API on :3001 (server)"
 (cd server && pnpm dev) &
 SERVER_PID=$!

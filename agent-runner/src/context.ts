@@ -30,6 +30,12 @@ export interface PrContext {
   /** True when the PR head is a fork — informational only; the workflow
    *  itself is responsible for never scheduling this job for fork PRs. */
   isFork: boolean;
+  /** `owner/name` as reported by GITHUB_REPOSITORY. */
+  repository: string;
+  /** Numeric repository id from the event payload (`repository.id`). */
+  repositoryId: number;
+  /** PR head commit SHA from the event payload (`pull_request.head.sha`). */
+  headSha: string;
 }
 
 interface PullRequestEventPayload {
@@ -37,8 +43,9 @@ interface PullRequestEventPayload {
     number?: number;
     title?: string;
     body?: string | null;
-    head?: { repo?: { fork?: boolean } | null };
+    head?: { sha?: string; repo?: { fork?: boolean } | null };
   };
+  repository?: { id?: number };
 }
 
 function readEventPayload(
@@ -83,9 +90,24 @@ export function resolvePrContext(
     );
   }
 
+  // The studio verifies these two against the Actions run metadata when it
+  // ingests the artifact, so a payload without them cannot produce a usable
+  // result — fail hard instead of emitting an unverifiable artifact.
+  const headSha = pr?.head?.sha;
+  if (typeof headSha !== 'string' || !/^[0-9a-f]{40}$/.test(headSha)) {
+    throw new RunnerError('Event payload is missing pull_request.head.sha (a 40-char hex commit SHA)');
+  }
+  const repositoryId = event?.repository?.id;
+  if (typeof repositoryId !== 'number' || !Number.isInteger(repositoryId) || repositoryId <= 0) {
+    throw new RunnerError('Event payload is missing repository.id (a positive integer)');
+  }
+
   return {
     owner,
     repo,
+    repository,
+    repositoryId,
+    headSha,
     prNumber,
     title: pr?.title ?? '',
     body: pr?.body ?? '',
