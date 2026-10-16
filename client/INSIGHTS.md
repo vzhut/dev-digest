@@ -63,6 +63,12 @@ A callback prop (`onSettled`) can't go in the deps for the same reason, so it is
 updated by an unconditional effect and read as `onSettledRef.current?.()` when the last stream
 closes. Result: no disabled lint rule, and the subscription survives parent re-renders.
 
+### `useRunEvents(onSettled)` fires only when ALL its streams closed, so per-child live state needs one hook per child
+
+`src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts:1` · 2026-10-13
+
+On the multi-agent page one `useRunEvents(allRunningIds, { onSettled })` would refetch the parent run only when the slowest child ends: an early finisher would sit at "running" with a ticking timer. `onSettled` in `src/lib/hooks/reviews.ts` is called when `open <= 0`, i.e. after the last EventSource closes. `useAgentLive(column, onSettled)` therefore calls `useRunEvents([column.run_id])` once per column (and per tab), so each child's end refetches `GET /multi-agent-runs/:id` on its own. Limitation: in Tabs mode only the open tab subscribes, so a hidden running child updates when its tab is opened or the window regains focus.
+
 ## Tool & Library Notes
 
 ### A Server Component that imports `@devdigest/ui` crashes every page under `next dev`, but `next build` passes

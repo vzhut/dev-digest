@@ -1,0 +1,62 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  wrap: { marginTop: 22 } satisfies CSSProperties,
+  right: { display: "flex", alignItems: "center", gap: 14 } satisfies CSSProperties,
+  count: { fontSize: 11.5, color: "var(--text-muted)" } satisfies CSSProperties,
+  toggle: {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    fontSize: 12,
+    color: "var(--text-secondary)",
+    textTransform: "none",
+    letterSpacing: 0,
+    fontWeight: 400,
+  } satisfies CSSProperties,
+  empty: { fontSize: 13.5, color: "var(--text-secondary)" } satisfies CSSProperties,
+  list: { display: "flex", flexDirection: "column", gap: 10 } satisfies CSSProperties,
+  card: {
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    overflow: "hidden",
+    background: "var(--bg-elevated)",
+  } satisfies CSSProperties,
+  head: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 14px",
+    borderBottom: "1px solid var(--border)",
+  } satisfies CSSProperties,
+  headIcon: { color: "var(--text-muted)" } satisfies CSSProperties,
+  loc: { fontSize: 12 } satisfies CSSProperties,
+  title: { fontSize: 13, fontWeight: 600, marginLeft: 6 } satisfies CSSProperties,
+  cells: (count: number): CSSProperties => ({
+    display: "grid",
+    gridTemplateColumns: `repeat(${Math.max(count, 1)}, 1fr)`,
+    gap: 1,
+    background: "var(--border)",
+  }),
+  cell: { padding: "10px 14px", background: "var(--bg-elevated)" } satisfies CSSProperties,
+  agent: { fontSize: 11.5, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 } satisfies CSSProperties,
+  verdict: { display: "flex", alignItems: "center", gap: 5, marginBottom: 4 } satisfies CSSProperties,
+  dot: (color: string): CSSProperties => ({ width: 7, height: 7, borderRadius: 99, background: color }),
+  verdictLabel: (flagged: boolean): CSSProperties => ({
+    fontSize: 11,
+    fontWeight: 600,
+    color: flagged ? "var(--text-primary)" : "var(--text-muted)",
+    textTransform: flagged ? "uppercase" : "none",
+    letterSpacing: flagged ? "0.03em" : 0,
+  }),
+  note: {
+    fontSize: 11.5,
+    color: "var(--text-muted)",
+    lineHeight: 1.4,
+    // The note is the finding's rationale: keep a cell to a few lines like the design.
+    display: "-webkit-box",
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  } satisfies CSSProperties,
+} as const;

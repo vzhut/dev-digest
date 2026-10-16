@@ -18,6 +18,8 @@ export const FindingRecord = Finding.extend({
   dismissed_at: z.string().nullable(),
   /** Severity the reviewer gave before the intent scope policy downgraded it. */
   original_severity: Severity.nullish(),
+  /** When the finding was saved as a repo learning; null/absent = not learned. */
+  learned_at: z.string().nullish(),
 });
 export type FindingRecord = z.infer<typeof FindingRecord>;
 
@@ -60,8 +62,23 @@ export const ReviewRunResponse = z.object({
   pr_id: z.string(),
   runs: z.array(ReviewRunTarget),
   reviews: z.array(ReviewRecord),
+  /** Set when the request used `agent_ids`: the parent multi-agent run. */
+  multi_agent_run_id: z.string().optional(),
 });
 export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
+
+/** Response of POST /findings/:id/learn. */
+export const LearnFindingResponse = z.object({
+  finding: FindingRecord,
+  memory: z.object({
+    id: z.string(),
+    kind: z.literal('learning'),
+    scope: z.literal('repo'),
+    content: z.string(),
+    created: z.boolean(),
+  }),
+});
+export type LearnFindingResponse = z.infer<typeof LearnFindingResponse>;
 
 /** Intent persisted for a PR (the Intent plus the pr_id it scopes and derivation metadata). */
 export const PrIntentRecord = Intent.extend({

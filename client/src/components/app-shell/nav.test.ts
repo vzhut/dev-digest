@@ -8,7 +8,7 @@ describe("sidebar NAV", () => {
   it("puts Skills, Agents, Conventions and Eval Dashboard in SKILLS LAB, not WORKSPACE", () => {
     expect(keysOf("SKILLS LAB")).toEqual(["skills", "agents", "conventions", "eval"]);
     expect(keysOf("WORKSPACE")).not.toContain("agents");
-    expect(keysOf("WORKSPACE")).toEqual(["pulls", "onboarding-tour", "context"]);
+    expect(keysOf("WORKSPACE")).toEqual(["pulls", "multi-agent", "onboarding-tour", "context"]);
   });
 
   it("keeps item keys and g-shortcuts unique", () => {

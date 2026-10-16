@@ -1,8 +1,10 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
-import type { Db } from '../../../db/client.js';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import type { Db, Tx } from '../../../db/client.js';
 import * as t from '../../../db/schema.js';
 import type { Finding, Severity } from '@devdigest/shared';
 import type { FindingRow, PullRow } from '../../../db/rows.js';
+
+type MemoryRow = typeof t.memory.$inferSelect;
 
 export type ReviewRow = typeof t.reviews.$inferSelect;
 
@@ -161,5 +163,84 @@ export async function setFindingDismissed(
     .set({ dismissedAt: at, acceptedAt: null })
     .where(eq(t.findings.id, findingId))
     .returning();
+  return row;
+}
+
+// ---- learn (finding -> repo memory) ----------------------------------------
+
+/** Run attribution for a finding's review: parent multi-agent run + stored agent name. */
+export async function getRunAttribution(
+  db: Db,
+  runId: string,
+): Promise<{ multiAgentRunId: string | null; agentName: string | null } | undefined> {
+  const [row] = await db
+    .select({ multiAgentRunId: t.agentRuns.multiAgentRunId, agentName: t.agentRuns.agentName })
+    .from(t.agentRuns)
+    .where(eq(t.agentRuns.id, runId));
+  return row;
+}
+
+/** Claim the one-time learn: sets `learned_at` only when still null. No row = already learned. */
+export async function claimFindingLearned(
+  db: Db | Tx,
+  findingId: string,
+  at: Date,
+): Promise<FindingRow | undefined> {
+  const [row] = await db
+    .update(t.findings)
+    .set({ learnedAt: at })
+    .where(and(eq(t.findings.id, findingId), isNull(t.findings.learnedAt)))
+    .returning();
+  return row;
+}
+
+export async function getFindingFor(db: Db | Tx, findingId: string): Promise<FindingRow | undefined> {
+  const [row] = await db.select().from(t.findings).where(eq(t.findings.id, findingId));
+  return row;
+}
+
+export async function getMemory(db: Db | Tx, id: string): Promise<MemoryRow | undefined> {
+  const [row] = await db.select().from(t.memory).where(eq(t.memory.id, id));
+  return row;
+}
+
+export async function insertLearning(
+  db: Db | Tx,
+  values: {
+    workspaceId: string;
+    repoId: string;
+    content: string;
+    confidence: number;
+    sources: unknown;
+  },
+): Promise<MemoryRow> {
+  const [row] = await db
+    .insert(t.memory)
+    .values({
+      workspaceId: values.workspaceId,
+      repoId: values.repoId,
+      scope: 'repo',
+      kind: 'learning',
+      content: values.content,
+      confidence: values.confidence,
+      sources: values.sources,
+    })
+    .returning();
+  if (!row) throw new Error('insertLearning: no row returned');
+  return row;
+}
+
+export async function linkFindingMemory(
+  db: Db | Tx,
+  findingId: string,
+  memoryId: string,
+  learnedAt: Date,
+): Promise<FindingRow> {
+  const [row] = await db
+    .update(t.findings)
+    .set({ learnedMemoryId: memoryId, learnedAt })
+    .where(eq(t.findings.id, findingId))
+    .returning();
+  if (!row) throw new Error('linkFindingMemory: finding not found');
   return row;
 }

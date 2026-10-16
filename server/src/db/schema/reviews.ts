@@ -4,6 +4,7 @@ import type { IntentSource } from '@devdigest/shared';
 import { now } from './_shared';
 import { workspaces } from './core';
 import { pullRequests } from './pulls';
+import { memory } from './knowledge';
 
 // ============================================================ Review & findings
 
@@ -48,6 +49,9 @@ export const findings = pgTable('findings', {
   originalSeverity: text('original_severity'),
   acceptedAt: timestamp('accepted_at', { withTimezone: true }),
   dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+  /** When the finding was saved as a repo learning (idempotency marker). */
+  learnedAt: timestamp('learned_at', { withTimezone: true }),
+  learnedMemoryId: uuid('learned_memory_id').references(() => memory.id, { onDelete: 'set null' }),
 });
 
 export const prIntent = pgTable(

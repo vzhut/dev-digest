@@ -78,6 +78,16 @@ export type MemoryKind = z.infer<typeof MemoryKind>;
 export const MemorySource = z.object({
   pr: z.number().int().nullish(),
   context: z.string(),
+  /** Learned-from-finding provenance (all optional; absent on other memories). */
+  finding_id: z.string().optional(),
+  pr_id: z.string().optional(),
+  run_id: z.string().optional(),
+  multi_agent_run_id: z.string().optional(),
+  agent_id: z.string().optional(),
+  agent_name: z.string().optional(),
+  decision: z.enum(['accepted', 'dismissed', 'undecided']).optional(),
+  learned_at: z.string().optional(),
+  origin: z.literal('agent_output').optional(),
 });
 export type MemorySource = z.infer<typeof MemorySource>;
 

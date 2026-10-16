@@ -3,7 +3,7 @@
 import React from "react";
 import type { FindingRecord } from "@devdigest/shared";
 import { useFindingAction } from "@/lib/hooks/reviews";
-import { FindingCard } from "../../../FindingCard";
+import { FindingCard } from "@/components/finding-card";
 
 interface InlineFindingProps {
   finding: FindingRecord;

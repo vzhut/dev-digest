@@ -1,4 +1,4 @@
-import type { Db } from '../../db/client.js';
+import type { Db, Tx } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 import type { RunSummary, RunTrace } from '@devdigest/shared';
 
@@ -129,6 +129,35 @@ export class ReviewRepository {
     return reviewRepo.setFindingDismissed(this.db, findingId, at);
   }
 
+  // ---- learn (finding -> repo memory); `tx` is owned by the service ----------
+
+  getRunAttribution(runId: string) {
+    return reviewRepo.getRunAttribution(this.db, runId);
+  }
+
+  claimFindingLearned(findingId: string, at: Date, tx?: Tx) {
+    return reviewRepo.claimFindingLearned(tx ?? this.db, findingId, at);
+  }
+
+  getFindingFor(findingId: string, tx?: Tx) {
+    return reviewRepo.getFindingFor(tx ?? this.db, findingId);
+  }
+
+  getMemory(id: string, tx?: Tx) {
+    return reviewRepo.getMemory(tx ?? this.db, id);
+  }
+
+  insertLearning(
+    values: Parameters<typeof reviewRepo.insertLearning>[1],
+    tx?: Tx,
+  ) {
+    return reviewRepo.insertLearning(tx ?? this.db, values);
+  }
+
+  linkFindingMemory(findingId: string, memoryId: string, learnedAt: Date, tx?: Tx) {
+    return reviewRepo.linkFindingMemory(tx ?? this.db, findingId, memoryId, learnedAt);
+  }
+
   // ---- observability: agent_runs + run_traces ----------------------------
 
   /** Create an agent_runs row in `running` state; returns its id (= the runId). */
@@ -138,8 +167,39 @@ export class ReviewRepository {
     prId: string;
     provider: string | null;
     model: string | null;
-  }): Promise<string> {
-    return runRepo.createAgentRun(this.db, values);
+    multiAgentRunId?: string | null;
+    agentName?: string | null;
+  }, tx?: Tx): Promise<string> {
+    return runRepo.createAgentRun(tx ?? this.db, values);
+  }
+
+  createMultiAgentRun(values: { workspaceId: string; prId: string }, tx?: Tx): Promise<string> {
+    return runRepo.createMultiAgentRun(tx ?? this.db, values);
+  }
+
+  finishMultiAgentRun(id: string): Promise<void> {
+    return runRepo.finishMultiAgentRun(this.db, id);
+  }
+
+  latestMultiAgentRunId(workspaceId: string, repoId: string): Promise<string | null> {
+    return runRepo.latestMultiAgentRunId(this.db, workspaceId, repoId);
+  }
+
+  latestMultiAgentRunIdForPull(workspaceId: string, prId: string): Promise<string | null> {
+    return runRepo.latestMultiAgentRunIdForPull(this.db, workspaceId, prId);
+  }
+
+  getMultiAgentRunData(workspaceId: string, id: string): Promise<runRepo.MultiAgentRunData | undefined> {
+    return runRepo.getMultiAgentRunData(this.db, workspaceId, id);
+  }
+
+  recentDoneRunsForAgents(workspaceId: string, agentIds: string[], limit: number) {
+    return runRepo.recentDoneRunsForAgents(this.db, workspaceId, agentIds, limit);
+  }
+
+  /** Workspace guard for run-scoped endpoints (cancel, trace). */
+  runExistsInWorkspace(workspaceId: string, runId: string): Promise<boolean> {
+    return runRepo.runExistsInWorkspace(this.db, workspaceId, runId);
   }
 
   completeAgentRun(

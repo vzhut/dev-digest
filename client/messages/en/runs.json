@@ -19,6 +19,7 @@
   "trace": {
     "configuration": "Configuration",
     "stats": "Stats",
+    "groundingDropped": "Dropped by grounding ({count})",
     "promptAssembly": "Prompt assembly",
     "toolCalls": "Tool calls",
     "rawOutput": "Raw output",
