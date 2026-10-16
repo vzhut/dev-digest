@@ -38,6 +38,13 @@ export const NAV: NavGroup[] = [
       { key: "eval", label: "Eval Dashboard", icon: "BarChart", href: "/eval", gKey: "e" },
     ],
   },
+  {
+    section: "GLOBAL",
+    items: [
+      // Export to CI: workspace-wide list of agent reviews that ran inside CI (no :repoId, no g-shortcut).
+      { key: "ci-runs", label: "CI Runs", icon: "Activity", href: "/ci-runs" },
+    ],
+  },
 ];
 
 export const SETTINGS_ITEM: NavItemDef = {
