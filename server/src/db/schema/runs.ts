@@ -7,6 +7,7 @@ import {
   timestamp,
   doublePrecision,
   primaryKey,
+  index,
 } from 'drizzle-orm/pg-core';
 import { workspaces } from './core';
 import { agents } from './agents';
@@ -15,7 +16,9 @@ import { skills } from './skills';
 
 // ============================================================ Observability
 
-export const agentRuns = pgTable('agent_runs', {
+export const agentRuns = pgTable(
+  'agent_runs',
+  {
   id: uuid('id').primaryKey().defaultRandom(),
   workspaceId: uuid('workspace_id')
     .notNull()
@@ -41,7 +44,15 @@ export const agentRuns = pgTable('agent_runs', {
   score: integer('score'),
   /** Findings that tripped the agent's gate (severity ≥ ciFailOn). */
   blockers: integer('blockers'),
-});
+  /** Parent multi-agent run this run was fanned out from; null for single runs. */
+  multiAgentRunId: uuid('multi_agent_run_id').references(() => multiAgentRuns.id, {
+    onDelete: 'set null',
+  }),
+  /** Agent name at run time, so columns survive an agent rename/delete. */
+  agentName: text('agent_name'),
+  },
+  (t) => ({ multiAgentRunIdx: index('agent_runs_multi_agent_run_id_idx').on(t.multiAgentRunId) }),
+);
 
 /** Whole trace of one run as a SINGLE jsonb document. */
 export const runTraces = pgTable('run_traces', {
@@ -60,6 +71,8 @@ export const multiAgentRuns = pgTable('multi_agent_runs', {
     .notNull()
     .references(() => pullRequests.id, { onDelete: 'cascade' }),
   ranAt: timestamp('ran_at', { withTimezone: true }).defaultNow().notNull(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  durationMs: integer('duration_ms'),
 });
 
 // Which skills were in a run's prompt — the basis of the per-skill Stats tab.

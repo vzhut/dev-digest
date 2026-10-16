@@ -9,12 +9,17 @@ import { ReviewService } from './service.js';
 
 /**
  * reviews module.
- *   POST   /pulls/:id/review  {agentId} | {all:true}  → run review(s); returns runs
+ *   POST   /pulls/:id/review  {agentId} | {all:true} | {agent_ids}  → run review(s); returns runs
+ *   GET    /multi-agent-runs/:id                       → parent run: columns + grouped disagreements
+ *   GET    /repos/:id/multi-agent-runs/latest          → the repo's most recent parent run id (or null)
+ *   GET    /pulls/:id/multi-agent-runs/latest          → the PR's most recent parent run id (or null)
+ *   GET    /multi-agent/estimates                      → per-agent history estimate
  *   GET    /runs/:id/events                            → SSE stream of RunEvent (replay-first)
  *   GET    /runs/:id/trace                             → the single-document RunTrace
  *   GET    /pulls/:id/reviews                          → persisted reviews + findings for a PR
  *   GET    /pulls/:id/smart-diff                       → files grouped by role + finding lines (no LLM)
  *   POST   /findings/:id/(accept|dismiss)              → finding actions
+ *   POST   /findings/:id/learn                         → save a finding as a repo learning
  */
 const FINDING_ACTIONS = ['accept', 'dismiss'] as const;
 export default async function reviewsRoutes(appBase: FastifyInstance) {
@@ -31,18 +36,7 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
     async (req) => {
     const { workspaceId } = await getContext(container, req);
     const body = RunRequest.parse(req.body ?? {});
-    const targets = await service.resolveTargets(workspaceId, {
-      ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
-      ...(body.all !== undefined ? { all: body.all } : {}),
-    });
-    const { runs, reviews } = await service.runReview(
-      workspaceId,
-      req.params.id,
-      targets,
-      req.log,
-      req.id,
-    );
-    return { pr_id: req.params.id, runs, reviews };
+    return service.startReview(workspaceId, req.params.id, body, req.log, req.id);
   });
 
   // ---- SSE: live run events (replay buffer first, then live; ends on done) -
@@ -114,17 +108,38 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
 
   // ---- Cancel an in-flight run --------------------------------------------
   app.post('/runs/:id/cancel', { schema: { params: IdParams } }, async (req) => {
-    await getContext(container, req);
-    await service.cancelRun(req.params.id);
+    const { workspaceId } = await getContext(container, req);
+    await service.cancelRun(workspaceId, req.params.id);
     return { ok: true };
   });
 
   // ---- Run trace (single document; A5 enriches with multi-agent/stats) ----
   app.get('/runs/:id/trace', { schema: { params: IdParams } }, async (req) => {
-    await getContext(container, req);
-    const trace = await service.getRunTrace(req.params.id);
+    const { workspaceId } = await getContext(container, req);
+    const trace = await service.getRunTrace(workspaceId, req.params.id);
     if (!trace) throw new NotFoundError('Run trace not found');
     return trace;
+  });
+
+  // ---- Multi-agent review: parent run + history estimates -----------------
+  app.get('/multi-agent-runs/:id', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.getMultiAgentRun(workspaceId, req.params.id);
+  });
+
+  app.get('/repos/:id/multi-agent-runs/latest', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.latestMultiAgentRun(workspaceId, req.params.id);
+  });
+
+  app.get('/pulls/:id/multi-agent-runs/latest', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.latestMultiAgentRunForPull(workspaceId, req.params.id);
+  });
+
+  app.get('/multi-agent/estimates', async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.agentEstimates(workspaceId);
   });
 
   // ---- Reads --------------------------------------------------------------
@@ -148,6 +163,12 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
     const ok = await service.deleteReview(workspaceId, req.params.id);
     if (!ok) throw new NotFoundError('Review not found');
     return { ok: true };
+  });
+
+  // ---- Learn: save a finding as a repo memory (idempotent) -----------------
+  app.post('/findings/:id/learn', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.learnFinding(workspaceId, req.params.id);
   });
 
   // ---- Finding actions (accept / dismiss) ---------------------------------

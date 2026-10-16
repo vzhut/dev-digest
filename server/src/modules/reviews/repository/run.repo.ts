@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../../../db/client.js';
 import * as t from '../../../db/schema.js';
 import type { RunSummary, RunTrace } from '@devdigest/shared';
+import type { FindingRow } from '../../../db/rows.js';
 import { findingPreviewsByReview } from '../../_shared/finding-previews.js';
 
 // ---- in-flight / history --------------------------------------------------
@@ -129,6 +130,175 @@ export async function reapStaleRunningRuns(db: Db): Promise<number> {
   return rows.length;
 }
 
+/** Insert the parent row of a multi-agent review; returns its id. */
+export async function createMultiAgentRun(
+  db: Db,
+  values: { workspaceId: string; prId: string },
+): Promise<string> {
+  const [row] = await db
+    .insert(t.multiAgentRuns)
+    .values({ workspaceId: values.workspaceId, prId: values.prId })
+    .returning({ id: t.multiAgentRuns.id });
+  return row!.id;
+}
+
+export type MultiAgentRunData = {
+  parent: { id: string; prId: string; prNumber: number | null; prTitle: string | null; ranAt: Date; durationMs: number | null };
+  runs: {
+    run: typeof t.agentRuns.$inferSelect;
+    currentAgentName: string | null;
+    review: { verdict: string | null; summary: string | null; score: number | null } | null;
+    findings: FindingRow[];
+  }[];
+};
+
+/** Id of the repo's most recent parent run (workspace-scoped), if any. */
+export async function latestMultiAgentRunId(
+  db: Db,
+  workspaceId: string,
+  repoId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: t.multiAgentRuns.id })
+    .from(t.multiAgentRuns)
+    .innerJoin(t.pullRequests, eq(t.pullRequests.id, t.multiAgentRuns.prId))
+    .where(and(eq(t.multiAgentRuns.workspaceId, workspaceId), eq(t.pullRequests.repoId, repoId)))
+    .orderBy(desc(t.multiAgentRuns.ranAt))
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/** Id of a PR's most recent parent run (workspace-scoped), if any. */
+export async function latestMultiAgentRunIdForPull(
+  db: Db,
+  workspaceId: string,
+  prId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: t.multiAgentRuns.id })
+    .from(t.multiAgentRuns)
+    .where(and(eq(t.multiAgentRuns.workspaceId, workspaceId), eq(t.multiAgentRuns.prId, prId)))
+    .orderBy(desc(t.multiAgentRuns.ranAt))
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/** Parent run + children (creation order) + each child's review and findings. Workspace-scoped. */
+export async function getMultiAgentRunData(
+  db: Db,
+  workspaceId: string,
+  id: string,
+): Promise<MultiAgentRunData | undefined> {
+  const [parentRow] = await db
+    .select({ run: t.multiAgentRuns, prNumber: t.pullRequests.number, prTitle: t.pullRequests.title })
+    .from(t.multiAgentRuns)
+    .leftJoin(t.pullRequests, eq(t.pullRequests.id, t.multiAgentRuns.prId))
+    .where(and(eq(t.multiAgentRuns.id, id), eq(t.multiAgentRuns.workspaceId, workspaceId)));
+  if (!parentRow) return undefined;
+
+  const childRows = await db
+    .select({ run: t.agentRuns, currentAgentName: t.agents.name })
+    .from(t.agentRuns)
+    .leftJoin(t.agents, eq(t.agents.id, t.agentRuns.agentId))
+    .where(and(eq(t.agentRuns.multiAgentRunId, id), eq(t.agentRuns.workspaceId, workspaceId)))
+    .orderBy(asc(t.agentRuns.ranAt), asc(t.agentRuns.id));
+
+  const runIds = childRows.map((r) => r.run.id);
+  const reviewByRun = new Map<string, { id: string; verdict: string | null; summary: string | null; score: number | null }>();
+  const findingsByReview = new Map<string, FindingRow[]>();
+  if (runIds.length > 0) {
+    const reviewRows = await db
+      .select()
+      .from(t.reviews)
+      .where(and(eq(t.reviews.workspaceId, workspaceId), inArray(t.reviews.runId, runIds)));
+    for (const rv of reviewRows) if (rv.runId) reviewByRun.set(rv.runId, rv);
+    if (reviewRows.length > 0) {
+      const findingRows = await db
+        .select()
+        .from(t.findings)
+        .where(inArray(t.findings.reviewId, reviewRows.map((r) => r.id)))
+        .orderBy(asc(t.findings.file), asc(t.findings.startLine));
+      for (const f of findingRows) {
+        const list = findingsByReview.get(f.reviewId) ?? [];
+        list.push(f);
+        findingsByReview.set(f.reviewId, list);
+      }
+    }
+  }
+
+  return {
+    parent: {
+      id: parentRow.run.id,
+      prId: parentRow.run.prId,
+      prNumber: parentRow.prNumber ?? null,
+      prTitle: parentRow.prTitle ?? null,
+      ranAt: parentRow.run.ranAt,
+      durationMs: parentRow.run.durationMs,
+    },
+    runs: childRows.map(({ run, currentAgentName }) => {
+      const review = reviewByRun.get(run.id) ?? null;
+      return {
+        run,
+        currentAgentName: currentAgentName ?? null,
+        review: review ? { verdict: review.verdict, summary: review.summary, score: review.score } : null,
+        findings: review ? (findingsByReview.get(review.id) ?? []) : [],
+      };
+    }),
+  };
+}
+
+/** The last `limit` finished local runs of each agent (newest first) — the estimate window, one query. */
+export async function recentDoneRunsForAgents(
+  db: Db,
+  workspaceId: string,
+  agentIds: string[],
+  limit: number,
+): Promise<Map<string, { durationMs: number | null; costUsd: number | null }[]>> {
+  const byAgent = new Map<string, { durationMs: number | null; costUsd: number | null }[]>();
+  if (agentIds.length === 0) return byAgent;
+  const rows = await db.execute<{ agent_id: string; duration_ms: number | null; cost_usd: number | null }>(sql`
+    select agent_id, duration_ms, cost_usd from (
+      select agent_id, duration_ms, cost_usd,
+             row_number() over (partition by agent_id order by ran_at desc) as rn
+      from agent_runs
+      where workspace_id = ${workspaceId}
+        and status = 'done' and source = 'local'
+        and agent_id in (${sql.join(agentIds.map((id) => sql`${id}`), sql`, `)})
+    ) ranked
+    where rn <= ${limit}
+  `);
+  for (const r of rows) {
+    const list = byAgent.get(r.agent_id) ?? [];
+    list.push({ durationMs: r.duration_ms, costUsd: r.cost_usd });
+    byAgent.set(r.agent_id, list);
+  }
+  return byAgent;
+}
+
+/** Stamp the parent's wall-clock once every child settled (duration from its ran_at). */
+export async function finishMultiAgentRun(db: Db, id: string): Promise<void> {
+  await db
+    .update(t.multiAgentRuns)
+    .set({
+      finishedAt: sql`now()`,
+      durationMs: sql`(extract(epoch from (now() - ${t.multiAgentRuns.ranAt})) * 1000)::int`,
+    })
+    .where(eq(t.multiAgentRuns.id, id));
+}
+
+/** True when the run belongs to the workspace (guards cancel / trace reads). */
+export async function runExistsInWorkspace(
+  db: Db,
+  workspaceId: string,
+  runId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: t.agentRuns.id })
+    .from(t.agentRuns)
+    .where(and(eq(t.agentRuns.id, runId), eq(t.agentRuns.workspaceId, workspaceId)));
+  return !!row;
+}
+
 // ---- observability: agent_runs + run_traces -------------------------------
 
 /** Create an agent_runs row in `running` state; returns its id (= the runId). */
@@ -140,6 +310,8 @@ export async function createAgentRun(
     prId: string;
     provider: string | null;
     model: string | null;
+    multiAgentRunId?: string | null;
+    agentName?: string | null;
   },
 ): Promise<string> {
   const [row] = await db
@@ -152,6 +324,10 @@ export async function createAgentRun(
       model: values.model,
       status: 'running',
       source: 'local',
+      // clock_timestamp(), not the transaction's now(): siblings created in one transaction keep creation order.
+      ranAt: sql`clock_timestamp()`,
+      multiAgentRunId: values.multiAgentRunId ?? null,
+      agentName: values.agentName ?? null,
     })
     .returning({ id: t.agentRuns.id });
   return row!.id;

@@ -1,0 +1,111 @@
+M	client/INSIGHTS.md
+A	client/messages/en/multiAgent.json
+M	client/messages/en/prReview.json
+M	client/messages/en/runs.json
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/ConfigureRun.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/helpers.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/MultiAgentResults.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/AgentMeta.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/constants.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/ColumnsView.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/AgentColumn.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/ConflictsSection.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/RunHeader.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/TabsView.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/AgentTab.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/constants.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/helpers.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/types.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useNow.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/MultiAgentView.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/page.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.test.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/_components/InlineFinding/InlineFinding.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailHeader/PrDetailHeader.test.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.test.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/constants.ts
+A	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/helpers.ts
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/styles.ts
+M	client/src/components/app-shell/nav.test.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.test.tsx	client/src/components/finding-card/EvalCaseAction/EvalCaseAction.test.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.tsx	client/src/components/finding-card/EvalCaseAction/EvalCaseAction.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/index.ts	client/src/components/finding-card/EvalCaseAction/index.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/styles.ts	client/src/components/finding-card/EvalCaseAction/styles.ts
+R097	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.test.tsx	client/src/components/finding-card/FindingCard.test.tsx
+R091	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.tsx	client/src/components/finding-card/FindingCard.tsx
+A	client/src/components/finding-card/LearnAction/LearnAction.tsx
+A	client/src/components/finding-card/LearnAction/index.ts
+A	client/src/components/finding-card/LearnAction/styles.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/constants.ts	client/src/components/finding-card/constants.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/helpers.ts	client/src/components/finding-card/helpers.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/index.ts	client/src/components/finding-card/index.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/styles.ts	client/src/components/finding-card/styles.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/FindingsSection.tsx	client/src/components/run-trace-drawer/FindingsSection/FindingsSection.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/index.ts	client/src/components/run-trace-drawer/FindingsSection/index.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/PromptBlock.tsx	client/src/components/run-trace-drawer/PromptBlock/PromptBlock.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/index.ts	client/src/components/run-trace-drawer/PromptBlock/index.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/PromptModalBody.tsx	client/src/components/run-trace-drawer/PromptModalBody/PromptModalBody.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/index.ts	client/src/components/run-trace-drawer/PromptModalBody/index.ts
+R097	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.test.tsx	client/src/components/run-trace-drawer/RunTraceDrawer.test.tsx
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.tsx	client/src/components/run-trace-drawer/RunTraceDrawer.tsx
+R097	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/ToolCallRow.tsx	client/src/components/run-trace-drawer/ToolCallRow/ToolCallRow.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/index.ts	client/src/components/run-trace-drawer/ToolCallRow/index.ts
+R085	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/TraceBody.tsx	client/src/components/run-trace-drawer/TraceBody/TraceBody.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/index.ts	client/src/components/run-trace-drawer/TraceBody/index.ts
+R096	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/TraceSection.tsx	client/src/components/run-trace-drawer/TraceSection/TraceSection.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/index.ts	client/src/components/run-trace-drawer/TraceSection/index.ts
+R095	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/atoms.tsx	client/src/components/run-trace-drawer/atoms.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/constants.ts	client/src/components/run-trace-drawer/constants.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/helpers.ts	client/src/components/run-trace-drawer/helpers.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/index.ts	client/src/components/run-trace-drawer/index.ts
+R095	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/styles.ts	client/src/components/run-trace-drawer/styles.ts
+M	client/src/lib/hooks/reviews.ts
+A	client/src/lib/multi-agent-format.ts
+M	client/src/vendor/shared/contracts/knowledge.ts
+M	client/src/vendor/shared/contracts/observability.ts
+M	client/src/vendor/shared/contracts/platform.ts
+M	client/src/vendor/shared/contracts/review-api.ts
+M	client/src/vendor/shared/contracts/trace.ts
+M	client/src/vendor/ui/nav.ts
+M	server/INSIGHTS.md
+M	server/src/db/client.ts
+A	server/src/db/migrations/0018_freezing_kingpin.sql
+M	server/src/db/migrations/meta/_journal.json
+M	server/src/db/schema/reviews.ts
+M	server/src/db/schema/runs.ts
+M	server/src/modules/reviews/helpers.ts
+A	server/src/modules/reviews/multi-agent.ts
+M	server/src/modules/reviews/repository.ts
+M	server/src/modules/reviews/repository/review.repo.ts
+M	server/src/modules/reviews/repository/run.repo.ts
+M	server/src/modules/reviews/routes.ts
+M	server/src/modules/reviews/run-executor.ts
+M	server/src/modules/reviews/service.ts
+M	server/src/vendor/shared/contracts/knowledge.ts
+M	server/src/vendor/shared/contracts/observability.ts
+M	server/src/vendor/shared/contracts/platform.ts
+M	server/src/vendor/shared/contracts/review-api.ts
+M	server/src/vendor/shared/contracts/trace.ts

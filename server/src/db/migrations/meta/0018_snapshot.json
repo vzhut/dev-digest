@@ -1,5 +1,5 @@
 {
-  "id": "c8921dc9-004a-49ee-903a-55c8ecf66dc0",
+  "id": "5b40d0ad-8cb4-4a79-b547-f7823e63f97c",
   "prevId": "14bf9220-9d87-4864-9e92-3725af83666b",
   "version": "7",
   "dialect": "postgresql",
@@ -809,6 +809,18 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "learned_at": {
+          "name": "learned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "learned_memory_id": {
+          "name": "learned_memory_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -824,6 +836,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "findings_learned_memory_id_memory_id_fk": {
+          "name": "findings_learned_memory_id_memory_id_fk",
+          "tableFrom": "findings",
+          "tableTo": "memory",
+          "columnsFrom": [
+            "learned_memory_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -3131,58 +3156,9 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "manifest_version": {
-          "name": "manifest_version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "workflow_version": {
-          "name": "workflow_version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "pr_url": {
-          "name": "pr_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
         }
       },
-      "indexes": {
-        "ci_installations_agent_repo_uq": {
-          "name": "ci_installations_agent_repo_uq",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "repo",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "ci_installations_agent_id_agents_id_fk": {
           "name": "ci_installations_agent_id_agents_id_fk",
@@ -3400,9 +3376,37 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "multi_agent_run_id": {
+          "name": "multi_agent_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_name": {
+          "name": "agent_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "agent_runs_multi_agent_run_id_idx": {
+          "name": "agent_runs_multi_agent_run_id_idx",
+          "columns": [
+            {
+              "expression": "multi_agent_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "agent_runs_workspace_id_workspaces_id_fk": {
           "name": "agent_runs_workspace_id_workspaces_id_fk",
@@ -3436,6 +3440,19 @@
           "tableTo": "pull_requests",
           "columnsFrom": [
             "pr_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "agent_runs_multi_agent_run_id_multi_agent_runs_id_fk": {
+          "name": "agent_runs_multi_agent_run_id_multi_agent_runs_id_fk",
+          "tableFrom": "agent_runs",
+          "tableTo": "multi_agent_runs",
+          "columnsFrom": [
+            "multi_agent_run_id"
           ],
           "columnsTo": [
             "id"
@@ -3479,6 +3496,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},

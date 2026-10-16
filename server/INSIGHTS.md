@@ -494,6 +494,19 @@ stored value. The stored `default_branch` is still wrong for any other consumer.
 `ci install failed` log line: it now carries the failing `method`, `path` and GitHub's `message` (`githubDebugOf`), never
 headers or the token.
 
+### Two branches that each ran `pnpm db:generate` collide on the migration number — regenerate, don't renumber
+
+`server/src/db/migrations/meta/_journal.json` · `server/src/db/migrations/0018_*.sql` · 2026-10-16
+
+PR #18 (multi-agent review) and PR #19 (Export to CI) both added a `0018_*` migration plus `meta/0018_snapshot.json` and a journal entry, so the
+second PR to merge showed `CONFLICT (add/add)` on `0018_snapshot.json` and a content conflict in `_journal.json`. `AGENTS.md` forbids renaming or
+hand-editing migrations. What works: `git merge origin/main`, take main's side of the snapshot and journal (`git checkout --theirs`), `git rm` your own
+`0018_<name>.sql`, then run `pnpm db:generate`; drizzle diffs the schema against main's latest snapshot and emits the same SQL as `0019_<new name>.sql`
+(no TTY prompt for pure column adds). Check the new file with `cat` and that the journal ends `…, 18 main's, 19 yours`.
+Local trap: a dev DB that already applied your OLD `0018` has the columns but not the new journal entry, so `pnpm db:migrate` fails with
+`column "…" already exists`. Either drop those columns/indexes and re-migrate, or insert the new migration's row into `drizzle.__drizzle_migrations`
+by hand; neither is needed in CI or on a fresh DB (`ci.it.test.ts` ran the whole chain on a clean container and passed).
+
 ## Session Notes
 
 ### 2026-09-16 — Run cost badge
@@ -538,3 +551,18 @@ onion-architecture violation (a cross-module import that compiled fine) and one 
 ## Open Questions
 
 _No entries yet._
+
+### `pnpm db:migrate` needs DATABASE_URL exported; there is no .env in a fresh worktree
+
+`server/.env.example:2` · 2026-10-13
+
+`pnpm db:migrate` in a new worktree fails with `DATABASE_URL is required` (only `.env.example` exists). Export the compose default (`postgres://devdigest:devdigest@localhost:5432/devdigest`) for the shell, then migrate; the same variable is what the `.it` suite uses via testcontainers-independent paths. Also: `agent-runner` `pnpm typecheck` already fails on a clean tree (`agent-runner/src/run.ts:124`, `string[]` vs `PromptSkill[]`), so it cannot be used as a contract-change gate until fixed.
+
+### The full `.it` suite flakes under parallel Testcontainers; `--no-file-parallelism` is green
+
+`server/vitest.config.ts` · `pnpm exec vitest run .it.test` · 2026-10-13
+
+On Docker Desktop with ~7.7 GiB, the 24 `.it` files start ~10 `pgvector` containers at once; some `beforeAll` hooks then die with `Hook timed out in 120000ms` (one container exited 137), and a different set of 4–7 files fails each run (`Test Files 7 failed | 17 passed`). The same files pass in isolation and as a group with `pnpm exec vitest run --no-file-parallelism <files>` (7/7 files, 20/20 tests). Treat a failing `.it` file as a regression only after re-running it alone; the failures are load, not code. (`--maxWorkers` is rejected by this config: `options.minThreads and options.maxThreads must not conflict`.)
+
+## 2026-10-16 — rows inserted in one transaction share `now()`, so `ran_at` ordering ties
+Moving the parent + child `agent_runs` inserts into one transaction made every `ran_at` (`defaultNow()`) identical, and the multi-agent columns came back in arbitrary order (`test/multi-agent-review.it.test.ts` "runs three agents at once": expected Alpha/Bravo/Charlie, got Bravo first). Fixed by inserting `ran_at` as `clock_timestamp()` in `modules/reviews/repository/run.repo.ts` `createAgentRun`. Anything that orders siblings by a `defaultNow()` column must not be created inside one transaction.

@@ -23,7 +23,7 @@ The feature works end to end on a real repository. Export wizard opened a PR fro
 and adding `OPENROUTER_API_KEY`, test PRs got a review from the bundled runner; a CRITICAL finding made the check
 red (exit 1); the studio ingested the runs into `agent_runs` (`source='ci'`, `pr_id` null) and the CI tab shows the
 installation as `active`. Nothing is committed: branch `emdash/export-to-ci-tg8ip` at `2d78769` holds ~28 modified
-and ~50 new (untracked) files plus the three spec files. Migration `0018_lush_plazm` is applied in the local DB
+and ~50 new (untracked) files plus the three spec files. Migration `0019_chilly_mikhail_rasputin (was 0018_lush_plazm before main took 0018)` is applied in the local DB
 (the installation row has the new columns).
 
 ## 2. Timeline
@@ -49,7 +49,7 @@ and ~50 new (untracked) files plus the three spec files. Migration `0018_lush_pl
 - server `server/src/modules/ci/`: `constants.ts`, `workflow.ts` (template + validator), `helpers.ts`,
   `repository.ts`, `service.ts` (preview/install/zip), `ingest.ts` + `ingest.service.ts` (pull ingest),
   `routes.ts`. Adapters: `adapters/github/octokit.ts`, `adapters/mocks.ts`. Schema `db/schema/ci.ts`,
-  migration `db/migrations/0018_lush_plazm.sql`, dependency `yaml`.
+  migration `db/migrations/0019_chilly_mikhail_rasputin (was 0018_lush_plazm before main took 0018).sql`, dependency `yaml`.
 - agent-runner: `src/{artifact,context,index,run}.ts` (artifact v2 fields, post-mode fallback, entry guard,
   redacted fatal log), README, one line in `scripts/dev.sh`.
 - client: `lib/api.ts`, `lib/hooks/ci.ts`, `AgentEditor/_components/CiTab/**` (tab + 4-step wizard),

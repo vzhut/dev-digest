@@ -27,7 +27,7 @@ import { PrDetailHeader } from "../PrDetailHeader";
 import { OverviewTab } from "../OverviewTab";
 import { FindingsTab } from "../FindingsTab";
 import { DiffTab } from "../DiffTab";
-import { RunTraceDrawer } from "../RunTraceDrawer";
+import { RunTraceDrawer } from "@/components/run-trace-drawer";
 import { diffDeepLinkQuery, latestReviewSummary, parseDiffTarget, scrollParentOf } from "./helpers";
 import { s } from "./styles";
 

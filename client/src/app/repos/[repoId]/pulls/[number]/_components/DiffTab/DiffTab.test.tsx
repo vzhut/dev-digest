@@ -17,6 +17,7 @@ vi.mock("@/lib/hooks/reviews", () => ({
   useSmartDiff: () => ({ data: state.smart }),
   usePrReviews: () => ({ data: state.reviews }),
   useFindingAction: () => ({ isPending: false, mutate }),
+  useLearnFinding: () => ({ isPending: false, isError: false, mutate: vi.fn() }),
 }));
 
 afterEach(() => {

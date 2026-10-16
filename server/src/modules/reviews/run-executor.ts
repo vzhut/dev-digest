@@ -74,6 +74,29 @@ export class ReviewRunExecutor {
     jobs: { agent: AgentRow; runId: string }[],
     logger?: Logger,
     correlationId?: string,
+    multiAgentRunId?: string,
+  ): Promise<void> {
+    try {
+      await this.executeJobs(workspaceId, pull, repo, jobs, logger, correlationId, multiAgentRunId);
+    } finally {
+      // Parent wall-clock: written once every child has settled (or the shared
+      // pre-work failed them all). A crash that skips this leaves it null → "—".
+      if (multiAgentRunId) {
+        await this.repo.finishMultiAgentRun(multiAgentRunId).catch((err) => {
+          logger?.error({ multiAgentRunId, err: (err as Error).message }, 'review: could not finish multi-agent run');
+        });
+      }
+    }
+  }
+
+  private async executeJobs(
+    workspaceId: string,
+    pull: PullRow,
+    repo: typeof schema.repos.$inferSelect,
+    jobs: { agent: AgentRow; runId: string }[],
+    logger: Logger | undefined,
+    correlationId: string | undefined,
+    multiAgentRunId: string | undefined,
   ): Promise<void> {
     // ONE logger fanned out over every queued run: shared pre-work (diff +
     // intent) is streamed into each target agent's Live Log and persisted into
@@ -82,7 +105,11 @@ export class ReviewRunExecutor {
       this.container.runBus,
       jobs.map((j) => j.runId),
       logger,
-      { prId: pull.id, ...(correlationId ? { correlation_id: correlationId } : {}) },
+      {
+        prId: pull.id,
+        ...(correlationId ? { correlation_id: correlationId } : {}),
+        ...(multiAgentRunId ? { multi_agent_run_id: multiAgentRunId } : {}),
+      },
     );
 
     // Pre-work failure (e.g. diff load) fails EVERY queued run. The error was
@@ -130,7 +157,10 @@ export class ReviewRunExecutor {
       ...(logger ? { log: logger } : {}),
     });
 
-    for (const { agent, runId } of jobs) {
+    // All agents run concurrently; one failing never affects the others
+    // (runOneAgent persists its own failure, so rejections here are only logged).
+    await Promise.allSettled(
+      jobs.map(async ({ agent, runId }) => {
       const agentStart = Date.now();
       logger?.info(
         { runId, agent: agent.name, provider: agent.provider, model: agent.model, prId: pull.id },
@@ -157,7 +187,8 @@ export class ReviewRunExecutor {
           `review: agent "${agent.name}" ${cancelled ? 'cancelled' : 'failed'}`,
         );
       }
-    }
+      }),
+    );
   }
 
   /** Execute a single agent's review against a PR, streaming progress. */
@@ -287,6 +318,14 @@ export class ReviewRunExecutor {
           if (this.container.runBus.isCancelled(runId)) throw new RunCancelledError();
         },
       });
+      // The engine only checks for cancellation before each LLM call, so a cancel that arrived
+      // while the (single) call was in flight must still win instead of being overwritten with
+      // `done`. `cancelRun` marks the row cancelled AND completes the bus (which also clears the
+      // cancel flag), so "the bus already completed this run while it is still executing" is the
+      // reliable signal here.
+      if (this.container.runBus.isCancelled(runId) || this.container.runBus.isComplete(runId)) {
+        throw new RunCancelledError();
+      }
       const { tokensIn, tokensOut, costUsd, grounding } = outcome;
 
       const keptFindings = outcome.review.findings;
@@ -374,6 +413,17 @@ export class ReviewRunExecutor {
         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
         // diff load + intent), not just events recorded inside this method.
         log: runLog.logFor(runId),
+        ...(outcome.dropped.length > 0
+          ? {
+              grounding_dropped: outcome.dropped.map((d) => ({
+                title: d.finding.title,
+                file: d.finding.file,
+                start_line: d.finding.start_line,
+                end_line: d.finding.end_line,
+                reason: d.reason,
+              })),
+            }
+          : {}),
       };
       runLog.info('Run complete; trace persisted');
       await this.repo.saveRunTrace(runId, trace);
