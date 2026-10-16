@@ -5,6 +5,11 @@
 import type {
   AgentEvalCase,
   AgentEvalCaseDetail,
+  CiExportRequest,
+  CiInstallResult,
+  CiInstallation,
+  CiPreview,
+  CiSyncResult,
   CreateEvalCaseResponse,
   EvalCaseWrite,
   EvalAgentDashboard,
@@ -43,7 +48,8 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError ? error.message : fallback;
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+/** Sends the request and maps every failure to ApiError; resolves with the OK response, body unread. */
+async function apiRequest(path: string, init?: RequestInit): Promise<Response> {
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${path}`, {
@@ -85,7 +91,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
     throw new ApiError(message, res.status, code, details);
   }
+  return res;
+}
 
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiRequest(path, init);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -104,6 +114,21 @@ export const api = {
   /** One LLM call; resolves with the freshly stored tour (full or skeleton). */
   generateOnboardingTour: (repoId: string) =>
     apiFetch<Tour>(`/repos/${repoId}/onboarding/generate`, { method: "POST" }),
+
+  // ---- export to CI (specs/2026-10-13-export-to-ci.md) ----
+  ciPreview: (agentId: string, body: CiExportRequest) =>
+    apiFetch<CiPreview>(`/agents/${encodeURIComponent(agentId)}/ci/preview`, { method: "POST", body: JSON.stringify(body) }),
+  ciInstall: (agentId: string, body: CiExportRequest) =>
+    apiFetch<CiInstallResult>(`/agents/${encodeURIComponent(agentId)}/ci/install`, { method: "POST", body: JSON.stringify(body) }),
+  /** The files as a .zip (no GitHub call on the server); a binary body, so it bypasses the JSON parse. */
+  ciZip: async (agentId: string, body: CiExportRequest): Promise<Blob> => {
+    const res = await apiRequest(`/agents/${encodeURIComponent(agentId)}/ci/zip`, { method: "POST", body: JSON.stringify(body) });
+    return res.blob();
+  },
+  ciInstallations: (agentId: string) =>
+    apiFetch<CiInstallation[]>(`/agents/${encodeURIComponent(agentId)}/ci/installations`),
+  /** Pulls new runs from GitHub, then answers with the stored CI runs (newest first). */
+  ciSyncRuns: () => apiFetch<CiSyncResult>("/ci/runs/sync", { method: "POST" }),
 
   getPrBrief: (prId: string) => apiFetch<PrBriefResponse>(`/pulls/${prId}/brief`),
 

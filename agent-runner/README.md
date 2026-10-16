@@ -5,8 +5,8 @@ inside a *target repository's own CI* (GitHub Actions), entirely outside this
 repo's server, its DI graph, and its Postgres instance.
 
 `src/index.ts` is `ncc`-bundled into a single self-contained `dist/index.js`,
-embedded as `.devdigest/runner/index.js` in the exported `devdigest/ci` PR, and
-executed by the target repo's workflow as `node .devdigest/runner/index.js`.
+embedded as `.devdigest/runner/index.mjs` in the exported `devdigest/ci` PR, and
+executed by the target repo's workflow as `node .devdigest/runner/index.mjs`.
 
 ## What it does
 
@@ -80,6 +80,15 @@ pnpm build          # ncc build src/index.ts -o dist  →  dist/index.js
 `dist/` and `node_modules/` are git-ignored — `dist/index.js` is a generated
 artifact, regenerate it with `pnpm build`.
 
+**Build before exporting to CI.** The studio's Export to CI flow ships
+`agent-runner/dist/index.js` (override the path with `AGENT_RUNNER_BUNDLE_PATH`
+on the server). On a fresh clone run it once, otherwise the export fails with
+`runner_bundle_missing`:
+
+```bash
+cd agent-runner && pnpm install && pnpm build
+```
+
 ## Runtime environment (set by the target repo's workflow)
 
 The runner reads these directly from `process.env`. This is the **correct and
@@ -95,9 +104,13 @@ there is no `SecretsProvider` / DI graph to inject from (see `CLAUDE.md`).
 | `GITHUB_EVENT_PATH` | auto (GHA) | `pull_request` event payload (title/body/fork) |
 | `DEVDIGEST_DIR` | no | override the `.devdigest` dir (default: `cwd/.devdigest`) |
 | `DEVDIGEST_RESULT_PATH` | no | override artifact path (default: `cwd/devdigest-result.json`) |
-| `DEVDIGEST_POST_AS` | no | `github_review` (default) \| `pr_comment` \| `none` |
+| `DEVDIGEST_POST_AS` | no | `github_review` \| `pr_comment` \| `none`; unset/invalid → the manifest's `post_as` → `github_review` |
 
 ¹ Falls back to `pull_request.number` from the event payload if `PR_NUMBER` is unset.
+
+The event payload must also carry `pull_request.head.sha` and `repository.id` (GitHub always sends them
+for `pull_request`); the runner hard-fails without them because the studio verifies both against the
+Actions run before ingesting the result artifact.
 
 Secrets are never logged and never written to `devdigest-result.json` or any
 posted comment.

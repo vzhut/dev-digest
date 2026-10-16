@@ -40,8 +40,13 @@ export interface RunCiDeps {
   env: CiEnv;
   /** Injected LLM provider — `OpenRouterProvider` in production, a stub in tests. */
   llm: LLMProvider;
-  /** How to post the result — `'github_review' | 'pr_comment' | 'none'` (AC-24). */
-  postAs: PostAs;
+  /**
+   * How to post the result (AC-24). When omitted, falls back to the manifest's
+   * `post_as`, then `'github_review'` (the explicit workflow env var wins).
+   */
+  postAs?: PostAs;
+  /** `process.version` of the running Node, recorded in the artifact. */
+  nodeVersion?: string;
   /** Absolute path to write the `CiResultArtifact` JSON to. */
   resultPath: string;
   fetchImpl?: FetchLike;
@@ -96,9 +101,10 @@ export async function runCi(deps: RunCiDeps): Promise<RunCiResult> {
     // 2. Resolve CI context (PR number/title/body/repo) from env + event payload.
     const ctx = resolvePrContext(deps.env, readFile);
 
+    const postAs: PostAs = deps.postAs ?? manifest.post_as ?? 'github_review';
     const githubToken = deps.env.GITHUB_TOKEN;
-    if (deps.postAs !== 'none' && !githubToken) {
-      throw new RunnerError(`GITHUB_TOKEN is required to post as '${deps.postAs}'`);
+    if (postAs !== 'none' && !githubToken) {
+      throw new RunnerError(`GITHUB_TOKEN is required to post as '${postAs}'`);
     }
 
     // 3. Assemble the diff from the CI context. Strip DevDigest's own exported
@@ -121,7 +127,9 @@ export async function runCi(deps: RunCiDeps): Promise<RunCiResult> {
       diff,
       llm: deps.llm,
       strategy: manifest.strategy,
-      skills,
+      // Skill files are plain markdown in the target repo and carry no trust
+      // metadata, so fail closed: the engine delimiter-wraps them as untrusted.
+      skills: skills.map((body, i) => ({ name: manifest.skills[i] ?? `skill-${i}`, body, trusted: false })),
       prDescription: ctx.body,
       task: `Review PR #${ctx.prNumber}: ${ctx.title}`,
     });
@@ -145,13 +153,22 @@ export async function runCi(deps: RunCiDeps): Promise<RunCiResult> {
       durationMs,
       agent: manifest.name,
       prNumber: ctx.prNumber,
+      repository: ctx.repository,
+      repositoryId: ctx.repositoryId,
+      headSha: ctx.headSha,
+      manifestVersion: manifest.version,
+      model: manifest.model,
+      skillVersions: manifest.skill_versions,
+      nodeVersion: deps.nodeVersion ?? process.version,
+      gateTriggered: triggered,
+      blockers,
     });
     writeFile(deps.resultPath, `${JSON.stringify(artifact, null, 2)}\n`);
 
     // 7. Post per `post_as` (AC-24).
-    if (deps.postAs === 'github_review') {
+    if (postAs === 'github_review') {
       await postGithubReview(ctx, githubToken as string, payload, fetchImpl);
-    } else if (deps.postAs === 'pr_comment') {
+    } else if (postAs === 'pr_comment') {
       await postPrComment(ctx, githubToken as string, payload.body, fetchImpl);
     }
     // 'none' → post nothing (exit-code only).
@@ -160,7 +177,7 @@ export async function runCi(deps: RunCiDeps): Promise<RunCiResult> {
     return {
       exitCode: triggered ? 1 : 0,
       artifact,
-      posted: { kind: deps.postAs, payload },
+      posted: { kind: postAs, payload },
       blockers,
       gateTriggered: triggered,
     };

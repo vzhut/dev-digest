@@ -11,10 +11,27 @@ import type {
   OpenPrPayload,
   CommitFilesPayload,
   IssueMeta,
+  CiWorkflowRun,
+  CiRunArtifactRef,
 } from '@devdigest/shared';
+import { ExternalServiceError } from '../../platform/errors.js';
 import { withRetry, withTimeout } from '../../platform/resilience.js';
 
 const TIMEOUT = 30_000;
+/** Artifact zips are larger than JSON payloads. */
+const DOWNLOAD_TIMEOUT = 60_000;
+
+/**
+ * Anti-corruption for the Actions reads: an SDK failure becomes an
+ * `ExternalServiceError` carrying the HTTP status in `details` (never the
+ * request, headers or token), so the ci service can map 401/403/404.
+ */
+function toGitHubError(op: string, err: unknown): ExternalServiceError {
+  const status = (err as { status?: number })?.status;
+  return new ExternalServiceError(`GitHub ${op} failed`, {
+    status: typeof status === 'number' ? status : null,
+  });
+}
 
 function mapStatus(state: string, merged: boolean | undefined): PrStatus {
   if (merged) return 'merged';
@@ -348,6 +365,18 @@ export class OctokitGitHubClient implements GitHubClient {
     );
   }
 
+  async getDefaultBranch(repo: RepoRef): Promise<string> {
+    return withRetry(() =>
+      withTimeout(
+        (async () => {
+          const res = await this.octokit.rest.repos.get({ owner: repo.owner, repo: repo.name });
+          return res.data.default_branch;
+        })(),
+        TIMEOUT,
+      ),
+    );
+  }
+
   async getIssue(repo: RepoRef, n: number): Promise<IssueMeta> {
     const res = await withRetry(() =>
       withTimeout(
@@ -368,5 +397,81 @@ export class OctokitGitHubClient implements GitHubClient {
       withTimeout(this.octokit.rest.users.getAuthenticated(), TIMEOUT),
     );
     return res.data.login;
+  }
+
+  async listWorkflowRuns(
+    repo: RepoRef,
+    workflowFile: string,
+    opts: { perPage: number },
+  ): Promise<CiWorkflowRun[]> {
+    try {
+      const res = await withRetry(() =>
+        withTimeout(
+          this.octokit.rest.actions.listWorkflowRuns({
+            owner: repo.owner,
+            repo: repo.name,
+            workflow_id: workflowFile,
+            per_page: opts.perPage,
+          }),
+          TIMEOUT,
+        ),
+      );
+      return res.data.workflow_runs.map((r) => ({
+        id: r.id,
+        run_attempt: r.run_attempt ?? 1,
+        head_sha: r.head_sha,
+        path: r.path,
+        status: r.status,
+        conclusion: r.conclusion,
+        html_url: r.html_url,
+        repository_id: r.repository.id,
+        updated_at: r.updated_at,
+      }));
+    } catch (err) {
+      throw toGitHubError('listWorkflowRuns', err);
+    }
+  }
+
+  async listRunArtifacts(repo: RepoRef, runId: number): Promise<CiRunArtifactRef[]> {
+    try {
+      const res = await withRetry(() =>
+        withTimeout(
+          this.octokit.rest.actions.listWorkflowRunArtifacts({
+            owner: repo.owner,
+            repo: repo.name,
+            run_id: runId,
+            per_page: 30,
+          }),
+          TIMEOUT,
+        ),
+      );
+      return res.data.artifacts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        size_in_bytes: a.size_in_bytes,
+        expired: a.expired,
+      }));
+    } catch (err) {
+      throw toGitHubError('listRunArtifacts', err);
+    }
+  }
+
+  async downloadArtifact(repo: RepoRef, artifactId: number): Promise<Uint8Array> {
+    try {
+      const res = await withRetry(() =>
+        withTimeout(
+          this.octokit.rest.actions.downloadArtifact({
+            owner: repo.owner,
+            repo: repo.name,
+            artifact_id: artifactId,
+            archive_format: 'zip',
+          }),
+          DOWNLOAD_TIMEOUT,
+        ),
+      );
+      return new Uint8Array(res.data as ArrayBuffer);
+    } catch (err) {
+      throw toGitHubError('downloadArtifact', err);
+    }
   }
 }

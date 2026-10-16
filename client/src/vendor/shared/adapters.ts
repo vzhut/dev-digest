@@ -119,6 +119,28 @@ export interface OpenPrPayload {
   body: string;
 }
 
+/** One GitHub Actions workflow run (the subset DevDigest ingests). */
+export interface CiWorkflowRun {
+  id: number;
+  run_attempt: number;
+  head_sha: string;
+  /** Workflow file path, e.g. ".github/workflows/devdigest-review.yml". */
+  path: string;
+  status: string | null;
+  conclusion: string | null;
+  html_url: string;
+  repository_id: number;
+  updated_at: string;
+}
+
+/** A run artifact's metadata (no bytes). */
+export interface CiRunArtifactRef {
+  id: number;
+  name: string;
+  size_in_bytes: number;
+  expired: boolean;
+}
+
 export interface GitHubClient {
   listPullRequests(repo: RepoRef): Promise<PrMeta[]>;
   getPullRequest(repo: RepoRef, n: number): Promise<PrDetail>;
@@ -135,6 +157,16 @@ export interface GitHubClient {
   getIssue(repo: RepoRef, n: number): Promise<IssueMeta>;
   /** GET /user — for "posting as @user". */
   currentLogin(): Promise<string>;
+  /** Recent runs of one workflow file (e.g. "devdigest-review.yml"), newest first. */
+  listWorkflowRuns(
+    repo: RepoRef,
+    workflowFile: string,
+    opts: { perPage: number },
+  ): Promise<CiWorkflowRun[]>;
+  /** Artifacts attached to one workflow run. */
+  listRunArtifacts(repo: RepoRef, runId: number): Promise<CiRunArtifactRef[]>;
+  /** Download one artifact as its zip bytes. */
+  downloadArtifact(repo: RepoRef, artifactId: number): Promise<Uint8Array>;
 }
 
 // ---------- Git (simple-git, heavy) ----------

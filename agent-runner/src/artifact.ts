@@ -3,7 +3,7 @@ import { CiResultArtifact } from '@devdigest/shared';
 import { RunnerError } from './errors.js';
 
 /** Runner version string embedded in every artifact (informational only). */
-export const RUNNER_VERSION = '1';
+export const RUNNER_VERSION = '2';
 
 export interface BuildResultArtifactInput {
   findings: Finding[];
@@ -11,6 +11,19 @@ export interface BuildResultArtifactInput {
   durationMs: number;
   agent: string;
   prNumber: number;
+  /** `owner/name`. */
+  repository: string;
+  repositoryId: number;
+  headSha: string;
+  /** Manifest fields echoed back so the studio can show what actually ran. */
+  manifestVersion: number | null | undefined;
+  model: string;
+  skillVersions: Record<string, number> | null | undefined;
+  /** `process.version` of the Node running the bundle. */
+  nodeVersion: string;
+  /** True when the deterministic gate requested changes. */
+  gateTriggered: boolean;
+  blockers: number;
 }
 
 function severityCounts(findings: Finding[]): { critical: number; warning: number; suggestion: number } {
@@ -32,6 +45,10 @@ function severityCounts(findings: Finding[]): { critical: number; warning: numbe
 export function buildResultArtifact(input: BuildResultArtifactInput): CiResultArtifact {
   const counts = severityCounts(input.findings);
   const candidate = {
+    artifact_version: 2 as const,
+    repository: input.repository,
+    repository_id: input.repositoryId,
+    head_sha: input.headSha,
     findings_count: input.findings.length,
     critical: counts.critical,
     warning: counts.warning,
@@ -41,6 +58,13 @@ export function buildResultArtifact(input: BuildResultArtifactInput): CiResultAr
     agent: input.agent,
     version: RUNNER_VERSION,
     pr_number: input.prNumber,
+    blockers: input.blockers,
+    verdict: input.gateTriggered ? ('fail' as const) : ('pass' as const),
+    manifest_version: input.manifestVersion ?? null,
+    model: input.model,
+    runner_version: RUNNER_VERSION,
+    node_version: input.nodeVersion,
+    skill_versions: input.skillVersions ?? null,
   };
   const result = CiResultArtifact.safeParse(candidate);
   if (!result.success) {

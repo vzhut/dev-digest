@@ -11,7 +11,9 @@
       "last7Days": "Last 7 days",
       "allAgents": "All agents",
       "allRepos": "All repos",
-      "allStatuses": "All statuses"
+      "allStatuses": "All statuses",
+      "agentLabel": "Agent",
+      "repoLabel": "Repository"
     },
     "table": {
       "timestamp": "Timestamp",
@@ -19,7 +21,13 @@
       "source": "Source",
       "findings": "Findings",
       "cost": "Cost",
-      "status": "Status"
+      "status": "Status",
+      "repository": "Repository",
+      "agent": "Agent",
+      "duration": "Duration",
+      "job": "Job",
+      "breakdown": "{critical} critical · {warning} warning · {suggestion} suggestion",
+      "jobLabel": "Open the CI job for {repo} on GitHub"
     },
     "view": "View",
     "status": {
@@ -27,7 +35,17 @@
       "noFindings": "No findings",
       "failed": "Failed",
       "running": "Running"
-    }
+    },
+    "result": {
+      "pass": "Passed",
+      "fail": "Blocked",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "loading": "Loading CI runs",
+    "loadError": "Couldn't load CI runs",
+    "noMatch": "No CI runs match these filters.",
+    "loadErrorBody": "The DevDigest engine didn't answer."
   },
   "exportWizard": {
     "title": "Export to CI",
@@ -72,7 +90,41 @@
     "installCardTitle": "Open a PR with these files",
     "installCardBody": "DevDigest opens a PR in {repo} titled “Add DevDigest CI review” with the {count} generated files.",
     "ownerRepo": "owner/repo",
-    "secretNote": "Add {key} to the repo's Actions secrets before the workflow runs."
+    "secretNote": "Add {key} to the repo's Actions secrets before the workflow runs.",
+    "noRepos": "Connect a repository first — the workflow is added to one of your connected repos.",
+    "workflowEditorLabel": "Edit {path}",
+    "violationsTitle": "This workflow breaks DevDigest's safety rules",
+    "triggerRequired": "Pick at least one trigger.",
+    "editsDiscardedNote": "You edited the workflow. Changing the triggers or the post mode regenerates it and discards those edits.",
+    "secretsLabel": "Secrets expected",
+    "secretUnchecked": "required — cannot be checked from DevDigest",
+    "tokenProvided": "Provided automatically by GitHub Actions",
+    "tokenReady": "provided",
+    "failOnLabel": "Fail CI on",
+    "failOnNote": "set on the agent; change it in the CI tab.",
+    "requiredCheckNote": "To block merging on findings, mark the DevDigest Review check as required in the repo's branch protection rules. A REQUEST_CHANGES review verdict alone does not block a merge: it only blocks under the repository's configured review rules, so the check must exit non-zero and be a required check.",
+    "forkNote": "Pull requests from forks are skipped: the workflow never hands secrets to fork code. A skipped check can still satisfy a required check, so review fork PRs by hand.",
+    "installMethodLabel": "How to add the files",
+    "zipCardTitle": "Download a .zip",
+    "zipCardBody": "Get the {count} generated files as an archive and add them to the repo yourself. Nothing is sent to GitHub.",
+    "installBlocked": "{count, plural, one {# workflow problem blocks} other {# workflow problems block}} the pull request. Fix {count, plural, one {it} other {them}} in the Preview step, or download the .zip instead.",
+    "installedBody": "A pull request is ready in {repo}. Merge it, then add the secret to start reviewing.",
+    "openPr": "View pull request",
+    "zipDoneBody": "The .zip was downloaded. Add its files to the repo, then add the secret.",
+    "download": "Download .zip",
+    "downloading": "Preparing…",
+    "close": "Close",
+    "errors": {
+      "generic": "Something went wrong while talking to the DevDigest engine.",
+      "no_repository": "This repository is not connected to the workspace any more.",
+      "repo_not_accessible": "GitHub can't see this repository with your token. Check that the token covers it.",
+      "token_missing": "No GitHub token is configured. Add one in Settings, then try again.",
+      "token_permission_missing": "The GitHub token lacks permission. It needs Contents, Pull requests and Workflows write access. You can download the .zip instead.",
+      "agent_not_exportable": "Only agents that use the OpenRouter provider can be exported to CI.",
+      "runner_bundle_missing": "The CI runner bundle isn't built. Run “cd agent-runner && pnpm install && pnpm build”, then try again.",
+      "workflow_invalid": "The workflow didn't pass validation. Fix the problems listed in the Preview step.",
+      "github_unavailable": "GitHub didn't respond. Try again in a moment, or download the .zip."
+    }
   },
   "ciTab": {
     "heading": "Continuous Integration",
@@ -81,8 +133,28 @@
     "publish": "Publish to CI",
     "update": "Update CI",
     "noRepo": "Connect a repository first",
-    "empty": "Not deployed to CI yet. Use “Publish to CI” to open a PR that adds the workflow + agent config.",
-    "installed": "installed {date}"
+    "empty": "Not deployed to CI yet. Use “Add to CI” to open a PR that adds the workflow and agent config.",
+    "installed": "installed {date}",
+    "emptyTitle": "Not in CI yet",
+    "addToCi": "Add to CI",
+    "activeIn": "{count, plural, =0 {Not active in any repo} one {Active in # repo} other {Active in # repos}}",
+    "versions": "agent v{agent} · workflow v{workflow}",
+    "status": {
+      "pending": "Pending merge",
+      "active": "Active"
+    },
+    "outdated": "Outdated",
+    "outdatedNotice": "This agent changed after it was exported. The change reaches CI after you export again (Add to CI) and merge the PR.",
+    "lastRun": "Last run {when} · {result}",
+    "noRuns": "No runs yet",
+    "openPr": "View pull request",
+    "loading": "Loading installations",
+    "loadError": "Couldn't load CI installations",
+    "loadErrorBody": "The DevDigest engine didn't answer.",
+    "installationsLabel": "CI installations",
+    "historyTitle": "Run history",
+    "historyError": "Couldn't load CI runs",
+    "historyEmpty": "No CI runs for this agent yet."
   },
   "publishDialog": {
     "title": "Publish to CI",

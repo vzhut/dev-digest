@@ -35,6 +35,8 @@ const EnvSchema = z.object({
   // Global API rate limit, requests per minute per client. The e2e stack raises it: its
   // flows run back to back from one address and would otherwise trip the default.
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+  // Built agent-runner bundle the CI export ships (default: ../agent-runner/dist/index.js).
+  AGENT_RUNNER_BUNDLE_PATH: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
@@ -53,6 +55,8 @@ export type AppConfig = {
   webPort: number;
   /** Absolute path where repos are cloned (~/.devdigest/workspace by default). */
   cloneDir: string;
+  /** Absolute path to the built agent-runner bundle (`AGENT_RUNNER_BUNDLE_PATH`). */
+  agentRunnerBundlePath: string;
   /** Absolute path to the writable secrets store (BYO keys from the UI). */
   secretsPath: string;
   nodeEnv: 'development' | 'test' | 'production';
@@ -93,6 +97,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiPort: parsed.API_PORT,
     webPort: parsed.WEB_PORT,
     cloneDir,
+    agentRunnerBundlePath: resolve(
+      parsed.AGENT_RUNNER_BUNDLE_PATH ?? join(process.cwd(), '..', 'agent-runner', 'dist', 'index.js'),
+    ),
     secretsPath: join(homedir(), '.devdigest', 'secrets.json'),
     nodeEnv: parsed.NODE_ENV,
     rateLimitMax: parsed.RATE_LIMIT_MAX,

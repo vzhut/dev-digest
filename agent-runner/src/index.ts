@@ -18,13 +18,35 @@
  * real world and maps the result onto `process.exitCode`.
  */
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { OpenRouterProvider } from '@devdigest/reviewer-core';
 import { runCi, type PostAs } from './run.js';
 
-function resolvePostAs(value: string | undefined): PostAs {
+/** Valid env value or `undefined` — `runCi` then falls back to the manifest, then `github_review`. */
+function resolvePostAs(value: string | undefined): PostAs | undefined {
   if (value === 'github_review' || value === 'pr_comment' || value === 'none') return value;
-  return 'github_review';
+  return undefined;
+}
+
+/**
+ * Safe-to-log text for a failure: the error's name + message only (never the raw
+ * object, stack, `cause`, request headers or response bodies), with the values of
+ * the CI secrets replaced by `***` (AC-35).
+ */
+export function redactSecrets(text: string, env: NodeJS.ProcessEnv = process.env): string {
+  let out = text;
+  for (const key of ['OPENROUTER_API_KEY', 'GITHUB_TOKEN']) {
+    const value = env[key];
+    if (value) out = out.split(value).join('***');
+  }
+  return out;
+}
+
+function safeErrorText(err: unknown, env: NodeJS.ProcessEnv = process.env): string {
+  const text =
+    err instanceof Error ? `${err.name}: ${err.message}` : typeof err === 'string' ? err : 'unknown error';
+  return redactSecrets(text, env);
 }
 
 export async function main(env: NodeJS.ProcessEnv = process.env): Promise<number> {
@@ -43,6 +65,7 @@ export async function main(env: NodeJS.ProcessEnv = process.env): Promise<number
     env,
     llm,
     postAs,
+    nodeVersion: process.version,
     resultPath,
     readFile: readFileSync,
     readDir: readdirSync,
@@ -50,7 +73,7 @@ export async function main(env: NodeJS.ProcessEnv = process.env): Promise<number
   });
 
   if (result.artifact === null) {
-    console.error(`[agent-runner] FAILED: ${result.error}`);
+    console.error(`[agent-runner] FAILED: ${redactSecrets(result.error, env)}`);
   } else {
     console.log(
       `[agent-runner] findings=${result.artifact.findings_count} blockers=${result.blockers} ` +
@@ -65,7 +88,7 @@ export async function main(env: NodeJS.ProcessEnv = process.env): Promise<number
 const isDirectRun =
   typeof process !== 'undefined' &&
   process.argv[1] != null &&
-  import.meta.url === `file://${process.argv[1]}`;
+  import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun) {
   main().then(
@@ -73,7 +96,7 @@ if (isDirectRun) {
       process.exitCode = code;
     },
     (err) => {
-      console.error('[agent-runner] fatal error:', err);
+      console.error(`[agent-runner] FAILED: ${safeErrorText(err)}`);
       process.exitCode = 1;
     },
   );
