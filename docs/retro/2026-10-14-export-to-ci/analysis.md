@@ -11,6 +11,7 @@ something is an inference or unverified it says so. Companion files in this fold
 | `logs/generated-workflow-as-installed.yml` | the workflow as it sits on `master` of the demo repo (the OLD two-job version) |
 | `logs/github-actions-runs.tsv`, `logs/github-prs.tsv` | runs and PRs of the demo repo |
 | `logs/studio-db-snapshot.txt` | `ci_installations`, `agent_runs` (source='ci') and `run_traces` rows from the studio DB |
+| `screenshots/01..06-*.png` | real UI of the feature (CI tab, the four wizard steps, CI Runs) taken from the running studio on 2026-10-16; the Install button was not pressed |
 | `check-token.sh` | diagnostic for the token the studio really uses (prints only codes and GitHub messages) |
 
 Spec / plan / tasks (with Delivery log): `specs/2026-10-13-export-to-ci.md`, `.plan.md`, `.tasks.md`.
