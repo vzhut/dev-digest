@@ -1,0 +1,3980 @@
+M	client/INSIGHTS.md
+A	client/messages/en/multiAgent.json
+M	client/messages/en/prReview.json
+M	client/messages/en/runs.json
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/ConfigureRun.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/helpers.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/MultiAgentResults.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/AgentMeta.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/constants.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/ColumnsView.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/AgentColumn.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/ConflictsSection.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/RunHeader.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/TabsView.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/AgentTab.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/constants.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/helpers.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/types.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useNow.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/MultiAgentView.tsx
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/index.ts
+A	client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/styles.ts
+A	client/src/app/repos/[repoId]/multi-agent/page.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.test.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/_components/InlineFinding/InlineFinding.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailHeader/PrDetailHeader.test.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.test.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.tsx
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/constants.ts
+A	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/helpers.ts
+M	client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/styles.ts
+M	client/src/components/app-shell/nav.test.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.test.tsx	client/src/components/finding-card/EvalCaseAction/EvalCaseAction.test.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.tsx	client/src/components/finding-card/EvalCaseAction/EvalCaseAction.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/index.ts	client/src/components/finding-card/EvalCaseAction/index.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/styles.ts	client/src/components/finding-card/EvalCaseAction/styles.ts
+R097	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.test.tsx	client/src/components/finding-card/FindingCard.test.tsx
+R091	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.tsx	client/src/components/finding-card/FindingCard.tsx
+A	client/src/components/finding-card/LearnAction/LearnAction.tsx
+A	client/src/components/finding-card/LearnAction/index.ts
+A	client/src/components/finding-card/LearnAction/styles.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/constants.ts	client/src/components/finding-card/constants.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/helpers.ts	client/src/components/finding-card/helpers.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/index.ts	client/src/components/finding-card/index.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/styles.ts	client/src/components/finding-card/styles.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/FindingsSection.tsx	client/src/components/run-trace-drawer/FindingsSection/FindingsSection.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/index.ts	client/src/components/run-trace-drawer/FindingsSection/index.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/PromptBlock.tsx	client/src/components/run-trace-drawer/PromptBlock/PromptBlock.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/index.ts	client/src/components/run-trace-drawer/PromptBlock/index.ts
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/PromptModalBody.tsx	client/src/components/run-trace-drawer/PromptModalBody/PromptModalBody.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/index.ts	client/src/components/run-trace-drawer/PromptModalBody/index.ts
+R097	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.test.tsx	client/src/components/run-trace-drawer/RunTraceDrawer.test.tsx
+R098	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.tsx	client/src/components/run-trace-drawer/RunTraceDrawer.tsx
+R097	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/ToolCallRow.tsx	client/src/components/run-trace-drawer/ToolCallRow/ToolCallRow.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/index.ts	client/src/components/run-trace-drawer/ToolCallRow/index.ts
+R085	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/TraceBody.tsx	client/src/components/run-trace-drawer/TraceBody/TraceBody.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/index.ts	client/src/components/run-trace-drawer/TraceBody/index.ts
+R096	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/TraceSection.tsx	client/src/components/run-trace-drawer/TraceSection/TraceSection.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/index.ts	client/src/components/run-trace-drawer/TraceSection/index.ts
+R095	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/atoms.tsx	client/src/components/run-trace-drawer/atoms.tsx
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/constants.ts	client/src/components/run-trace-drawer/constants.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/helpers.ts	client/src/components/run-trace-drawer/helpers.ts
+R100	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/index.ts	client/src/components/run-trace-drawer/index.ts
+R095	client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/styles.ts	client/src/components/run-trace-drawer/styles.ts
+M	client/src/lib/hooks/reviews.ts
+A	client/src/lib/multi-agent-format.ts
+M	client/src/vendor/shared/contracts/knowledge.ts
+M	client/src/vendor/shared/contracts/observability.ts
+M	client/src/vendor/shared/contracts/platform.ts
+M	client/src/vendor/shared/contracts/review-api.ts
+M	client/src/vendor/shared/contracts/trace.ts
+M	client/src/vendor/ui/nav.ts
+M	server/INSIGHTS.md
+M	server/src/db/client.ts
+A	server/src/db/migrations/0018_freezing_kingpin.sql
+M	server/src/db/migrations/meta/_journal.json
+M	server/src/db/schema/reviews.ts
+M	server/src/db/schema/runs.ts
+M	server/src/modules/reviews/helpers.ts
+A	server/src/modules/reviews/multi-agent.ts
+M	server/src/modules/reviews/repository.ts
+M	server/src/modules/reviews/repository/review.repo.ts
+M	server/src/modules/reviews/repository/run.repo.ts
+M	server/src/modules/reviews/routes.ts
+M	server/src/modules/reviews/run-executor.ts
+M	server/src/modules/reviews/service.ts
+M	server/src/vendor/shared/contracts/knowledge.ts
+M	server/src/vendor/shared/contracts/observability.ts
+M	server/src/vendor/shared/contracts/platform.ts
+M	server/src/vendor/shared/contracts/review-api.ts
+M	server/src/vendor/shared/contracts/trace.ts
+
+diff --git a/client/INSIGHTS.md b/client/INSIGHTS.md
+index 62b2fa69..5bc44487 100644
+--- a/client/INSIGHTS.md
++++ b/client/INSIGHTS.md
+@@ -63,6 +63,12 @@ A callback prop (`onSettled`) can't go in the deps for the same reason, so it is
+ updated by an unconditional effect and read as `onSettledRef.current?.()` when the last stream
+ closes. Result: no disabled lint rule, and the subscription survives parent re-renders.
+ 
++### `useRunEvents(onSettled)` fires only when ALL its streams closed, so per-child live state needs one hook per child
++
++`src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts:1` · 2026-10-13
++
++On the multi-agent page one `useRunEvents(allRunningIds, { onSettled })` would refetch the parent run only when the slowest child ends: an early finisher would sit at "running" with a ticking timer. `onSettled` in `src/lib/hooks/reviews.ts` is called when `open <= 0`, i.e. after the last EventSource closes. `useAgentLive(column, onSettled)` therefore calls `useRunEvents([column.run_id])` once per column (and per tab), so each child's end refetches `GET /multi-agent-runs/:id` on its own. Limitation: in Tabs mode only the open tab subscribes, so a hidden running child updates when its tab is opened or the window regains focus.
++
+ ## Tool & Library Notes
+ 
+ ### A Server Component that imports `@devdigest/ui` crashes every page under `next dev`, but `next build` passes
+diff --git a/client/messages/en/multiAgent.json b/client/messages/en/multiAgent.json
+new file mode 100644
+index 00000000..c98ee101
+--- /dev/null
++++ b/client/messages/en/multiAgent.json
+@@ -0,0 +1,59 @@
++{
++  "page": {
++    "crumb": "Multi-Agent Review",
++    "title": "Multi-Agent Review",
++    "subtitle": "Run several agents on one pull request at the same time and compare what they find."
++  },
++  "configure": {
++    "pullRequest": "Pull request",
++    "pickPr": "Select a pull request…",
++    "pickPrFirst": "Pick a pull request first",
++    "agents": "Agents ({checked} of {total} selected)",
++    "selectAll": "Select all",
++    "run": "Run multi-agent review ({count})",
++    "noAgentsTitle": "No enabled agents",
++    "noAgentsBody": "Enable at least one agent to run a multi-agent review.",
++    "goToAgents": "Go to Agents"
++  },
++  "results": {
++    "prTitle": "Pull request #{number}",
++    "prTitleUnknown": "Pull request",
++    "runStatus": {
++      "running": "running",
++      "done": "done",
++      "partial": "partial",
++      "failed": "failed"
++    },
++    "mode": {
++      "label": "View mode",
++      "columns": "Columns",
++      "tabs": "Tabs"
++    },
++    "status": {
++      "queued": "queued",
++      "running": "running",
++      "done": "done",
++      "failed": "failed",
++      "cancelled": "cancelled"
++    },
++    "costUnknown": "unknown",
++    "cancelled": "Cancelled",
++    "failedNoReason": "The run failed.",
++    "findingCount": "{count, plural, one {# finding} other {# findings}}",
++    "noFindings": "No findings.",
++    "viewTrace": "View trace",
++    "loadError": "Could not load this multi-agent run.",
++    "conflicts": {
++      "title": "Where agents disagree",
++      "onlyConflicts": "Show only conflicts",
++      "none": "No overlapping findings between agents.",
++      "noneConflicting": "No conflicts: the agents agree wherever they overlap.",
++      "take": {
++        "ignored": "did not flag",
++        "failed": "run failed",
++        "cancelled": "run cancelled",
++        "pending": "still running"
++      }
++    }
++  }
++}
+diff --git a/client/messages/en/prReview.json b/client/messages/en/prReview.json
+index 76e0409f..9753f622 100644
+--- a/client/messages/en/prReview.json
++++ b/client/messages/en/prReview.json
+@@ -6,6 +6,8 @@
+     "accept": "Accept",
+     "dismiss": "Reject",
+     "learn": "Learn",
++    "learned": "learned",
++    "learnFailed": "Could not save this learning",
+     "replyToAuthor": "Reply to author",
+     "replyPlaceholder": "Reply to the author about this finding…",
+     "sendReply": "Send reply",
+@@ -49,13 +51,17 @@
+     "noMatchBody": "Adjust the filters above, or run a review to generate findings."
+   },
+   "runReview": {
+-    "runAll": "Run all enabled agents",
++    "pickerLabel": "Choose agents",
++    "agentsHeading": "Agents",
++    "clear": "Clear",
++    "runMulti": "Run multi-agent review ({count})",
+     "configureAgents": "Configure agents…",
++    "goToAgents": "Go to Agents",
++    "noEnabledAgents": "No enabled agents. Enable at least one agent to run a multi-agent review.",
+     "running": "Running…",
+     "runReview": "Run Review",
+     "mergedWarning": "Already merged — review is informational",
+-    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code.",
+-    "noAgents": "No agents yet — create one"
++    "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code."
+   },
+   "runStatus": {
+     "elapsed": "Running · {count} agent(s)",
+@@ -168,7 +174,7 @@
+     "historyHint": "runs & commits · newest first",
+     "runsHint": "grouped by run · newest first",
+     "emptyTitle": "No findings yet",
+-    "emptyBody": "Run a review to generate findings. Use Run Review ▾ above (run all enabled agents or a specific one).",
++    "emptyBody": "Run a review to generate findings. Use Run Review ▾ above to pick the agents to run.",
+     "deleteRun": "Delete this review run",
+     "reviewInProgressSub": "the agent is analyzing the diff — this can take a while on large PRs.",
+     "trifectaCount": "{count} finding(s)",
+diff --git a/client/messages/en/runs.json b/client/messages/en/runs.json
+index 49a3c7a5..5e30fcaa 100644
+--- a/client/messages/en/runs.json
++++ b/client/messages/en/runs.json
+@@ -19,6 +19,7 @@
+   "trace": {
+     "configuration": "Configuration",
+     "stats": "Stats",
++    "groundingDropped": "Dropped by grounding ({count})",
+     "promptAssembly": "Prompt assembly",
+     "toolCalls": "Tool calls",
+     "rawOutput": "Raw output",
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/ConfigureRun.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/ConfigureRun.tsx
+new file mode 100644
+index 00000000..a826494a
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/ConfigureRun.tsx
+@@ -0,0 +1,107 @@
++/* ConfigureRun — pick a pull request and the enabled agents to run on it (none checked
++   by default), see the estimated total, and start one concurrent review. */
++"use client";
++
++import React from "react";
++import { useRouter } from "next/navigation";
++import { useTranslations } from "next-intl";
++import { Button, EmptyState, Skeleton } from "@devdigest/ui";
++import { useAgents } from "@/lib/hooks/agents";
++import { usePulls } from "@/lib/hooks/core";
++import { useAgentEstimates, useStartMultiAgentReview } from "@/lib/hooks/reviews";
++import { estimateLabel, formatSelectionTotal } from "@/lib/multi-agent-format";
++import { checkedIds, enabledAgents, estimatesFor, toggleId } from "./helpers";
++import { s } from "./styles";
++
++export function ConfigureRun({ repoId }: { repoId: string }) {
++  const t = useTranslations("multiAgent.configure");
++  const router = useRouter();
++  const { data: pulls } = usePulls(repoId);
++  const { data: agents, isLoading } = useAgents();
++  const { data: estimates } = useAgentEstimates();
++  const start = useStartMultiAgentReview();
++  const [prId, setPrId] = React.useState("");
++  const [checked, setChecked] = React.useState<ReadonlySet<string>>(new Set());
++
++  const enabled = enabledAgents(agents);
++  const ids = checkedIds(enabled, checked);
++  const byAgent = new Map((estimates ?? []).map((e) => [e.agent_id, e]));
++  const canRun = !!prId && ids.length > 0 && !start.isPending;
++
++  const run = () =>
++    start.mutate(
++      { prId, agentIds: ids },
++      {
++        onSuccess: (res) => {
++          if (res.multi_agent_run_id) router.push(`/repos/${repoId}/multi-agent?run=${res.multi_agent_run_id}`);
++        },
++      },
++    );
++
++  if (isLoading) {
++    return (
++      <div style={s.form}>
++        <Skeleton height={120} />
++      </div>
++    );
++  }
++
++  if (enabled.length === 0) {
++    return (
++      <EmptyState
++        icon="Cpu"
++        title={t("noAgentsTitle")}
++        body={t("noAgentsBody")}
++        cta={t("goToAgents")}
++        onCta={() => router.push("/agents")}
++      />
++    );
++  }
++
++  return (
++    <div style={s.form}>
++      <div>
++        <label htmlFor="multi-agent-pr" style={s.label}>
++          {t("pullRequest")}
++        </label>
++        <select id="multi-agent-pr" style={s.select} value={prId} onChange={(e) => setPrId(e.target.value)}>
++          <option value="">{t("pickPr")}</option>
++          {(pulls ?? [])
++            .filter((p) => p.id)
++            .map((p) => (
++              <option key={p.id} value={p.id ?? ""}>
++                #{p.number} {p.title}
++              </option>
++            ))}
++        </select>
++      </div>
++
++      <div style={s.toolbar}>
++        <span style={s.label}>{t("agents", { checked: ids.length, total: enabled.length })}</span>
++        <Button kind="ghost" size="sm" onClick={() => setChecked(new Set(enabled.map((a) => a.id)))}>
++          {t("selectAll")}
++        </Button>
++      </div>
++      <div style={s.grid}>
++        {enabled.map((a) => (
++          <label key={a.id} style={s.card(checked.has(a.id))}>
++            <input type="checkbox" checked={checked.has(a.id)} onChange={() => setChecked((c) => toggleId(c, a.id))} />
++            <span style={s.cardBody}>
++              <span style={s.cardName}>{a.name}</span>
++              <span style={s.cardDesc}>{a.description}</span>
++              <span style={s.cardEstimate}>{estimateLabel(byAgent.get(a.id))}</span>
++            </span>
++          </label>
++        ))}
++      </div>
++
++      <div style={s.footer}>
++        <Button kind="primary" icon="Play" disabled={!canRun} loading={start.isPending} onClick={run}>
++          {t("run", { count: ids.length })}
++        </Button>
++        <span style={s.total}>{formatSelectionTotal(estimatesFor(ids, estimates))}</span>
++        {!prId && <span style={s.hint}>{t("pickPrFirst")}</span>}
++      </div>
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/helpers.ts b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/helpers.ts
+new file mode 100644
+index 00000000..4dd4f1c9
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/helpers.ts
+@@ -0,0 +1,23 @@
++/* Pure selection helpers for the Configure run form. */
++import type { Agent, AgentRunEstimate } from "@devdigest/shared";
++
++export function enabledAgents(agents: Agent[] | undefined): Agent[] {
++  return (agents ?? []).filter((a) => a.enabled);
++}
++
++/** Checked enabled agents, in list order (an agent disabled since it was checked drops out). */
++export function checkedIds(enabled: Agent[], checked: ReadonlySet<string>): string[] {
++  return enabled.filter((a) => checked.has(a.id)).map((a) => a.id);
++}
++
++export function toggleId(set: ReadonlySet<string>, id: string): Set<string> {
++  const next = new Set(set);
++  if (next.has(id)) next.delete(id);
++  else next.add(id);
++  return next;
++}
++
++export function estimatesFor(ids: string[], estimates: AgentRunEstimate[] | undefined): AgentRunEstimate[] {
++  const wanted = new Set(ids);
++  return (estimates ?? []).filter((e) => wanted.has(e.agent_id));
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/index.ts
+new file mode 100644
+index 00000000..83e92e33
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/index.ts
+@@ -0,0 +1 @@
++export { ConfigureRun } from "./ConfigureRun";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/styles.ts
+new file mode 100644
+index 00000000..35b8e9c1
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/ConfigureRun/styles.ts
+@@ -0,0 +1,34 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  form: { padding: "10px 32px 32px", display: "flex", flexDirection: "column", gap: 16, maxWidth: 880 } satisfies CSSProperties,
++  label: { fontSize: 13, fontWeight: 600 } satisfies CSSProperties,
++  select: {
++    width: "100%",
++    padding: "8px 10px",
++    fontSize: 14,
++    background: "var(--bg-elevated)",
++    color: "var(--text-primary)",
++    border: "1px solid var(--border-strong)",
++    borderRadius: 6,
++  } satisfies CSSProperties,
++  toolbar: { display: "flex", alignItems: "center", justifyContent: "space-between" } satisfies CSSProperties,
++  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 } satisfies CSSProperties,
++  card: (checked: boolean): CSSProperties => ({
++    display: "flex",
++    gap: 10,
++    alignItems: "flex-start",
++    padding: 12,
++    borderRadius: 8,
++    border: "1px solid " + (checked ? "var(--accent)" : "var(--border)"),
++    background: "var(--bg-elevated)",
++    cursor: "pointer",
++  }),
++  cardBody: { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 } satisfies CSSProperties,
++  cardName: { fontSize: 14, fontWeight: 600 } satisfies CSSProperties,
++  cardDesc: { fontSize: 12.5, color: "var(--text-secondary)" } satisfies CSSProperties,
++  cardEstimate: { fontSize: 12, color: "var(--text-muted)", marginTop: 4 } satisfies CSSProperties,
++  footer: { display: "flex", alignItems: "center", gap: 14 } satisfies CSSProperties,
++  total: { fontSize: 13, color: "var(--text-secondary)" } satisfies CSSProperties,
++  hint: { fontSize: 12.5, color: "var(--text-muted)" } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/MultiAgentResults.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/MultiAgentResults.tsx
+new file mode 100644
+index 00000000..d938cfb6
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/MultiAgentResults.tsx
+@@ -0,0 +1,97 @@
++/* MultiAgentResults — one multi-agent run: header, Columns / Tabs mode, the "where agents
++   disagree" section and one trace drawer. The run comes from the TanStack cache
++   (GET /multi-agent-runs/:id); each running child's SSE stream settling refetches it. */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { ErrorState, Skeleton } from "@devdigest/ui";
++import type { FindingActionKind } from "@devdigest/shared";
++import { RunTraceDrawer } from "@/components/run-trace-drawer";
++import { apiErrorMessage } from "@/lib/api";
++import { useFindingAction, useMultiAgentRun } from "@/lib/hooks/reviews";
++import type { Mode } from "./constants";
++import { isLive } from "./helpers";
++import { useNow } from "./useNow";
++import { ColumnsView } from "./_components/ColumnsView";
++import { ConflictsSection } from "./_components/ConflictsSection";
++import { RunHeader } from "./_components/RunHeader";
++import { TabsView } from "./_components/TabsView";
++import { s } from "./styles";
++
++export function MultiAgentResults({ runId }: { runId: string }) {
++  const t = useTranslations("multiAgent.results");
++  const { data: run, isLoading, isError, error, refetch } = useMultiAgentRun(runId);
++  const findingAction = useFindingAction();
++  const [mode, setMode] = React.useState<Mode>("columns");
++  const [tab, setTab] = React.useState<string | null>(null);
++  const [onlyConflicts, setOnlyConflicts] = React.useState(false);
++  const [drawerRunId, setDrawerRunId] = React.useState<string | null>(null);
++  const now = useNow(run?.columns.some((c) => isLive(c.status)) ?? false);
++
++  if (isLoading) {
++    return (
++      <div style={s.page}>
++        <Skeleton height={220} />
++      </div>
++    );
++  }
++  if (isError || !run) {
++    return (
++      <div style={s.page}>
++        <ErrorState title={t("loadError")} body={apiErrorMessage(error, t("loadError"))} onRetry={() => refetch()} />
++      </div>
++    );
++  }
++
++  const settled = () => void refetch();
++  const drawerColumn = run.columns.find((c) => c.run_id === drawerRunId);
++  const act = (findingId: string, action: FindingActionKind) =>
++    findingAction.mutate({ findingId, action, prId: run.pr_id, multiAgentRunId: run.id });
++  const pendingFindingId = findingAction.isPending ? (findingAction.variables?.findingId ?? null) : null;
++
++  return (
++    <div style={s.page}>
++      <RunHeader run={run} mode={mode} onModeChange={setMode} />
++      {mode === "columns" ? (
++        <ColumnsView
++          columns={run.columns}
++          ranAt={run.ran_at}
++          now={now}
++          onSettled={settled}
++          onViewTrace={setDrawerRunId}
++        />
++      ) : (
++        <TabsView
++          columns={run.columns}
++          tab={tab}
++          onTabChange={setTab}
++          prId={run.pr_id}
++          multiAgentRunId={run.id}
++          ranAt={run.ran_at}
++          now={now}
++          pendingFindingId={pendingFindingId}
++          onSettled={settled}
++          onViewTrace={setDrawerRunId}
++          onFindingAction={act}
++        />
++      )}
++      <ConflictsSection
++        conflicts={run.conflicts}
++        columns={run.columns}
++        onlyConflicts={onlyConflicts}
++        onToggleOnly={setOnlyConflicts}
++      />
++      {drawerColumn && (
++        <RunTraceDrawer
++          runId={drawerColumn.run_id}
++          agentName={drawerColumn.agent_name}
++          prNumber={run.pr_number}
++          findings={drawerColumn.findings}
++          running={isLive(drawerColumn.status)}
++          onClose={() => setDrawerRunId(null)}
++        />
++      )}
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/AgentMeta.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/AgentMeta.tsx
+new file mode 100644
+index 00000000..c8119ed7
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/AgentMeta.tsx
+@@ -0,0 +1,39 @@
++/* AgentMeta — status, time and cost of one agent's run (shared by the column and the tab). */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { Badge } from "@devdigest/ui";
++import { formatDuration } from "@/lib/eval-format";
++import { formatCostUsd } from "@/lib/format-cost";
++import { elapsedMs, type DisplayStatus } from "../../helpers";
++import type { RunColumn } from "../../types";
++import { STATUS_COLOR } from "./constants";
++import { s } from "./styles";
++
++export function AgentMeta({
++  column,
++  status,
++  ranAt,
++  now,
++}: {
++  column: RunColumn;
++  status: DisplayStatus;
++  ranAt: string;
++  now: number;
++}) {
++  const t = useTranslations("multiAgent.results");
++  const live = status === "queued" || status === "running";
++  const time = live ? formatDuration(elapsedMs(ranAt, now)) : formatDuration(column.duration_ms);
++  return (
++    <div style={s.row}>
++      <Badge color={STATUS_COLOR[status]}>{t(`status.${status}`)}</Badge>
++      <span className="tnum" style={s.muted}>
++        {time}
++      </span>
++      <span className="tnum" style={s.muted}>
++        {column.cost_usd == null ? t("costUnknown") : formatCostUsd(column.cost_usd)}
++      </span>
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/constants.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/constants.ts
+new file mode 100644
+index 00000000..de3d2360
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/constants.ts
+@@ -0,0 +1,9 @@
++import type { DisplayStatus } from "../../helpers";
++
++export const STATUS_COLOR: Record<DisplayStatus, string> = {
++  queued: "var(--text-muted)",
++  running: "var(--accent)",
++  done: "var(--ok)",
++  failed: "var(--crit)",
++  cancelled: "var(--text-muted)",
++};
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/index.ts
+new file mode 100644
+index 00000000..5dfde117
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/index.ts
+@@ -0,0 +1 @@
++export { AgentMeta } from "./AgentMeta";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/styles.ts
+new file mode 100644
+index 00000000..143eff76
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/AgentMeta/styles.ts
+@@ -0,0 +1,6 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  row: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } satisfies CSSProperties,
++  muted: { fontSize: 12.5, color: "var(--text-muted)" } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/ColumnsView.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/ColumnsView.tsx
+new file mode 100644
+index 00000000..eac088bf
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/ColumnsView.tsx
+@@ -0,0 +1,39 @@
++/* ColumnsView — the agents side by side. Up to MAX_FIT_COLUMNS share the width; more scroll. */
++"use client";
++
++import React from "react";
++import { MAX_FIT_COLUMNS, SCROLL_COLUMN_WIDTH } from "../../constants";
++import type { RunColumn } from "../../types";
++import { AgentColumn } from "./_components/AgentColumn";
++import { s } from "./styles";
++
++export function ColumnsView({
++  columns,
++  ranAt,
++  now,
++  onSettled,
++  onViewTrace,
++}: {
++  columns: RunColumn[];
++  ranAt: string;
++  now: number;
++  onSettled: () => void;
++  onViewTrace: (runId: string) => void;
++}) {
++  const scrolls = columns.length > MAX_FIT_COLUMNS;
++  return (
++    <div style={s.row(scrolls)}>
++      {columns.map((c) => (
++        <AgentColumn
++          key={c.run_id}
++          column={c}
++          ranAt={ranAt}
++          now={now}
++          fixedWidth={scrolls ? SCROLL_COLUMN_WIDTH : undefined}
++          onSettled={onSettled}
++          onViewTrace={onViewTrace}
++        />
++      ))}
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/AgentColumn.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/AgentColumn.tsx
+new file mode 100644
+index 00000000..8376e814
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/AgentColumn.tsx
+@@ -0,0 +1,73 @@
++/* AgentColumn — one agent's result: status/time/cost, a live log tail while running, the
++   score ring when done, its findings and View trace. Failed / cancelled show the reason
++   instead of a ring. */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { Button, CircularScore, LiveLogStream, SeverityBadge, type Severity } from "@devdigest/ui";
++import { LOG_TAIL_HEIGHT } from "../../../../constants";
++import { lineRange } from "../../../../helpers";
++import type { RunColumn } from "../../../../types";
++import { useAgentLive } from "../../../../useAgentLive";
++import { AgentMeta } from "../../../AgentMeta";
++import { s } from "./styles";
++
++export function AgentColumn({
++  column,
++  ranAt,
++  now,
++  fixedWidth,
++  onSettled,
++  onViewTrace,
++}: {
++  column: RunColumn;
++  ranAt: string;
++  now: number;
++  /** Min width in px once the columns scroll; undefined = share the row. */
++  fixedWidth?: number;
++  onSettled: () => void;
++  onViewTrace: (runId: string) => void;
++}) {
++  const t = useTranslations("multiAgent.results");
++  const { status, log, live } = useAgentLive(column, onSettled);
++  const failedOrCancelled = status === "failed" || status === "cancelled";
++
++  return (
++    <section aria-label={column.agent_name} style={s.column(fixedWidth)}>
++      <div style={s.head}>
++        <h3 style={s.name}>{column.agent_name}</h3>
++        {status === "done" && column.score != null && <CircularScore score={column.score} size={44} />}
++      </div>
++      <AgentMeta column={column} status={status} ranAt={ranAt} now={now} />
++
++      {live && <LiveLogStream log={log} running height={LOG_TAIL_HEIGHT} />}
++      {failedOrCancelled && (
++        <p style={s.reason}>{status === "cancelled" ? t("cancelled") : (column.error ?? t("failedNoReason"))}</p>
++      )}
++
++      {status === "done" && (
++        <>
++          <div style={s.count}>{t("findingCount", { count: column.findings.length })}</div>
++          <ul style={s.list}>
++            {column.findings.map((f) => (
++              <li key={f.id} style={s.finding}>
++                <SeverityBadge severity={f.severity as Severity} compact />
++                <div style={s.findingBody}>
++                  <span style={s.findingTitle}>{f.title}</span>
++                  <span className="mono" style={s.findingLoc}>
++                    {f.file}:{lineRange(f.start_line, f.end_line)}
++                  </span>
++                </div>
++              </li>
++            ))}
++          </ul>
++        </>
++      )}
++
++      <Button kind="ghost" size="sm" icon="Eye" onClick={() => onViewTrace(column.run_id)}>
++        {t("viewTrace")}
++      </Button>
++    </section>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/index.ts
+new file mode 100644
+index 00000000..69037471
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/index.ts
+@@ -0,0 +1 @@
++export { AgentColumn } from "./AgentColumn";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/styles.ts
+new file mode 100644
+index 00000000..68607aad
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/_components/AgentColumn/styles.ts
+@@ -0,0 +1,24 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  column: (fixedWidth?: number): CSSProperties => ({
++    flex: fixedWidth ? `0 0 ${fixedWidth}px` : "1 1 0",
++    minWidth: 0,
++    display: "flex",
++    flexDirection: "column",
++    gap: 10,
++    padding: 14,
++    border: "1px solid var(--border)",
++    borderRadius: 10,
++    background: "var(--bg-elevated)",
++  }),
++  head: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } satisfies CSSProperties,
++  name: { fontSize: 15, fontWeight: 600 } satisfies CSSProperties,
++  reason: { fontSize: 13, color: "var(--text-secondary)" } satisfies CSSProperties,
++  count: { fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" } satisfies CSSProperties,
++  list: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
++  finding: { display: "flex", gap: 8, alignItems: "flex-start" } satisfies CSSProperties,
++  findingBody: { display: "flex", flexDirection: "column", minWidth: 0 } satisfies CSSProperties,
++  findingTitle: { fontSize: 13.5, fontWeight: 500 } satisfies CSSProperties,
++  findingLoc: { fontSize: 11.5, color: "var(--text-muted)", overflowWrap: "anywhere" } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/index.ts
+new file mode 100644
+index 00000000..f322de39
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/index.ts
+@@ -0,0 +1 @@
++export { ColumnsView } from "./ColumnsView";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/styles.ts
+new file mode 100644
+index 00000000..9f3e775a
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ColumnsView/styles.ts
+@@ -0,0 +1,11 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  row: (scrolls: boolean): CSSProperties => ({
++    display: "flex",
++    gap: 12,
++    alignItems: "flex-start",
++    overflowX: scrolls ? "auto" : "visible",
++    paddingBottom: scrolls ? 8 : 0,
++  }),
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/ConflictsSection.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/ConflictsSection.tsx
+new file mode 100644
+index 00000000..f1cc48a2
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/ConflictsSection.tsx
+@@ -0,0 +1,84 @@
++/* ConflictsSection — "Where agents disagree": one row per contended file:line with the
++   agents' findings there and one cell per agent (flagged / did not flag / failed /
++   cancelled / pending). "Show only conflicts" keeps rows the server marked `is_conflict`. */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { SeverityBadge, type Severity } from "@devdigest/ui";
++import { lineRange, takeKind, visibleConflicts } from "../../helpers";
++import type { RunColumn, RunConflict } from "../../types";
++import { s } from "./styles";
++
++export function ConflictsSection({
++  conflicts,
++  columns,
++  onlyConflicts,
++  onToggleOnly,
++}: {
++  conflicts: RunConflict[];
++  columns: RunColumn[];
++  onlyConflicts: boolean;
++  onToggleOnly: (only: boolean) => void;
++}) {
++  const t = useTranslations("multiAgent.results.conflicts");
++  const rows = visibleConflicts(conflicts, onlyConflicts);
++  const nameOf = (agentId: string, fallback: string) =>
++    columns.find((c) => c.agent_id === agentId)?.agent_name ?? fallback;
++
++  return (
++    <section aria-labelledby="multi-agent-conflicts" style={s.wrap}>
++      <div style={s.head}>
++        <h3 id="multi-agent-conflicts" style={s.title}>
++          {t("title")}
++        </h3>
++        <label style={s.toggle}>
++          <input type="checkbox" checked={onlyConflicts} onChange={(e) => onToggleOnly(e.target.checked)} />
++          {t("onlyConflicts")}
++        </label>
++      </div>
++
++      {rows.length === 0 ? (
++        <p style={s.empty}>{onlyConflicts ? t("noneConflicting") : t("none")}</p>
++      ) : (
++        rows.map((c, i) => (
++          <div key={`${c.file}:${c.line}:${i}`} style={s.row}>
++            <div style={s.rowHead}>
++              <span className="mono" style={s.loc}>
++                {c.file}:{lineRange(c.line, c.end_line)}
++              </span>
++              <span style={s.rowTitle}>{c.title}</span>
++            </div>
++            <ul style={s.members}>
++              {c.members.map((m) => (
++                <li key={m.finding_id} style={s.member}>
++                  <span style={s.agent}>{m.agent_name}</span>
++                  <SeverityBadge severity={m.severity as Severity} compact />
++                  <span>{m.title}</span>
++                </li>
++              ))}
++            </ul>
++            <div style={s.cells}>
++              {c.takes.map((take) => {
++                const kind = takeKind(take);
++                return (
++                  <div key={take.agent_id} style={s.cell}>
++                    <div style={s.agent}>{nameOf(take.agent_id, take.persona)}</div>
++                    {kind === "flagged" ? (
++                      <>
++                        <SeverityBadge severity={take.verdict as Severity} compact />
++                        {take.note && <div style={s.note}>{take.note}</div>}
++                      </>
++                    ) : (
++                      <div style={s.note}>{t(`take.${kind}`)}</div>
++                    )}
++                  </div>
++                );
++              })}
++            </div>
++          </div>
++        ))
++      )}
++    </section>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/index.ts
+new file mode 100644
+index 00000000..552ac21f
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/index.ts
+@@ -0,0 +1 @@
++export { ConflictsSection } from "./ConflictsSection";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/styles.ts
+new file mode 100644
+index 00000000..37c5bf96
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/ConflictsSection/styles.ts
+@@ -0,0 +1,35 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  wrap: { display: "flex", flexDirection: "column", gap: 12, marginTop: 24 } satisfies CSSProperties,
++  head: { display: "flex", alignItems: "center", justifyContent: "space-between" } satisfies CSSProperties,
++  title: { fontSize: 16, fontWeight: 600 } satisfies CSSProperties,
++  toggle: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" } satisfies CSSProperties,
++  empty: { fontSize: 13.5, color: "var(--text-secondary)" } satisfies CSSProperties,
++  row: {
++    display: "flex",
++    flexDirection: "column",
++    gap: 10,
++    padding: 14,
++    border: "1px solid var(--border)",
++    borderRadius: 10,
++    background: "var(--bg-elevated)",
++  } satisfies CSSProperties,
++  rowHead: { display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" } satisfies CSSProperties,
++  loc: { fontSize: 12.5, color: "var(--text-muted)" } satisfies CSSProperties,
++  rowTitle: { fontSize: 14, fontWeight: 600 } satisfies CSSProperties,
++  members: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4, fontSize: 13 } satisfies CSSProperties,
++  member: { display: "flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
++  agent: { fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)" } satisfies CSSProperties,
++  cells: { display: "flex", gap: 10, flexWrap: "wrap" } satisfies CSSProperties,
++  cell: {
++    flex: "1 1 180px",
++    display: "flex",
++    flexDirection: "column",
++    gap: 4,
++    padding: 10,
++    borderRadius: 8,
++    border: "1px solid var(--border)",
++  } satisfies CSSProperties,
++  note: { fontSize: 12.5, color: "var(--text-secondary)" } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/RunHeader.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/RunHeader.tsx
+new file mode 100644
+index 00000000..3bd8af73
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/RunHeader.tsx
+@@ -0,0 +1,53 @@
++/* RunHeader — the run's PR, status and meta line, plus the Columns / Tabs mode switch. */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { Badge, Button } from "@devdigest/ui";
++import type { MultiAgentRunDetail } from "@devdigest/shared";
++import { formatRunMeta } from "@/lib/multi-agent-format";
++import { MODES, type Mode } from "../../constants";
++import { s } from "./styles";
++
++export function RunHeader({
++  run,
++  mode,
++  onModeChange,
++}: {
++  run: MultiAgentRunDetail;
++  mode: Mode;
++  onModeChange: (mode: Mode) => void;
++}) {
++  const t = useTranslations("multiAgent.results");
++  return (
++    <div style={s.wrap}>
++      <div>
++        <div style={s.titleRow}>
++          <h2 style={s.title}>{run.pr_number != null ? t("prTitle", { number: run.pr_number }) : t("prTitleUnknown")}</h2>
++          <Badge>{t(`runStatus.${run.status}`)}</Badge>
++        </div>
++        <div style={s.meta}>
++          {formatRunMeta(
++            run.agent_count,
++            run.total_duration_ms,
++            run.columns.map((c) => c.cost_usd),
++          )}
++        </div>
++      </div>
++      <div role="group" aria-label={t("mode.label")} style={s.modes}>
++        {MODES.map((m) => (
++          <Button
++            key={m}
++            kind="secondary"
++            size="sm"
++            active={mode === m}
++            aria-pressed={mode === m}
++            onClick={() => onModeChange(m)}
++          >
++            {t(`mode.${m}`)}
++          </Button>
++        ))}
++      </div>
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/index.ts
+new file mode 100644
+index 00000000..8b6d1d74
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/index.ts
+@@ -0,0 +1 @@
++export { RunHeader } from "./RunHeader";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/styles.ts
+new file mode 100644
+index 00000000..5cc34141
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/RunHeader/styles.ts
+@@ -0,0 +1,9 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  wrap: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 } satisfies CSSProperties,
++  titleRow: { display: "flex", alignItems: "center", gap: 10 } satisfies CSSProperties,
++  title: { fontSize: 17, fontWeight: 600 } satisfies CSSProperties,
++  meta: { fontSize: 13, color: "var(--text-secondary)", marginTop: 4 } satisfies CSSProperties,
++  modes: { display: "flex", gap: 6 } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/TabsView.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/TabsView.tsx
+new file mode 100644
+index 00000000..67f4a11a
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/TabsView.tsx
+@@ -0,0 +1,44 @@
++/* TabsView — one tab per agent; only the selected agent's body is rendered. */
++"use client";
++
++import React from "react";
++import { Tabs } from "@devdigest/ui";
++import type { FindingActionKind } from "@devdigest/shared";
++import type { RunColumn } from "../../types";
++import { AgentTab } from "./_components/AgentTab";
++
++export function TabsView({
++  columns,
++  tab,
++  onTabChange,
++  ...tabProps
++}: {
++  columns: RunColumn[];
++  /** Selected agent's run id; falls back to the first agent. */
++  tab: string | null;
++  onTabChange: (runId: string) => void;
++  prId: string;
++  multiAgentRunId: string;
++  ranAt: string;
++  now: number;
++  pendingFindingId: string | null;
++  onSettled: () => void;
++  onViewTrace: (runId: string) => void;
++  onFindingAction: (findingId: string, action: FindingActionKind) => void;
++}) {
++  const selected = columns.find((c) => c.run_id === tab) ?? columns[0];
++  if (!selected) return null;
++  return (
++    <div>
++      <Tabs
++        pad="0"
++        value={selected.run_id}
++        onChange={onTabChange}
++        tabs={columns.map((c) => ({ key: c.run_id, label: c.agent_name, count: c.findings.length }))}
++      />
++      <div style={{ paddingTop: 14 }}>
++        <AgentTab key={selected.run_id} column={selected} {...tabProps} />
++      </div>
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/AgentTab.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/AgentTab.tsx
+new file mode 100644
+index 00000000..028ec082
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/AgentTab.tsx
+@@ -0,0 +1,74 @@
++/* AgentTab — one agent's tab body: a summary card (verdict, score, summary, status/time/cost),
++   then its findings as FindingCards. */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { Button, CircularScore, LiveLogStream } from "@devdigest/ui";
++import type { FindingActionKind } from "@devdigest/shared";
++import { FindingCard } from "@/components/finding-card";
++import { LOG_TAIL_HEIGHT } from "../../../../constants";
++import type { RunColumn } from "../../../../types";
++import { useAgentLive } from "../../../../useAgentLive";
++import { AgentMeta } from "../../../AgentMeta";
++import { s } from "./styles";
++
++export function AgentTab({
++  column,
++  prId,
++  multiAgentRunId,
++  ranAt,
++  now,
++  pendingFindingId,
++  onSettled,
++  onViewTrace,
++  onFindingAction,
++}: {
++  column: RunColumn;
++  prId: string;
++  multiAgentRunId: string;
++  ranAt: string;
++  now: number;
++  pendingFindingId: string | null;
++  onSettled: () => void;
++  onViewTrace: (runId: string) => void;
++  onFindingAction: (findingId: string, action: FindingActionKind) => void;
++}) {
++  const t = useTranslations("multiAgent.results");
++  const { status, log, live } = useAgentLive(column, onSettled);
++  const failedOrCancelled = status === "failed" || status === "cancelled";
++
++  return (
++    <div style={s.wrap}>
++      <div style={s.summary}>
++        <div style={s.summaryMain}>
++          <h3 style={s.name}>{column.agent_name}</h3>
++          <AgentMeta column={column} status={status} ranAt={ranAt} now={now} />
++          {column.verdict && <div style={s.verdict}>{column.verdict}</div>}
++          {column.summary && <p style={s.text}>{column.summary}</p>}
++          {failedOrCancelled && (
++            <p style={s.text}>{status === "cancelled" ? t("cancelled") : (column.error ?? t("failedNoReason"))}</p>
++          )}
++        </div>
++        {status === "done" && column.score != null && <CircularScore score={column.score} size={56} />}
++        <Button kind="ghost" size="sm" icon="Eye" onClick={() => onViewTrace(column.run_id)}>
++          {t("viewTrace")}
++        </Button>
++      </div>
++
++      {live && <LiveLogStream log={log} running height={LOG_TAIL_HEIGHT} />}
++
++      {status === "done" && column.findings.length === 0 && <p style={s.text}>{t("noFindings")}</p>}
++      {column.findings.map((f) => (
++        <FindingCard
++          key={f.id}
++          f={f}
++          prId={prId}
++          multiAgentRunId={multiAgentRunId}
++          pending={pendingFindingId === f.id}
++          onAction={(action) => onFindingAction(f.id, action)}
++        />
++      ))}
++    </div>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/index.ts
+new file mode 100644
+index 00000000..72ca2f98
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/index.ts
+@@ -0,0 +1 @@
++export { AgentTab } from "./AgentTab";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/styles.ts
+new file mode 100644
+index 00000000..6fdc33d6
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/_components/AgentTab/styles.ts
+@@ -0,0 +1,18 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  wrap: { display: "flex", flexDirection: "column", gap: 12 } satisfies CSSProperties,
++  summary: {
++    display: "flex",
++    alignItems: "flex-start",
++    gap: 16,
++    padding: 14,
++    border: "1px solid var(--border)",
++    borderRadius: 10,
++    background: "var(--bg-elevated)",
++  } satisfies CSSProperties,
++  summaryMain: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
++  name: { fontSize: 15, fontWeight: 600 } satisfies CSSProperties,
++  verdict: { fontSize: 13, fontWeight: 600 } satisfies CSSProperties,
++  text: { fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.5 } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/index.ts
+new file mode 100644
+index 00000000..8f0785f1
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/_components/TabsView/index.ts
+@@ -0,0 +1 @@
++export { TabsView } from "./TabsView";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/constants.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/constants.ts
+new file mode 100644
+index 00000000..5ad081fc
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/constants.ts
+@@ -0,0 +1,13 @@
++/** Constants for MultiAgentResults. */
++
++/** With more columns than this the columns view scrolls horizontally instead of squeezing. */
++export const MAX_FIT_COLUMNS = 5;
++
++/** Min width (px) of one column once the view scrolls. */
++export const SCROLL_COLUMN_WIDTH = 300;
++
++/** Height (px) of the live log tail shown in a running column. */
++export const LOG_TAIL_HEIGHT = 140;
++
++export const MODES = ["columns", "tabs"] as const;
++export type Mode = (typeof MODES)[number];
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/helpers.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/helpers.ts
+new file mode 100644
+index 00000000..b44aebb4
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/helpers.ts
+@@ -0,0 +1,36 @@
++/* Pure rules for the multi-agent results page. */
++import type { RunColumn, RunConflict, RunTake } from "./types";
++
++export type DisplayStatus = "queued" | "running" | "done" | "failed" | "cancelled";
++
++/** A running child shows "queued" until its first live event arrives, then "running". */
++export function displayStatus(status: RunColumn["status"], hasEvents: boolean): DisplayStatus {
++  if (status === "queued" || status === "running") return hasEvents ? "running" : "queued";
++  return status;
++}
++
++export function isLive(status: RunColumn["status"]): boolean {
++  return status === "queued" || status === "running";
++}
++
++/** Milliseconds from the parent's start to `now`, never negative. */
++export function elapsedMs(ranAt: string, now: number): number {
++  const start = new Date(ranAt).getTime();
++  return Number.isNaN(start) ? 0 : Math.max(0, now - start);
++}
++
++/** The "Show only conflicts" filter: keep entries the server marked `is_conflict`. */
++export function visibleConflicts(conflicts: RunConflict[], onlyConflicts: boolean): RunConflict[] {
++  return onlyConflicts ? conflicts.filter((c) => c.is_conflict) : conflicts;
++}
++
++export type TakeKind = "flagged" | "ignored" | "failed" | "cancelled" | "pending";
++
++export function takeKind(take: RunTake): TakeKind {
++  const v = take.verdict;
++  return v === "ignored" || v === "failed" || v === "cancelled" || v === "pending" ? v : "flagged";
++}
++
++export function lineRange(start: number, end: number): string {
++  return end > start ? `${start}-${end}` : `${start}`;
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/index.ts
+new file mode 100644
+index 00000000..3e619209
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/index.ts
+@@ -0,0 +1 @@
++export { MultiAgentResults } from "./MultiAgentResults";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/styles.ts
+new file mode 100644
+index 00000000..5d49c1ac
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/styles.ts
+@@ -0,0 +1,5 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  page: { padding: "10px 32px 32px", display: "flex", flexDirection: "column", gap: 16 } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/types.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/types.ts
+new file mode 100644
+index 00000000..e67f4509
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/types.ts
+@@ -0,0 +1,5 @@
++import type { MultiAgentRunDetail } from "@devdigest/shared";
++
++export type RunColumn = MultiAgentRunDetail["columns"][number];
++export type RunConflict = MultiAgentRunDetail["conflicts"][number];
++export type RunTake = RunConflict["takes"][number];
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts
+new file mode 100644
+index 00000000..db015214
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useAgentLive.ts
+@@ -0,0 +1,18 @@
++"use client";
++
++import type { LogLine } from "@devdigest/ui";
++import { useRunEvents } from "@/lib/hooks/reviews";
++import { displayStatus, isLive, type DisplayStatus } from "./helpers";
++import type { RunColumn } from "./types";
++
++/** Live state of one child run: its SSE log tail and the displayed status. When the stream
++    ends (the child settled) `onSettled` refetches the parent read. */
++export function useAgentLive(
++  column: RunColumn,
++  onSettled: () => void,
++): { status: DisplayStatus; log: LogLine[]; live: boolean } {
++  const live = isLive(column.status);
++  const { events } = useRunEvents(live ? [column.run_id] : [], { onSettled });
++  const log: LogLine[] = events.map((e) => ({ t: e.t, k: e.kind as LogLine["k"], m: e.msg }));
++  return { status: displayStatus(column.status, events.length > 0), log, live };
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useNow.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useNow.ts
+new file mode 100644
+index 00000000..c536cd76
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentResults/useNow.ts
+@@ -0,0 +1,15 @@
++"use client";
++
++import React from "react";
++
++/** `Date.now()` refreshed every second while `active` — drives the live elapsed timers. */
++export function useNow(active: boolean): number {
++  const [now, setNow] = React.useState(() => Date.now());
++  React.useEffect(() => {
++    if (!active) return;
++    setNow(Date.now());
++    const id = setInterval(() => setNow(Date.now()), 1000);
++    return () => clearInterval(id);
++  }, [active]);
++  return now;
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/MultiAgentView.tsx b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/MultiAgentView.tsx
+new file mode 100644
+index 00000000..38aa67c8
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/MultiAgentView.tsx
+@@ -0,0 +1,41 @@
++/* Multi-Agent Review view — /repos/:repoId/multi-agent. Without `?run=` it shows the
++   Configure run form; with `?run=<id>` it shows that run's results. */
++"use client";
++
++import React from "react";
++import { useParams, useSearchParams } from "next/navigation";
++import { useTranslations } from "next-intl";
++import { AppShell } from "@/components/app-shell";
++import { RepoNotFound } from "@/components/repo-not-found";
++import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
++import { ConfigureRun } from "../ConfigureRun";
++import { MultiAgentResults } from "../MultiAgentResults";
++import { s } from "./styles";
++
++export function MultiAgentView() {
++  const t = useTranslations("multiAgent");
++  const { repoId } = useParams<{ repoId: string }>();
++  const runId = useSearchParams().get("run");
++  const { activeRepo } = useActiveRepo();
++  const repoNotFound = useRepoNotFound(repoId);
++  const repoName = activeRepo?.full_name ?? repoId;
++  const crumb = [{ label: repoName, mono: true }, { label: t("page.crumb") }];
++
++  if (repoNotFound) {
++    return (
++      <AppShell crumb={crumb}>
++        <RepoNotFound />
++      </AppShell>
++    );
++  }
++
++  return (
++    <AppShell crumb={crumb}>
++      <div style={s.pageHeader}>
++        <h1 style={s.pageTitle}>{t("page.title")}</h1>
++        <p style={s.pageSubtitle}>{t("page.subtitle")}</p>
++      </div>
++      {runId ? <MultiAgentResults runId={runId} /> : <ConfigureRun repoId={repoId} />}
++    </AppShell>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/index.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/index.ts
+new file mode 100644
+index 00000000..a7a5df72
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/index.ts
+@@ -0,0 +1 @@
++export { MultiAgentView } from "./MultiAgentView";
+diff --git a/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/styles.ts b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/styles.ts
+new file mode 100644
+index 00000000..a7dc7446
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/_components/MultiAgentView/styles.ts
+@@ -0,0 +1,7 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  pageHeader: { padding: "24px 32px 10px" } satisfies CSSProperties,
++  pageTitle: { fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" } satisfies CSSProperties,
++  pageSubtitle: { fontSize: 14, color: "var(--text-secondary)", marginTop: 4 } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/app/repos/[repoId]/multi-agent/page.tsx b/client/src/app/repos/[repoId]/multi-agent/page.tsx
+new file mode 100644
+index 00000000..796d4d9d
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/multi-agent/page.tsx
+@@ -0,0 +1,19 @@
++import React from "react";
++import type { Metadata } from "next";
++import { getTranslations } from "next-intl/server";
++import { MultiAgentView } from "./_components/MultiAgentView";
++
++export async function generateMetadata(): Promise<Metadata> {
++  const t = await getTranslations("multiAgent");
++  return { title: t("page.crumb") };
++}
++
++/* Route: /repos/:repoId/multi-agent. Thin route entry — the view lives in _components/MultiAgentView.
++   Suspense because the view reads `useSearchParams` (`?run=`). */
++export default function MultiAgentPage() {
++  return (
++    <React.Suspense fallback={null}>
++      <MultiAgentView />
++    </React.Suspense>
++  );
++}
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.test.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.test.tsx
+index d2c6c641..506410e7 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.test.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/DiffTab.test.tsx
+@@ -17,6 +17,7 @@ vi.mock("@/lib/hooks/reviews", () => ({
+   useSmartDiff: () => ({ data: state.smart }),
+   usePrReviews: () => ({ data: state.reviews }),
+   useFindingAction: () => ({ isPending: false, mutate }),
++  useLearnFinding: () => ({ isPending: false, isError: false, mutate: vi.fn() }),
+ }));
+ 
+ afterEach(() => {
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/_components/InlineFinding/InlineFinding.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/_components/InlineFinding/InlineFinding.tsx
+index 8370a265..4efc8a1b 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/_components/InlineFinding/InlineFinding.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/DiffTab/_components/InlineFinding/InlineFinding.tsx
+@@ -3,7 +3,7 @@
+ import React from "react";
+ import type { FindingRecord } from "@devdigest/shared";
+ import { useFindingAction } from "@/lib/hooks/reviews";
+-import { FindingCard } from "../../../FindingCard";
++import { FindingCard } from "@/components/finding-card";
+ 
+ interface InlineFindingProps {
+   finding: FindingRecord;
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx
+index a5128b32..74f0f2ab 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/FindingsPanel.tsx
+@@ -6,7 +6,7 @@ import React from "react";
+ import { useTranslations } from "next-intl";
+ import { Toggle, EmptyState } from "@devdigest/ui";
+ import type { FindingRecord, Severity } from "@devdigest/shared";
+-import { FindingCard } from "../FindingCard";
++import { FindingCard } from "@/components/finding-card";
+ import { useFindingAction } from "@/lib/hooks/reviews";
+ import { KEY_TO_ACTION } from "./constants";
+ import { filterBySeverity, visibleFindings } from "./helpers";
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailHeader/PrDetailHeader.test.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailHeader/PrDetailHeader.test.tsx
+index ea784046..ff24c5a9 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailHeader/PrDetailHeader.test.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailHeader/PrDetailHeader.test.tsx
+@@ -8,10 +8,14 @@ import { NextIntlClientProvider } from "next-intl";
+ import type { PrDetail } from "@devdigest/shared";
+ import messages from "../../../../../../../../messages/en/prReview.json";
+ 
+-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
++  useParams: () => ({ repoId: "r1" }),
++}));
+ vi.mock("@/lib/hooks/agents", () => ({ useAgents: () => ({ data: [] }) }));
+ vi.mock("@/lib/hooks/reviews", () => ({
+-  useRunReview: () => ({ mutateAsync: vi.fn(), isPending: false }),
++  useStartMultiAgentReview: () => ({ mutate: vi.fn(), isPending: false }),
++  useAgentEstimates: () => ({ data: [] }),
+ }));
+ 
+ import { PrDetailHeader } from "./PrDetailHeader";
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx
+index 3595583f..784f0b55 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/PrDetailView/PrDetailView.tsx
+@@ -27,7 +27,7 @@ import { PrDetailHeader } from "../PrDetailHeader";
+ import { OverviewTab } from "../OverviewTab";
+ import { FindingsTab } from "../FindingsTab";
+ import { DiffTab } from "../DiffTab";
+-import { RunTraceDrawer } from "../RunTraceDrawer";
++import { RunTraceDrawer } from "@/components/run-trace-drawer";
+ import { diffDeepLinkQuery, latestReviewSummary, parseDiffTarget, scrollParentOf } from "./helpers";
+ import { s } from "./styles";
+ 
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.test.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.test.tsx
+index 8cb55a54..ad7b7ddc 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.test.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.test.tsx
+@@ -5,12 +5,14 @@ import messages from "../../../../../../../../messages/en/prReview.json";
+ 
+ vi.mock("next/navigation", () => ({
+   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
++  useParams: () => ({ repoId: "r1" }),
+ }));
+ vi.mock("@/lib/hooks/agents", () => ({
+   useAgents: () => ({ data: [{ id: "a1", name: "Security", model: "gpt-4.1", enabled: true }] }),
+ }));
+ vi.mock("@/lib/hooks/reviews", () => ({
+-  useRunReview: () => ({ mutateAsync: vi.fn(), isPending: false }),
++  useStartMultiAgentReview: () => ({ mutate: vi.fn(), isPending: false }),
++  useAgentEstimates: () => ({ data: [] }),
+ }));
+ 
+ import { RunReviewDropdown } from "./RunReviewDropdown";
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.tsx b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.tsx
+index b3ff57bd..18474c53 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.tsx
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/RunReviewDropdown.tsx
+@@ -1,15 +1,19 @@
+-/* RunReviewDropdown — ported from components2.jsx.
+-   "Run all enabled agents" / a specific agent → kicks off POST /pulls/:id/review
+-   and hands the resulting runIds up so the parent can stream SSE live status. */
++/* RunReviewDropdown — the PR page's multi-agent picker. Enabled agents are all checked by
++   default; "Run multi-agent review (N)" starts ONE concurrent review with the checked agents
++   and opens its results page. */
+ "use client";
+ 
+ import React from "react";
+-import { useRouter } from "next/navigation";
++import Link from "next/link";
++import { useParams, useRouter } from "next/navigation";
+ import { useTranslations } from "next-intl";
+-import { Button, Dropdown, type DropdownItemDef } from "@devdigest/ui";
++import { Button } from "@devdigest/ui";
+ import { useAgents } from "@/lib/hooks/agents";
+-import { useRunReview } from "@/lib/hooks/reviews";
+-import { DROPDOWN_WIDTH } from "./constants";
++import { useAgentEstimates, useStartMultiAgentReview } from "@/lib/hooks/reviews";
++import { estimateLabel, formatSelectionTotal } from "@/lib/multi-agent-format";
++import { PANEL_WIDTH } from "./constants";
++import { checkedIds, enabledAgents, estimatesFor, toggleId } from "./helpers";
++import { s } from "./styles";
+ 
+ export function RunReviewDropdown({
+   prId,
+@@ -33,69 +37,121 @@ export function RunReviewDropdown({
+ }) {
+   const t = useTranslations("prReview");
+   const router = useRouter();
++  const { repoId } = useParams<{ repoId: string }>();
+   const { data: agents } = useAgents();
+-  const run = useRunReview();
+-  const all = agents ?? [];
+-  const hasEnabled = all.some((a) => a.enabled);
++  const { data: estimates } = useAgentEstimates();
++  const start = useStartMultiAgentReview();
++  const [open, setOpen] = React.useState(false);
++  const [unchecked, setUnchecked] = React.useState<ReadonlySet<string>>(new Set());
++  const rootRef = React.useRef<HTMLDivElement>(null);
+ 
+-  const kick = async (opts: { all?: boolean; agentId?: string }) => {
+-    onRunStart?.();
+-    try {
+-      const res = await run.mutateAsync({ prId, ...opts });
+-      onRunsStarted?.(res.runs.map((r) => r.run_id));
+-    } finally {
+-      onRunSettled?.();
+-    }
+-  };
++  React.useEffect(() => {
++    if (!open) return;
++    const onDown = (e: MouseEvent) => {
++      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
++    };
++    const onKey = (e: KeyboardEvent) => {
++      if (e.key === "Escape") setOpen(false);
++    };
++    document.addEventListener("mousedown", onDown);
++    document.addEventListener("keydown", onKey);
++    return () => {
++      document.removeEventListener("mousedown", onDown);
++      document.removeEventListener("keydown", onKey);
++    };
++  }, [open]);
+ 
+-  // List EVERY agent (not just enabled) so they're always visible; a specific
+-  // agent can be run regardless of its enabled flag. "Run all" still targets
+-  // only enabled agents.
+-  const agentItems: DropdownItemDef[] = all.length
+-    ? all.map((a) => ({
+-        label: a.name,
+-        icon: "Cpu" as const,
+-        hint: a.enabled ? a.model : `${a.model} · disabled`,
+-        onClick: () => kick({ agentId: a.id }),
+-      }))
+-    : [{ label: t("runReview.noAgents"), icon: "Plus", muted: true, onClick: () => router.push("/agents") }];
++  const enabled = enabledAgents(agents);
++  const ids = checkedIds(enabled, unchecked);
++  const byAgent = new Map((estimates ?? []).map((e) => [e.agent_id, e]));
+ 
+-  const items: DropdownItemDef[] = [
+-    // Merged/closed PRs can still be reviewed (informational only); lead with a
+-    // muted, non-actionable warning so the intent is clear.
+-    ...(warnMerged
+-      ? [
+-          { label: t("runReview.mergedWarning"), icon: "AlertTriangle" as const, muted: true },
+-          { divider: true } as DropdownItemDef,
+-        ]
+-      : []),
+-    {
+-      label: t("runReview.runAll"),
+-      icon: "Play",
+-      ...(hasEnabled ? {} : { muted: true }),
+-      onClick: () => kick({ all: true }),
+-    },
+-    { divider: true },
+-    ...agentItems,
+-    { divider: true },
+-    { label: t("runReview.configureAgents"), icon: "Settings", muted: true, onClick: () => router.push("/agents") },
+-  ];
++  const run = () => {
++    onRunStart?.();
++    start.mutate(
++      { prId, agentIds: ids },
++      {
++        onSuccess: (res) => {
++          onRunsStarted?.(res.runs.map((r) => r.run_id));
++          setOpen(false);
++          if (res.multi_agent_run_id) {
++            router.push(`/repos/${repoId}/multi-agent?run=${res.multi_agent_run_id}`);
++          }
++        },
++        onSettled: () => onRunSettled?.(),
++      },
++    );
++  };
+ 
+   return (
+-    <Dropdown
+-      width={DROPDOWN_WIDTH}
+-      align="right"
+-      items={items}
+-      trigger={
+-        <span
+-          title={warnMerged ? t("runReview.mergedTooltip") : undefined}
+-          style={warnMerged ? { opacity: 0.6 } : undefined}
++    <div ref={rootRef} style={s.root}>
++      <span
++        title={warnMerged ? t("runReview.mergedTooltip") : undefined}
++        style={warnMerged ? { opacity: 0.6 } : undefined}
++      >
++        <Button
++          kind={kind}
++          size={size}
++          iconRight="ChevronDown"
++          icon="Sparkles"
++          loading={start.isPending}
++          aria-haspopup="dialog"
++          aria-expanded={open}
++          onClick={() => setOpen((o) => !o)}
+         >
+-          <Button kind={kind} size={size} iconRight="ChevronDown" icon="Sparkles" loading={run.isPending}>
+-            {run.isPending ? t("runReview.running") : t("runReview.runReview")}
+-          </Button>
+-        </span>
+-      }
+-    />
++          {start.isPending ? t("runReview.running") : t("runReview.runReview")}
++        </Button>
++      </span>
++      {open && (
++        <div role="dialog" aria-label={t("runReview.pickerLabel")} style={s.panel(PANEL_WIDTH)}>
++          {warnMerged && <div style={s.warning}>{t("runReview.mergedWarning")}</div>}
++          {enabled.length === 0 ? (
++            <div style={s.empty}>
++              <span>{t("runReview.noEnabledAgents")}</span>
++              <Link href="/agents">{t("runReview.goToAgents")}</Link>
++            </div>
++          ) : (
++            <>
++              <div style={s.headerRow}>
++                <span style={s.heading}>{t("runReview.agentsHeading")}</span>
++                <Button
++                  kind="ghost"
++                  size="sm"
++                  disabled={ids.length === 0}
++                  onClick={() => setUnchecked(new Set(enabled.map((a) => a.id)))}
++                >
++                  {t("runReview.clear")}
++                </Button>
++              </div>
++              <div style={s.list}>
++                {enabled.map((a) => (
++                  <label key={a.id} style={s.row}>
++                    <input
++                      type="checkbox"
++                      checked={!unchecked.has(a.id)}
++                      onChange={() => setUnchecked((u) => toggleId(u, a.id))}
++                    />
++                    <span style={s.rowName}>{a.name}</span>
++                    <span style={s.rowEstimate}>{estimateLabel(byAgent.get(a.id))}</span>
++                  </label>
++                ))}
++              </div>
++              <div style={s.footer}>
++                <div style={s.total}>{formatSelectionTotal(estimatesFor(ids, estimates))}</div>
++                <Button
++                  kind="primary"
++                  size="sm"
++                  icon="Play"
++                  disabled={ids.length === 0 || start.isPending}
++                  onClick={run}
++                >
++                  {t("runReview.runMulti", { count: ids.length })}
++                </Button>
++                <Link href={`/repos/${repoId}/multi-agent`}>{t("runReview.configureAgents")}</Link>
++              </div>
++            </>
++          )}
++        </div>
++      )}
++    </div>
+   );
+ }
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/constants.ts b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/constants.ts
+index 766600ca..1a690726 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/constants.ts
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/constants.ts
+@@ -1,4 +1,4 @@
+ /** Constants for RunReviewDropdown. */
+ 
+-/** Dropdown menu width (px). */
+-export const DROPDOWN_WIDTH = 250;
++/** Picker panel width (px). */
++export const PANEL_WIDTH = 340;
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/helpers.ts b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/helpers.ts
+new file mode 100644
+index 00000000..ce11bce6
+--- /dev/null
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/helpers.ts
+@@ -0,0 +1,25 @@
++/* Pure selection helpers for the multi-agent picker. The picker stores the UNCHECKED ids so
++   "all enabled agents checked" is the default without an effect that seeds state. */
++import type { Agent, AgentRunEstimate } from "@devdigest/shared";
++
++export function enabledAgents(agents: Agent[] | undefined): Agent[] {
++  return (agents ?? []).filter((a) => a.enabled);
++}
++
++/** Ids of the enabled agents that are still checked, in list order. */
++export function checkedIds(enabled: Agent[], unchecked: ReadonlySet<string>): string[] {
++  return enabled.filter((a) => !unchecked.has(a.id)).map((a) => a.id);
++}
++
++export function toggleId(set: ReadonlySet<string>, id: string): Set<string> {
++  const next = new Set(set);
++  if (next.has(id)) next.delete(id);
++  else next.add(id);
++  return next;
++}
++
++/** Estimate rows of the checked agents (agents without a row simply contribute nothing). */
++export function estimatesFor(ids: string[], estimates: AgentRunEstimate[] | undefined): AgentRunEstimate[] {
++  const wanted = new Set(ids);
++  return (estimates ?? []).filter((e) => wanted.has(e.agent_id));
++}
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/styles.ts b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/styles.ts
+index fca661d8..aa1a8a90 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/styles.ts
++++ b/client/src/app/repos/[repoId]/pulls/[number]/_components/RunReviewDropdown/styles.ts
+@@ -1,6 +1,37 @@
+ import type { CSSProperties } from "react";
+ 
+-/** Co-located styles for RunReviewDropdown. This component renders only library
+-   primitives (Button/Dropdown) and has no inline styles; the map is kept for
+-   convention parity and future use. */
+-export const s = {} satisfies Record<string, CSSProperties>;
++export const s = {
++  root: { position: "relative", display: "inline-block" } satisfies CSSProperties,
++  panel: (width: number): CSSProperties => ({
++    position: "absolute",
++    top: "calc(100% + 6px)",
++    right: 0,
++    width,
++    background: "var(--bg-elevated)",
++    border: "1px solid var(--border-strong)",
++    borderRadius: 9,
++    boxShadow: "var(--shadow-modal)",
++    padding: 10,
++    zIndex: 40,
++    display: "flex",
++    flexDirection: "column",
++    gap: 8,
++  }),
++  warning: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
++  headerRow: { display: "flex", alignItems: "center", justifyContent: "space-between" } satisfies CSSProperties,
++  heading: { fontSize: 13, fontWeight: 600 } satisfies CSSProperties,
++  list: { display: "flex", flexDirection: "column", gap: 2, maxHeight: 260, overflowY: "auto" } satisfies CSSProperties,
++  row: {
++    display: "flex",
++    alignItems: "center",
++    gap: 10,
++    padding: "6px 4px",
++    fontSize: 14,
++    cursor: "pointer",
++  } satisfies CSSProperties,
++  rowName: { flex: 1, minWidth: 0 } satisfies CSSProperties,
++  rowEstimate: { fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" } satisfies CSSProperties,
++  total: { fontSize: 12, color: "var(--text-secondary)" } satisfies CSSProperties,
++  footer: { display: "flex", flexDirection: "column", gap: 6 } satisfies CSSProperties,
++  empty: { fontSize: 13, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
++} as const;
+diff --git a/client/src/components/app-shell/nav.test.ts b/client/src/components/app-shell/nav.test.ts
+index 9f6884a6..678d6516 100644
+--- a/client/src/components/app-shell/nav.test.ts
++++ b/client/src/components/app-shell/nav.test.ts
+@@ -8,7 +8,7 @@ describe("sidebar NAV", () => {
+   it("puts Skills, Agents, Conventions and Eval Dashboard in SKILLS LAB, not WORKSPACE", () => {
+     expect(keysOf("SKILLS LAB")).toEqual(["skills", "agents", "conventions", "eval"]);
+     expect(keysOf("WORKSPACE")).not.toContain("agents");
+-    expect(keysOf("WORKSPACE")).toEqual(["pulls", "onboarding-tour", "context"]);
++    expect(keysOf("WORKSPACE")).toEqual(["pulls", "multi-agent", "onboarding-tour", "context"]);
+   });
+ 
+   it("keeps item keys and g-shortcuts unique", () => {
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.test.tsx b/client/src/components/finding-card/EvalCaseAction/EvalCaseAction.test.tsx
+similarity index 98%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.test.tsx
+rename to client/src/components/finding-card/EvalCaseAction/EvalCaseAction.test.tsx
+index 18125ad3..3db4b09d 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.test.tsx
++++ b/client/src/components/finding-card/EvalCaseAction/EvalCaseAction.test.tsx
+@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
+ import { NextIntlClientProvider } from "next-intl";
+ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import type { CreateEvalCaseResponse, FindingRecord, ReviewRecord } from "@devdigest/shared";
+-import messages from "../../../../../../../../../../messages/en/prReview.json";
++import messages from "../../../../messages/en/prReview.json";
+ import { api } from "@/lib/api";
+ import { notify } from "@/lib/toast";
+ import { EvalCaseAction } from "./EvalCaseAction";
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.tsx b/client/src/components/finding-card/EvalCaseAction/EvalCaseAction.tsx
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/EvalCaseAction.tsx
+rename to client/src/components/finding-card/EvalCaseAction/EvalCaseAction.tsx
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/index.ts b/client/src/components/finding-card/EvalCaseAction/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/index.ts
+rename to client/src/components/finding-card/EvalCaseAction/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/styles.ts b/client/src/components/finding-card/EvalCaseAction/styles.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/_components/EvalCaseAction/styles.ts
+rename to client/src/components/finding-card/EvalCaseAction/styles.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.test.tsx b/client/src/components/finding-card/FindingCard.test.tsx
+similarity index 97%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.test.tsx
+rename to client/src/components/finding-card/FindingCard.test.tsx
+index 6a5f69dc..d1f02acb 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.test.tsx
++++ b/client/src/components/finding-card/FindingCard.test.tsx
+@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
+ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+ import { NextIntlClientProvider } from "next-intl";
+ import type { FindingRecord } from "@devdigest/shared";
+-import messages from "../../../../../../../../messages/en/prReview.json";
++import messages from "../../../messages/en/prReview.json";
+ import { FindingCard } from "./FindingCard";
+ 
+ afterEach(cleanup);
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.tsx b/client/src/components/finding-card/FindingCard.tsx
+similarity index 91%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.tsx
+rename to client/src/components/finding-card/FindingCard.tsx
+index c2180912..cf3142ac 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/FindingCard.tsx
++++ b/client/src/components/finding-card/FindingCard.tsx
+@@ -22,7 +22,8 @@ import type { FindingRecord, FindingActionKind } from "@devdigest/shared";
+ import { SEV_COLOR, SEV_COLOR_FALLBACK } from "./constants";
+ import { lineLabel } from "./helpers";
+ import { githubBlobUrl } from "@/lib/github-urls";
+-import { EvalCaseAction } from "./_components/EvalCaseAction";
++import { EvalCaseAction } from "./EvalCaseAction";
++import { LearnAction } from "./LearnAction";
+ import { s } from "./styles";
+ 
+ export function FindingCard({
+@@ -34,6 +35,7 @@ export function FindingCard({
+   repoFullName,
+   headSha,
+   prId,
++  multiAgentRunId,
+ }: {
+   f: FindingRecord;
+   focused?: boolean;
+@@ -44,6 +46,8 @@ export function FindingCard({
+   headSha?: string | null;
+   /** The PR the finding belongs to — enables the "Turn into eval case" action. */
+   prId?: string | null;
++  /** Set on the multi-agent page so a Learn also refreshes the parent run. */
++  multiAgentRunId?: string;
+ }) {
+   const t = useTranslations("prReview");
+   const [expanded, setExpanded] = React.useState(defaultExpanded ?? false);
+@@ -76,6 +80,7 @@ export function FindingCard({
+             )}
+             {accepted && <span style={s.acceptedTag}>{t("finding.accepted")}</span>}
+             {dismissed && <span style={s.dismissedTag}>{t("finding.dismissed")}</span>}
++            {f.learned_at && <span style={s.acceptedTag}>{t("finding.learned")}</span>}
+           </div>
+           <div style={s.metaRow}>
+             <MonoLink href={fileHref}>
+@@ -124,6 +129,7 @@ export function FindingCard({
+             >
+               {t("finding.dismiss")}
+             </Button>
++            {prId && <LearnAction finding={f} prId={prId} multiAgentRunId={multiAgentRunId} />}
+             {prId && <EvalCaseAction finding={f} prId={prId} />}
+           </div>
+         </div>
+diff --git a/client/src/components/finding-card/LearnAction/LearnAction.tsx b/client/src/components/finding-card/LearnAction/LearnAction.tsx
+new file mode 100644
+index 00000000..d5d873bb
+--- /dev/null
++++ b/client/src/components/finding-card/LearnAction/LearnAction.tsx
+@@ -0,0 +1,53 @@
++/* LearnAction — "Learn" on a finding: saves it as a repo learning (one click, no dialog).
++   Pending while saving; once `learned_at` is set it stays disabled and pressed. A failure
++   shows inline text and leaves the button enabled so the user can retry. */
++"use client";
++
++import React from "react";
++import { useTranslations } from "next-intl";
++import { Button } from "@devdigest/ui";
++import type { FindingRecord } from "@devdigest/shared";
++import { apiErrorMessage } from "@/lib/api";
++import { useLearnFinding } from "@/lib/hooks/reviews";
++import { s } from "./styles";
++
++export function LearnAction({
++  finding,
++  prId,
++  multiAgentRunId,
++}: {
++  finding: FindingRecord;
++  prId: string;
++  multiAgentRunId?: string;
++}) {
++  const t = useTranslations("prReview.finding");
++  const learn = useLearnFinding();
++  const learned = !!finding.learned_at;
++
++  const onClick = (e: React.MouseEvent) => {
++    e.stopPropagation();
++    learn.mutate({ findingId: finding.id, prId, multiAgentRunId });
++  };
++
++  return (
++    <span style={s.wrap}>
++      <Button
++        kind="ghost"
++        size="sm"
++        icon="Lightbulb"
++        active={learned}
++        aria-pressed={learned}
++        disabled={learned || learn.isPending}
++        loading={learn.isPending}
++        onClick={onClick}
++      >
++        {t("learn")}
++      </Button>
++      {learn.isError && (
++        <span role="alert" style={s.error}>
++          {apiErrorMessage(learn.error, t("learnFailed"))}
++        </span>
++      )}
++    </span>
++  );
++}
+diff --git a/client/src/components/finding-card/LearnAction/index.ts b/client/src/components/finding-card/LearnAction/index.ts
+new file mode 100644
+index 00000000..ccb52117
+--- /dev/null
++++ b/client/src/components/finding-card/LearnAction/index.ts
+@@ -0,0 +1 @@
++export { LearnAction } from "./LearnAction";
+diff --git a/client/src/components/finding-card/LearnAction/styles.ts b/client/src/components/finding-card/LearnAction/styles.ts
+new file mode 100644
+index 00000000..193a1354
+--- /dev/null
++++ b/client/src/components/finding-card/LearnAction/styles.ts
+@@ -0,0 +1,6 @@
++import type { CSSProperties } from "react";
++
++export const s = {
++  wrap: { display: "inline-flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
++  error: { fontSize: 11.5, color: "var(--crit)" } satisfies CSSProperties,
++};
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/constants.ts b/client/src/components/finding-card/constants.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/constants.ts
+rename to client/src/components/finding-card/constants.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/helpers.ts b/client/src/components/finding-card/helpers.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/helpers.ts
+rename to client/src/components/finding-card/helpers.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/index.ts b/client/src/components/finding-card/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/index.ts
+rename to client/src/components/finding-card/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/styles.ts b/client/src/components/finding-card/styles.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/FindingCard/styles.ts
+rename to client/src/components/finding-card/styles.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/FindingsSection.tsx b/client/src/components/run-trace-drawer/FindingsSection/FindingsSection.tsx
+similarity index 98%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/FindingsSection.tsx
+rename to client/src/components/run-trace-drawer/FindingsSection/FindingsSection.tsx
+index 5bda2ee6..0702d6d7 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/FindingsSection.tsx
++++ b/client/src/components/run-trace-drawer/FindingsSection/FindingsSection.tsx
+@@ -6,7 +6,7 @@ import React from "react";
+ import { useTranslations } from "next-intl";
+ import { Badge } from "@devdigest/ui";
+ import type { FindingRecord } from "@devdigest/shared";
+-import { s } from "../../styles";
++import { s } from "../styles";
+ import { TraceSection } from "../TraceSection";
+ 
+ const SEV_COLOR: Record<string, string> = {
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/index.ts b/client/src/components/run-trace-drawer/FindingsSection/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/FindingsSection/index.ts
+rename to client/src/components/run-trace-drawer/FindingsSection/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/PromptBlock.tsx b/client/src/components/run-trace-drawer/PromptBlock/PromptBlock.tsx
+similarity index 98%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/PromptBlock.tsx
+rename to client/src/components/run-trace-drawer/PromptBlock/PromptBlock.tsx
+index 8927d447..2910ecf3 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/PromptBlock.tsx
++++ b/client/src/components/run-trace-drawer/PromptBlock/PromptBlock.tsx
+@@ -5,7 +5,7 @@
+ import React from "react";
+ import { useTranslations } from "next-intl";
+ import { Button, Icon, Modal } from "@devdigest/ui";
+-import { s } from "../../styles";
++import { s } from "../styles";
+ import { PromptModalBody } from "../PromptModalBody";
+ 
+ const miniBtnStyle: React.CSSProperties = {
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/index.ts b/client/src/components/run-trace-drawer/PromptBlock/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptBlock/index.ts
+rename to client/src/components/run-trace-drawer/PromptBlock/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/PromptModalBody.tsx b/client/src/components/run-trace-drawer/PromptModalBody/PromptModalBody.tsx
+similarity index 98%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/PromptModalBody.tsx
+rename to client/src/components/run-trace-drawer/PromptModalBody/PromptModalBody.tsx
+index 6db38567..a35b3aaf 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/PromptModalBody.tsx
++++ b/client/src/components/run-trace-drawer/PromptModalBody/PromptModalBody.tsx
+@@ -6,7 +6,7 @@
+ import React from "react";
+ import { useTranslations } from "next-intl";
+ import { TextInput } from "@devdigest/ui";
+-import { s } from "../../styles";
++import { s } from "../styles";
+ 
+ /** Highlight every case-insensitive occurrence of `q` within a single line. */
+ function highlightLine(line: string, q: string): React.ReactNode {
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/index.ts b/client/src/components/run-trace-drawer/PromptModalBody/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/PromptModalBody/index.ts
+rename to client/src/components/run-trace-drawer/PromptModalBody/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.test.tsx b/client/src/components/run-trace-drawer/RunTraceDrawer.test.tsx
+similarity index 97%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.test.tsx
+rename to client/src/components/run-trace-drawer/RunTraceDrawer.test.tsx
+index 664284b5..42ceb84c 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.test.tsx
++++ b/client/src/components/run-trace-drawer/RunTraceDrawer.test.tsx
+@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
+ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+ import { NextIntlClientProvider } from "next-intl";
+ import type { RunTrace } from "@devdigest/shared";
+-import messages from "../../../../../../../../messages/en/runs.json"; // apps/web/messages/en/runs.json
++import messages from "../../../messages/en/runs.json"; // apps/web/messages/en/runs.json
+ 
+ // Mock the trace hooks so the drawer renders without a query client / SSE.
+ const SKILLS_TEXT = "x".repeat(400); // 400 chars -> ≈ 100 tokens, distinct from every other block
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.tsx b/client/src/components/run-trace-drawer/RunTraceDrawer.tsx
+similarity index 98%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.tsx
+rename to client/src/components/run-trace-drawer/RunTraceDrawer.tsx
+index eb6114c2..c57bb10d 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/RunTraceDrawer.tsx
++++ b/client/src/components/run-trace-drawer/RunTraceDrawer.tsx
+@@ -14,7 +14,7 @@ import { useRunEvents } from "@/lib/hooks/reviews";
+ import { DRAWER_WIDTH, LOG_HEIGHT, TABS } from "./constants";
+ import { eventsToLog, traceLog } from "./helpers";
+ import { s } from "./styles";
+-import { TraceBody } from "./_components/TraceBody";
++import { TraceBody } from "./TraceBody";
+ 
+ export interface RunTraceDrawerProps {
+   runId: string;
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/ToolCallRow.tsx b/client/src/components/run-trace-drawer/ToolCallRow/ToolCallRow.tsx
+similarity index 97%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/ToolCallRow.tsx
+rename to client/src/components/run-trace-drawer/ToolCallRow/ToolCallRow.tsx
+index 16dcfada..0e49f7b8 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/ToolCallRow.tsx
++++ b/client/src/components/run-trace-drawer/ToolCallRow/ToolCallRow.tsx
+@@ -5,7 +5,7 @@ import React from "react";
+ import { useTranslations } from "next-intl";
+ import { Icon } from "@devdigest/ui";
+ import type { ToolCall } from "@devdigest/shared";
+-import { s } from "../../styles";
++import { s } from "../styles";
+ 
+ export function ToolCallRow({ tc }: { tc: ToolCall }) {
+   const t = useTranslations("runs");
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/index.ts b/client/src/components/run-trace-drawer/ToolCallRow/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/ToolCallRow/index.ts
+rename to client/src/components/run-trace-drawer/ToolCallRow/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/TraceBody.tsx b/client/src/components/run-trace-drawer/TraceBody/TraceBody.tsx
+similarity index 85%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/TraceBody.tsx
+rename to client/src/components/run-trace-drawer/TraceBody/TraceBody.tsx
+index 0f83c205..f9776d22 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/TraceBody.tsx
++++ b/client/src/components/run-trace-drawer/TraceBody/TraceBody.tsx
+@@ -6,10 +6,10 @@ import React from "react";
+ import { useTranslations } from "next-intl";
+ import { Badge } from "@devdigest/ui";
+ import type { RunTrace, FindingRecord } from "@devdigest/shared";
+-import { PROMPT_COLORS } from "../../constants";
+-import { formatSeconds, formatTokens } from "../../helpers";
++import { PROMPT_COLORS } from "../constants";
++import { formatSeconds, formatTokens } from "../helpers";
+ import { formatCostUsd } from "@/lib/format-cost";
+-import { s } from "../../styles";
++import { s } from "../styles";
+ import { TraceSection } from "../TraceSection";
+ import { ToolCallRow } from "../ToolCallRow";
+ import { PromptBlock } from "../PromptBlock";
+@@ -81,6 +81,25 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
+           <Stat label={t("trace.stat.findings")} val={stats.findings} />
+           <Stat label={t("trace.stat.cost")} val={formatCostUsd(stats.cost_usd)} />
+         </div>
++        {trace.grounding_dropped && trace.grounding_dropped.length > 0 && (
++          <div style={s.groundingWrap}>
++            <div style={s.groundingTitle}>
++              {t("trace.groundingDropped", { count: trace.grounding_dropped.length })}
++            </div>
++            <ul style={s.groundingList}>
++              {trace.grounding_dropped.map((d, i) => (
++                <li key={i} style={s.findingText}>
++                  <strong>{d.title}</strong>{" "}
++                  <span className="mono" style={s.findingLoc}>
++                    {d.file}:{d.start_line}
++                    {d.end_line !== d.start_line ? `-${d.end_line}` : ""}
++                  </span>{" "}
++                  — {d.reason}
++                </li>
++              ))}
++            </ul>
++          </div>
++        )}
+       </TraceSection>
+ 
+       <FindingsSection findings={findings} />
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/index.ts b/client/src/components/run-trace-drawer/TraceBody/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceBody/index.ts
+rename to client/src/components/run-trace-drawer/TraceBody/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/TraceSection.tsx b/client/src/components/run-trace-drawer/TraceSection/TraceSection.tsx
+similarity index 96%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/TraceSection.tsx
+rename to client/src/components/run-trace-drawer/TraceSection/TraceSection.tsx
+index 8b677dda..a4588aa4 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/TraceSection.tsx
++++ b/client/src/components/run-trace-drawer/TraceSection/TraceSection.tsx
+@@ -3,7 +3,7 @@
+ 
+ import React from "react";
+ import { Icon } from "@devdigest/ui";
+-import { s } from "../../styles";
++import { s } from "../styles";
+ 
+ export function TraceSection({
+   icon,
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/index.ts b/client/src/components/run-trace-drawer/TraceSection/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/TraceSection/index.ts
+rename to client/src/components/run-trace-drawer/TraceSection/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/atoms.tsx b/client/src/components/run-trace-drawer/atoms.tsx
+similarity index 95%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/atoms.tsx
+rename to client/src/components/run-trace-drawer/atoms.tsx
+index 7cc9ca08..f70c4d42 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/_components/atoms.tsx
++++ b/client/src/components/run-trace-drawer/atoms.tsx
+@@ -1,7 +1,7 @@
+ /* atoms — trivial presentational layout helpers shared by the trace body
+    (Stat tile, labelled Row). Grouped in one file: no logic, never tested alone. */
+ import React from "react";
+-import { s } from "../styles";
++import { s } from "./styles";
+ 
+ export function Stat({ label, val }: { label: string; val: React.ReactNode }) {
+   return (
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/constants.ts b/client/src/components/run-trace-drawer/constants.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/constants.ts
+rename to client/src/components/run-trace-drawer/constants.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/helpers.ts b/client/src/components/run-trace-drawer/helpers.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/helpers.ts
+rename to client/src/components/run-trace-drawer/helpers.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/index.ts b/client/src/components/run-trace-drawer/index.ts
+similarity index 100%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/index.ts
+rename to client/src/components/run-trace-drawer/index.ts
+diff --git a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/styles.ts b/client/src/components/run-trace-drawer/styles.ts
+similarity index 95%
+rename from client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/styles.ts
+rename to client/src/components/run-trace-drawer/styles.ts
+index 30ba885c..9bedf88d 100644
+--- a/client/src/app/repos/[repoId]/pulls/[number]/_components/RunTraceDrawer/styles.ts
++++ b/client/src/components/run-trace-drawer/styles.ts
+@@ -100,6 +100,9 @@ export const s = {
+   specMissing: { color: "var(--warn, var(--text-muted))", fontWeight: 600 } satisfies CSSProperties,
+   spec: { fontSize: 12, color: "var(--text-secondary)" } satisfies CSSProperties,
+   statsRow: { display: "flex", gap: 10 } satisfies CSSProperties,
++  groundingWrap: { marginTop: 12 } satisfies CSSProperties,
++  groundingTitle: { fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 } satisfies CSSProperties,
++  groundingList: { margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 } satisfies CSSProperties,
+   rawPre: {
+     margin: 0,
+     padding: "12px 14px",
+diff --git a/client/src/lib/hooks/reviews.ts b/client/src/lib/hooks/reviews.ts
+index 274820f0..8b9f79a4 100644
+--- a/client/src/lib/hooks/reviews.ts
++++ b/client/src/lib/hooks/reviews.ts
+@@ -7,7 +7,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+ import { api, API_BASE } from "../api";
+ import { notify } from "../toast";
+ import type {
++  AgentRunEstimate,
+   FindingActionKind,
++  LearnFindingResponse,
++  MultiAgentRunDetail,
+   PrIntentResponse,
+   PrReviewComment,
+   ReviewRecord,
+@@ -26,6 +29,8 @@ export const reviewKeys = {
+   comments: (prId: string | null | undefined) => ["pr-comments", prId] as const,
+   intent: (prId: string | null | undefined) => ["pr-intent", prId] as const,
+   smartDiff: (prId: string | null | undefined) => ["pr-smart-diff", prId] as const,
++  multiAgentRun: (id: string | null | undefined) => ["multi-agent-run", id] as const,
++  agentEstimates: () => ["multi-agent-estimates"] as const,
+ };
+ 
+ // ---- Active (in-flight) runs — server-side source of truth ----
+@@ -175,6 +180,42 @@ export function useRunReview() {
+   });
+ }
+ 
++// ---- Multi-agent review (several agents on one PR, concurrently) ----
++export interface StartMultiAgentInput {
++  prId: string;
++  agentIds: string[];
++}
++
++/** Start one concurrent review with exactly these agents; the response carries `multi_agent_run_id`. */
++export function useStartMultiAgentReview() {
++  const qc = useQueryClient();
++  return useMutation({
++    mutationFn: ({ prId, agentIds }: StartMultiAgentInput) =>
++      api.post<ReviewRunResponse>(`/pulls/${prId}/review`, { agent_ids: agentIds }),
++    onSuccess: (_d, { prId }) => {
++      qc.invalidateQueries({ queryKey: reviewKeys.runs(prId) });
++      qc.invalidateQueries({ queryKey: reviewKeys.activeRuns(prId) });
++    },
++  });
++}
++
++/** The parent run with its columns and conflicts. No polling: callers refetch when the SSE streams settle. */
++export function useMultiAgentRun(id: string | null | undefined) {
++  return useQuery({
++    queryKey: reviewKeys.multiAgentRun(id),
++    queryFn: () => api.get<MultiAgentRunDetail>(`/multi-agent-runs/${id}`),
++    enabled: !!id,
++  });
++}
++
++/** History-average duration/cost per enabled agent. */
++export function useAgentEstimates() {
++  return useQuery({
++    queryKey: reviewKeys.agentEstimates(),
++    queryFn: () => api.get<AgentRunEstimate[]>("/multi-agent/estimates"),
++  });
++}
++
+ // ---- PR intent (what the PR is meant to change) ----
+ /** The PR's stored intent; `data.intent` is null until it was derived once. */
+ export function usePrIntent(prId: string | null | undefined) {
+@@ -211,13 +252,28 @@ export function useFindingAction() {
+       action: FindingActionKind;
+       reply?: string;
+       prId?: string;
++      multiAgentRunId?: string;
+     }) =>
+       api.post<{ finding: ReviewRecord["findings"][number]; memoryId?: string }>(
+         `/findings/${findingId}/${action}`,
+         reply ? { reply } : undefined,
+       ),
+-    onSuccess: (_d, { prId }) => {
++    onSuccess: (_d, { prId, multiAgentRunId }) => {
++      if (prId) qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
++      if (multiAgentRunId) qc.invalidateQueries({ queryKey: reviewKeys.multiAgentRun(multiAgentRunId) });
++    },
++  });
++}
++
++/** Save a finding as a repo learning (idempotent server-side). */
++export function useLearnFinding() {
++  const qc = useQueryClient();
++  return useMutation({
++    mutationFn: ({ findingId }: { findingId: string; prId?: string; multiAgentRunId?: string }) =>
++      api.post<LearnFindingResponse>(`/findings/${findingId}/learn`),
++    onSuccess: (_d, { prId, multiAgentRunId }) => {
+       if (prId) qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
++      if (multiAgentRunId) qc.invalidateQueries({ queryKey: reviewKeys.multiAgentRun(multiAgentRunId) });
+     },
+   });
+ }
+diff --git a/client/src/lib/multi-agent-format.ts b/client/src/lib/multi-agent-format.ts
+new file mode 100644
+index 00000000..0680cee2
+--- /dev/null
++++ b/client/src/lib/multi-agent-format.ts
+@@ -0,0 +1,39 @@
++/**
++ * Pure formatting for the multi-agent review surfaces (PR-page picker, Configure run,
++ * results header). Estimates are history averages per agent; an agent without history
++ * has null numbers and is simply left out of the totals.
++ */
++import type { AgentRunEstimate } from "@devdigest/shared";
++import { formatDuration } from "./eval-format";
++import { UNKNOWN, formatCostUsd } from "./format-cost";
++
++/** Sum of the known (non-null) numbers; null when there are none. */
++export function sumKnown(values: Array<number | null | undefined>): number | null {
++  const known = values.filter((v): v is number => v != null && Number.isFinite(v));
++  return known.length === 0 ? null : known.reduce((a, b) => a + b, 0);
++}
++
++/** Per-agent estimate line: "≈ 12.3s · $0.014", or "no estimate" without history. */
++export function estimateLabel(est: AgentRunEstimate | null | undefined): string {
++  if (!est || (est.est_duration_ms == null && est.est_cost_usd == null)) return "no estimate";
++  return `≈ ${formatDuration(est.est_duration_ms)} · ${formatCostUsd(est.est_cost_usd)}`;
++}
++
++/** Total line under a selection: slowest known agent (parallel), summed known cost. */
++export function formatSelectionTotal(estimates: AgentRunEstimate[]): string {
++  const durations = estimates.map((e) => e.est_duration_ms).filter((v): v is number => v != null);
++  const max = durations.length === 0 ? null : Math.max(...durations);
++  const cost = sumKnown(estimates.map((e) => e.est_cost_usd));
++  return `≈ ${formatDuration(max)} · ${formatCostUsd(cost)} · parallel fan-out`;
++}
++
++/** Run header meta: "3 agents · parallel · 41.2s total · $0.052". */
++export function formatRunMeta(
++  agentCount: number,
++  totalDurationMs: number | null | undefined,
++  costs: Array<number | null | undefined>,
++): string {
++  const noun = agentCount === 1 ? "agent" : "agents";
++  const wall = totalDurationMs == null ? UNKNOWN : formatDuration(totalDurationMs);
++  return `${agentCount} ${noun} · parallel · ${wall} total · ${formatCostUsd(sumKnown(costs))}`;
++}
+diff --git a/client/src/vendor/shared/contracts/knowledge.ts b/client/src/vendor/shared/contracts/knowledge.ts
+index 1edaa190..7756e292 100644
+--- a/client/src/vendor/shared/contracts/knowledge.ts
++++ b/client/src/vendor/shared/contracts/knowledge.ts
+@@ -78,6 +78,16 @@ export type MemoryKind = z.infer<typeof MemoryKind>;
+ export const MemorySource = z.object({
+   pr: z.number().int().nullish(),
+   context: z.string(),
++  /** Learned-from-finding provenance (all optional; absent on other memories). */
++  finding_id: z.string().optional(),
++  pr_id: z.string().optional(),
++  run_id: z.string().optional(),
++  multi_agent_run_id: z.string().optional(),
++  agent_id: z.string().optional(),
++  agent_name: z.string().optional(),
++  decision: z.enum(['accepted', 'dismissed', 'undecided']).optional(),
++  learned_at: z.string().optional(),
++  origin: z.literal('agent_output').optional(),
+ });
+ export type MemorySource = z.infer<typeof MemorySource>;
+ 
+diff --git a/client/src/vendor/shared/contracts/observability.ts b/client/src/vendor/shared/contracts/observability.ts
+index 4c3a4528..1db29ea9 100644
+--- a/client/src/vendor/shared/contracts/observability.ts
++++ b/client/src/vendor/shared/contracts/observability.ts
+@@ -1,5 +1,6 @@
+ import { z } from 'zod';
+ import { Severity } from './findings.js';
++import { FindingRecord } from './review-api.js';
+ 
+ /**
+  * A5 — Observability / Multi-agent contracts (L07).
+@@ -38,7 +39,7 @@ export const AgentColumn = z.object({
+   agent_name: z.string(),
+   provider: z.string().nullable(),
+   model: z.string().nullable(),
+-  status: z.enum(['done', 'failed', 'running']),
++  status: z.enum(['done', 'failed', 'running', 'queued', 'cancelled']),
+   verdict: z.string().nullable(),
+   score: z.number().int().nullable(),
+   summary: z.string().nullable(),
+@@ -53,7 +54,13 @@ export const ConflictTake = z.object({
+   agent_id: z.string(),
+   persona: z.string(),
+   /** Severity if the agent flagged it, or 'ignored' when it did not. */
+-  verdict: z.union([Severity, z.literal('ignored')]),
++  verdict: z.union([
++    Severity,
++    z.literal('ignored'),
++    z.literal('failed'),
++    z.literal('cancelled'),
++    z.literal('pending'),
++  ]),
+   note: z.string(),
+ });
+ export type ConflictTake = z.infer<typeof ConflictTake>;
+@@ -85,6 +92,43 @@ export const MultiAgentRun = z.object({
+ });
+ export type MultiAgentRun = z.infer<typeof MultiAgentRun>;
+ 
++/** Response of GET /multi-agent-runs/:id (parent run with live-derived status). */
++export const MultiAgentRunDetail = MultiAgentRun.extend({
++  status: z.enum(['running', 'done', 'partial', 'failed']),
++  total_duration_ms: z.number().int().nullable(),
++  columns: z.array(
++    AgentColumn.extend({
++      error: z.string().nullable(),
++      findings: z.array(FindingRecord),
++    }),
++  ),
++  conflicts: z.array(
++    Conflict.extend({
++      end_line: z.number().int(),
++      members: z.array(
++        z.object({
++          finding_id: z.string(),
++          run_id: z.string(),
++          agent_id: z.string().nullable(),
++          agent_name: z.string(),
++          severity: Severity,
++          title: z.string(),
++        }),
++      ),
++      is_conflict: z.boolean(),
++    }),
++  ),
++});
++export type MultiAgentRunDetail = z.infer<typeof MultiAgentRunDetail>;
++
++/** One row of GET /multi-agent/estimates (history average per enabled agent). */
++export const AgentRunEstimate = z.object({
++  agent_id: z.string(),
++  est_duration_ms: z.number().int().nullable(),
++  est_cost_usd: z.number().nullable(),
++});
++export type AgentRunEstimate = z.infer<typeof AgentRunEstimate>;
++
+ // ---------------------------------------------------------------------------
+ // Per-agent Stats (GET /agents/:id/stats)
+ // ---------------------------------------------------------------------------
+diff --git a/client/src/vendor/shared/contracts/platform.ts b/client/src/vendor/shared/contracts/platform.ts
+index bf064a1f..6b86e634 100644
+--- a/client/src/vendor/shared/contracts/platform.ts
++++ b/client/src/vendor/shared/contracts/platform.ts
+@@ -267,6 +267,8 @@ export type IndexStatus = z.infer<typeof IndexStatus>;
+ export const RunRequest = z.object({
+   agentId: z.string().optional(),
+   all: z.boolean().optional(),
++  /** Multi-agent review: run exactly these agents concurrently (1..10 distinct). */
++  agent_ids: z.array(z.string()).optional(),
+ });
+ export type RunRequest = z.infer<typeof RunRequest>;
+ 
+diff --git a/client/src/vendor/shared/contracts/review-api.ts b/client/src/vendor/shared/contracts/review-api.ts
+index d52d49c8..cbddf7a6 100644
+--- a/client/src/vendor/shared/contracts/review-api.ts
++++ b/client/src/vendor/shared/contracts/review-api.ts
+@@ -18,6 +18,8 @@ export const FindingRecord = Finding.extend({
+   dismissed_at: z.string().nullable(),
+   /** Severity the reviewer gave before the intent scope policy downgraded it. */
+   original_severity: Severity.nullish(),
++  /** When the finding was saved as a repo learning; null/absent = not learned. */
++  learned_at: z.string().nullish(),
+ });
+ export type FindingRecord = z.infer<typeof FindingRecord>;
+ 
+@@ -60,9 +62,24 @@ export const ReviewRunResponse = z.object({
+   pr_id: z.string(),
+   runs: z.array(ReviewRunTarget),
+   reviews: z.array(ReviewRecord),
++  /** Set when the request used `agent_ids`: the parent multi-agent run. */
++  multi_agent_run_id: z.string().optional(),
+ });
+ export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
+ 
++/** Response of POST /findings/:id/learn. */
++export const LearnFindingResponse = z.object({
++  finding: FindingRecord,
++  memory: z.object({
++    id: z.string(),
++    kind: z.literal('learning'),
++    scope: z.literal('repo'),
++    content: z.string(),
++    created: z.boolean(),
++  }),
++});
++export type LearnFindingResponse = z.infer<typeof LearnFindingResponse>;
++
+ /** Intent persisted for a PR (the Intent plus the pr_id it scopes and derivation metadata). */
+ export const PrIntentRecord = Intent.extend({
+   pr_id: z.string(),
+diff --git a/client/src/vendor/shared/contracts/trace.ts b/client/src/vendor/shared/contracts/trace.ts
+index 9d65a8a7..ccc36cd3 100644
+--- a/client/src/vendor/shared/contracts/trace.ts
++++ b/client/src/vendor/shared/contracts/trace.ts
+@@ -102,6 +102,18 @@ export const RunTrace = z.object({
+   memory_pulled: z.array(MemoryPulled),
+   specs_read: z.array(z.union([z.string(), SpecRead])),
+   log: z.array(RunLogLine),
++  /** Findings the grounding pass dropped, with the reason. */
++  grounding_dropped: z
++    .array(
++      z.object({
++        title: z.string(),
++        file: z.string(),
++        start_line: z.number().int(),
++        end_line: z.number().int(),
++        reason: z.string(),
++      }),
++    )
++    .optional(),
+ });
+ export type RunTrace = z.infer<typeof RunTrace>;
+ 
+diff --git a/client/src/vendor/ui/nav.ts b/client/src/vendor/ui/nav.ts
+index 90f196d5..e7f990e9 100644
+--- a/client/src/vendor/ui/nav.ts
++++ b/client/src/vendor/ui/nav.ts
+@@ -23,6 +23,7 @@ export const NAV: NavGroup[] = [
+     section: "WORKSPACE",
+     items: [
+       { key: "pulls", label: "Pull Requests", icon: "GitPullRequest", href: "/repos/:repoId/pulls", gKey: "p" },
++      { key: "multi-agent", label: "Multi-Agent Review", icon: "Users", href: "/repos/:repoId/multi-agent", gKey: "m" },
+       { key: "onboarding-tour", label: "Onboarding Tour", icon: "Workflow", href: "/repos/:repoId/onboarding" },
+       { key: "context", label: "Project Context", icon: "FileText", href: "/repos/:repoId/context" },
+     ],
+diff --git a/server/INSIGHTS.md b/server/INSIGHTS.md
+index 117c5c06..20864e2a 100644
+--- a/server/INSIGHTS.md
++++ b/server/INSIGHTS.md
+@@ -488,3 +488,9 @@ onion-architecture violation (a cross-module import that compiled fine) and one
+ ## Open Questions
+ 
+ _No entries yet._
++
++### `pnpm db:migrate` needs DATABASE_URL exported; there is no .env in a fresh worktree
++
++`server/.env.example:2` · 2026-10-13
++
++`pnpm db:migrate` in a new worktree fails with `DATABASE_URL is required` (only `.env.example` exists). Export the compose default (`postgres://devdigest:devdigest@localhost:5432/devdigest`) for the shell, then migrate; the same variable is what the `.it` suite uses via testcontainers-independent paths. Also: `agent-runner` `pnpm typecheck` already fails on a clean tree (`agent-runner/src/run.ts:124`, `string[]` vs `PromptSkill[]`), so it cannot be used as a contract-change gate until fixed.
+diff --git a/server/src/db/client.ts b/server/src/db/client.ts
+index a49974db..ce12d297 100644
+--- a/server/src/db/client.ts
++++ b/server/src/db/client.ts
+@@ -3,6 +3,7 @@ import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+ import { schema } from './schema.js';
+ 
+ export type Db = PostgresJsDatabase<typeof schema>;
++export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+ 
+ export interface DbHandle {
+   db: Db;
+diff --git a/server/src/db/migrations/0018_freezing_kingpin.sql b/server/src/db/migrations/0018_freezing_kingpin.sql
+new file mode 100644
+index 00000000..c62564d6
+--- /dev/null
++++ b/server/src/db/migrations/0018_freezing_kingpin.sql
+@@ -0,0 +1,9 @@
++ALTER TABLE "findings" ADD COLUMN "learned_at" timestamp with time zone;--> statement-breakpoint
++ALTER TABLE "findings" ADD COLUMN "learned_memory_id" uuid;--> statement-breakpoint
++ALTER TABLE "agent_runs" ADD COLUMN "multi_agent_run_id" uuid;--> statement-breakpoint
++ALTER TABLE "agent_runs" ADD COLUMN "agent_name" text;--> statement-breakpoint
++ALTER TABLE "multi_agent_runs" ADD COLUMN "finished_at" timestamp with time zone;--> statement-breakpoint
++ALTER TABLE "multi_agent_runs" ADD COLUMN "duration_ms" integer;--> statement-breakpoint
++ALTER TABLE "findings" ADD CONSTRAINT "findings_learned_memory_id_memory_id_fk" FOREIGN KEY ("learned_memory_id") REFERENCES "public"."memory"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
++ALTER TABLE "agent_runs" ADD CONSTRAINT "agent_runs_multi_agent_run_id_multi_agent_runs_id_fk" FOREIGN KEY ("multi_agent_run_id") REFERENCES "public"."multi_agent_runs"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
++CREATE INDEX "agent_runs_multi_agent_run_id_idx" ON "agent_runs" USING btree ("multi_agent_run_id");
+\ No newline at end of file
+diff --git a/server/src/db/migrations/meta/_journal.json b/server/src/db/migrations/meta/_journal.json
+index 67b82e0a..d1581659 100644
+--- a/server/src/db/migrations/meta/_journal.json
++++ b/server/src/db/migrations/meta/_journal.json
+@@ -127,6 +127,13 @@
+       "when": 1791553382034,
+       "tag": "0017_spooky_doctor_doom",
+       "breakpoints": true
++    },
++    {
++      "idx": 18,
++      "version": "7",
++      "when": 1791900075638,
++      "tag": "0018_freezing_kingpin",
++      "breakpoints": true
+     }
+   ]
+ }
+\ No newline at end of file
+diff --git a/server/src/db/schema/reviews.ts b/server/src/db/schema/reviews.ts
+index d57d6e32..48e4017a 100644
+--- a/server/src/db/schema/reviews.ts
++++ b/server/src/db/schema/reviews.ts
+@@ -4,6 +4,7 @@ import type { IntentSource } from '@devdigest/shared';
+ import { now } from './_shared';
+ import { workspaces } from './core';
+ import { pullRequests } from './pulls';
++import { memory } from './knowledge';
+ 
+ // ============================================================ Review & findings
+ 
+@@ -48,6 +49,9 @@ export const findings = pgTable('findings', {
+   originalSeverity: text('original_severity'),
+   acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+   dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
++  /** When the finding was saved as a repo learning (idempotency marker). */
++  learnedAt: timestamp('learned_at', { withTimezone: true }),
++  learnedMemoryId: uuid('learned_memory_id').references(() => memory.id, { onDelete: 'set null' }),
+ });
+ 
+ export const prIntent = pgTable(
+diff --git a/server/src/db/schema/runs.ts b/server/src/db/schema/runs.ts
+index db61982d..92d6be41 100644
+--- a/server/src/db/schema/runs.ts
++++ b/server/src/db/schema/runs.ts
+@@ -7,6 +7,7 @@ import {
+   timestamp,
+   doublePrecision,
+   primaryKey,
++  index,
+ } from 'drizzle-orm/pg-core';
+ import { workspaces } from './core';
+ import { agents } from './agents';
+@@ -15,7 +16,9 @@ import { skills } from './skills';
+ 
+ // ============================================================ Observability
+ 
+-export const agentRuns = pgTable('agent_runs', {
++export const agentRuns = pgTable(
++  'agent_runs',
++  {
+   id: uuid('id').primaryKey().defaultRandom(),
+   workspaceId: uuid('workspace_id')
+     .notNull()
+@@ -41,7 +44,15 @@ export const agentRuns = pgTable('agent_runs', {
+   score: integer('score'),
+   /** Findings that tripped the agent's gate (severity ≥ ciFailOn). */
+   blockers: integer('blockers'),
+-});
++  /** Parent multi-agent run this run was fanned out from; null for single runs. */
++  multiAgentRunId: uuid('multi_agent_run_id').references(() => multiAgentRuns.id, {
++    onDelete: 'set null',
++  }),
++  /** Agent name at run time, so columns survive an agent rename/delete. */
++  agentName: text('agent_name'),
++  },
++  (t) => ({ multiAgentRunIdx: index('agent_runs_multi_agent_run_id_idx').on(t.multiAgentRunId) }),
++);
+ 
+ /** Whole trace of one run as a SINGLE jsonb document. */
+ export const runTraces = pgTable('run_traces', {
+@@ -60,6 +71,8 @@ export const multiAgentRuns = pgTable('multi_agent_runs', {
+     .notNull()
+     .references(() => pullRequests.id, { onDelete: 'cascade' }),
+   ranAt: timestamp('ran_at', { withTimezone: true }).defaultNow().notNull(),
++  finishedAt: timestamp('finished_at', { withTimezone: true }),
++  durationMs: integer('duration_ms'),
+ });
+ 
+ // Which skills were in a run's prompt — the basis of the per-skill Stats tab.
+diff --git a/server/src/modules/reviews/helpers.ts b/server/src/modules/reviews/helpers.ts
+index b7707855..565da674 100644
+--- a/server/src/modules/reviews/helpers.ts
++++ b/server/src/modules/reviews/helpers.ts
+@@ -15,6 +15,7 @@ export interface ReviewDtoFinding extends Finding {
+   review_id: string;
+   accepted_at: string | null;
+   dismissed_at: string | null;
++  learned_at: string | null;
+ }
+ 
+ export interface ReviewDto {
+@@ -57,6 +58,7 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
+     review_id: row.reviewId,
+     accepted_at: row.acceptedAt?.toISOString() ?? null,
+     dismissed_at: row.dismissedAt?.toISOString() ?? null,
++    learned_at: row.learnedAt?.toISOString() ?? null,
+   };
+ }
+ 
+diff --git a/server/src/modules/reviews/multi-agent.ts b/server/src/modules/reviews/multi-agent.ts
+new file mode 100644
+index 00000000..c4ddc25e
+--- /dev/null
++++ b/server/src/modules/reviews/multi-agent.ts
+@@ -0,0 +1,262 @@
++import { AppError } from '../../platform/errors.js';
++
++/** Most distinct agents one multi-agent review may fan out to. */
++export const MAX_MULTI_AGENT_IDS = 10;
++
++/**
++ * Validate and normalise the `agent_ids` of a multi-agent start request:
++ * non-empty, not mixed with `agentId` / `all`, at most 10 distinct ids.
++ * Duplicates are dropped, keeping the first occurrence's order.
++ */
++export function normalizeAgentIds(opts: {
++  agentIds: string[];
++  agentId?: string | undefined;
++  all?: boolean | undefined;
++}): string[] {
++  if (opts.agentId !== undefined || opts.all) {
++    throw new AppError('invalid_run_request', 'agent_ids cannot be combined with agentId or all', 400);
++  }
++  const ids = [...new Set(opts.agentIds)];
++  if (ids.length === 0) {
++    throw new AppError('invalid_run_request', 'agent_ids must contain at least one agent', 400);
++  }
++  if (ids.length > MAX_MULTI_AGENT_IDS) {
++    throw new AppError(
++      'invalid_run_request',
++      `agent_ids accepts at most ${MAX_MULTI_AGENT_IDS} distinct agents`,
++      400,
++    );
++  }
++  return ids;
++}
++
++// ---------------------------------------------------------------------------
++// Grouping + disagreement (pure; zero LLM)
++// ---------------------------------------------------------------------------
++
++type Sev = 'CRITICAL' | 'WARNING' | 'SUGGESTION';
++const SEVERITY_ORDER: Record<Sev, number> = { CRITICAL: 0, WARNING: 1, SUGGESTION: 2 };
++
++/** Lines apart (start to start) at which two findings still count as the same spot. */
++const NEAR_LINES = 2;
++const SIMILAR_TITLE_RATIO = 0.5;
++const MIN_TOKEN_LENGTH = 3;
++
++export type ColumnStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled';
++
++/** One child run (a column), in display order. */
++export interface GroupingColumn {
++  runId: string;
++  agentId: string;
++  agentName: string;
++  status: ColumnStatus;
++}
++
++export interface GroupingFinding {
++  id: string;
++  runId: string;
++  severity: Sev;
++  category: string;
++  title: string;
++  file: string;
++  startLine: number;
++  endLine: number;
++  rationale: string;
++}
++
++export interface GroupTake {
++  agent_id: string;
++  persona: string;
++  verdict: Sev | 'ignored' | 'failed' | 'cancelled' | 'pending';
++  note: string;
++}
++
++export interface FindingGroup {
++  file: string;
++  line: number;
++  end_line: number;
++  title: string;
++  takes: GroupTake[];
++  members: {
++    finding_id: string;
++    run_id: string;
++    agent_id: string | null;
++    agent_name: string;
++    severity: Sev;
++    title: string;
++  }[];
++  is_conflict: boolean;
++}
++
++/** Lowercase alphanumeric tokens of 3+ chars. */
++export function titleTokens(title: string): Set<string> {
++  return new Set(
++    title
++      .toLowerCase()
++      .split(/[^a-z0-9]+/)
++      .filter((tok) => tok.length >= MIN_TOKEN_LENGTH),
++  );
++}
++
++/** |A ∩ B| / max(|A|, |B|) >= 0.5; two empty token sets are never similar. */
++export function titlesSimilar(a: string, b: string): boolean {
++  const ta = titleTokens(a);
++  const tb = titleTokens(b);
++  const max = Math.max(ta.size, tb.size);
++  if (max === 0) return false;
++  let shared = 0;
++  for (const tok of ta) if (tb.has(tok)) shared += 1;
++  return shared / max >= SIMILAR_TITLE_RATIO;
++}
++
++/** Direct link: different child runs, same file, same spot, same category or similar titles. */
++export function findingsLinked(a: GroupingFinding, b: GroupingFinding): boolean {
++  if (a.runId === b.runId || a.file !== b.file) return false;
++  const overlap = a.startLine <= b.endLine && b.startLine <= a.endLine;
++  const near = Math.abs(a.startLine - b.startLine) <= NEAR_LINES;
++  if (!overlap && !near) return false;
++  return a.category === b.category || titlesSimilar(a.title, b.title);
++}
++
++/**
++ * Group findings across child runs (transitive closure of `findingsLinked` per
++ * file; singletons kept) and derive each group's per-agent takes.
++ */
++export function groupFindings(
++  columns: GroupingColumn[],
++  findings: GroupingFinding[],
++): FindingGroup[] {
++  // Union-find over the finding list.
++  const parent = findings.map((_, i) => i);
++  const find = (i: number): number => {
++    while (parent[i] !== i) {
++      parent[i] = parent[parent[i]!]!;
++      i = parent[i]!;
++    }
++    return i;
++  };
++  for (let i = 0; i < findings.length; i += 1) {
++    for (let j = i + 1; j < findings.length; j += 1) {
++      if (findingsLinked(findings[i]!, findings[j]!)) parent[find(i)] = find(j);
++    }
++  }
++  const buckets = new Map<number, number[]>();
++  findings.forEach((_, i) => {
++    const root = find(i);
++    (buckets.get(root) ?? buckets.set(root, []).get(root)!).push(i);
++  });
++
++  const columnIndex = new Map(columns.map((c, i) => [c.runId, i]));
++  const groups: FindingGroup[] = [];
++  for (const idxs of buckets.values()) {
++    const members = idxs
++      .map((i) => findings[i]!)
++      .sort(
++        (a, b) =>
++          (columnIndex.get(a.runId) ?? 0) - (columnIndex.get(b.runId) ?? 0) ||
++          a.startLine - b.startLine,
++      );
++    // Highest severity wins the title; ties fall to column order (stable sort).
++    const top = [...members].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])[0]!;
++    const takes = columns.map((col): GroupTake => {
++      const mine = members.filter((m) => m.runId === col.runId);
++      if (mine.length > 0) {
++        const best = [...mine].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])[0]!;
++        return { agent_id: col.agentId, persona: col.agentName, verdict: best.severity, note: best.rationale };
++      }
++      const verdict: GroupTake['verdict'] =
++        col.status === 'done' ? 'ignored'
++        : col.status === 'failed' ? 'failed'
++        : col.status === 'cancelled' ? 'cancelled'
++        : 'pending';
++      return { agent_id: col.agentId, persona: col.agentName, verdict, note: '' };
++    });
++    const flagged = takes.filter((t) => t.verdict === 'CRITICAL' || t.verdict === 'WARNING' || t.verdict === 'SUGGESTION');
++    const ignored = takes.filter((t) => t.verdict === 'ignored');
++    const severities = new Set(flagged.map((t) => t.verdict));
++    groups.push({
++      file: top.file,
++      line: Math.min(...members.map((m) => m.startLine)),
++      end_line: Math.max(...members.map((m) => m.endLine)),
++      title: top.title,
++      takes,
++      members: members.map((m) => {
++        const col = columns[columnIndex.get(m.runId) ?? 0]!;
++        return {
++          finding_id: m.id,
++          run_id: m.runId,
++          agent_id: col.agentId || null,
++          agent_name: col.agentName,
++          severity: m.severity,
++          title: m.title,
++        };
++      }),
++      is_conflict: (flagged.length >= 1 && ignored.length >= 1) || severities.size > 1,
++    });
++  }
++  return groups.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
++}
++
++/** Parent status from the children: any running → running, all done → done, none done → failed, else partial. */
++export function parentStatus(statuses: ColumnStatus[]): 'running' | 'done' | 'partial' | 'failed' {
++  if (statuses.some((s) => s === 'running' || s === 'queued')) return 'running';
++  const done = statuses.filter((s) => s === 'done').length;
++  if (done === statuses.length && done > 0) return 'done';
++  if (done === 0) return 'failed';
++  return 'partial';
++}
++
++/** Average duration / cost over a window of finished runs; cost ignores nulls. */
++export function averageEstimate(
++  runs: { durationMs: number | null; costUsd: number | null }[],
++): { est_duration_ms: number | null; est_cost_usd: number | null } {
++  const durations = runs.map((r) => r.durationMs).filter((v): v is number => v !== null);
++  const costs = runs.map((r) => r.costUsd).filter((v): v is number => v !== null);
++  const avg = (xs: number[]) => (xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length);
++  const d = avg(durations);
++  return { est_duration_ms: d === null ? null : Math.round(d), est_cost_usd: avg(costs) };
++}
++
++// ---------------------------------------------------------------------------
++// Learn (finding -> repo memory)
++// ---------------------------------------------------------------------------
++
++/** Memory text for a learned finding: title, location, rationale and the suggestion if any. */
++export function buildLearningContent(f: {
++  title: string;
++  file: string;
++  startLine: number;
++  rationale: string;
++  suggestion: string | null;
++}): string {
++  const parts = [f.title, `${f.file}:${f.startLine}`, f.rationale];
++  if (f.suggestion) parts.push(`Suggestion: ${f.suggestion}`);
++  return parts.join('\n\n');
++}
++
++/** Provenance stored on the memory row (AC-36); origin marks it as agent output, not a human note. */
++export function buildLearningSource(input: {
++  prNumber: number;
++  findingId: string;
++  prId: string;
++  runId: string | null;
++  multiAgentRunId: string | null;
++  agentId: string | null;
++  agentName: string | null;
++  decision: 'accepted' | 'dismissed' | 'undecided';
++  learnedAt: Date;
++}) {
++  return {
++    pr: input.prNumber,
++    context: `Learned from a finding${input.agentName ? ` by ${input.agentName}` : ''} on PR #${input.prNumber}`,
++    finding_id: input.findingId,
++    pr_id: input.prId,
++    ...(input.runId ? { run_id: input.runId } : {}),
++    ...(input.multiAgentRunId ? { multi_agent_run_id: input.multiAgentRunId } : {}),
++    ...(input.agentId ? { agent_id: input.agentId } : {}),
++    ...(input.agentName ? { agent_name: input.agentName } : {}),
++    decision: input.decision,
++    learned_at: input.learnedAt.toISOString(),
++    origin: 'agent_output' as const,
++  };
++}
+diff --git a/server/src/modules/reviews/repository.ts b/server/src/modules/reviews/repository.ts
+index 61517ca0..5f55d4f6 100644
+--- a/server/src/modules/reviews/repository.ts
++++ b/server/src/modules/reviews/repository.ts
+@@ -1,4 +1,4 @@
+-import type { Db } from '../../db/client.js';
++import type { Db, Tx } from '../../db/client.js';
+ import * as t from '../../db/schema.js';
+ import type { RunSummary, RunTrace } from '@devdigest/shared';
+ 
+@@ -129,6 +129,35 @@ export class ReviewRepository {
+     return reviewRepo.setFindingDismissed(this.db, findingId, at);
+   }
+ 
++  // ---- learn (finding -> repo memory); `tx` is owned by the service ----------
++
++  getRunAttribution(runId: string) {
++    return reviewRepo.getRunAttribution(this.db, runId);
++  }
++
++  claimFindingLearned(findingId: string, at: Date, tx?: Tx) {
++    return reviewRepo.claimFindingLearned(tx ?? this.db, findingId, at);
++  }
++
++  getFindingFor(findingId: string, tx?: Tx) {
++    return reviewRepo.getFindingFor(tx ?? this.db, findingId);
++  }
++
++  getMemory(id: string, tx?: Tx) {
++    return reviewRepo.getMemory(tx ?? this.db, id);
++  }
++
++  insertLearning(
++    values: Parameters<typeof reviewRepo.insertLearning>[1],
++    tx?: Tx,
++  ) {
++    return reviewRepo.insertLearning(tx ?? this.db, values);
++  }
++
++  linkFindingMemory(findingId: string, memoryId: string, learnedAt: Date, tx?: Tx) {
++    return reviewRepo.linkFindingMemory(tx ?? this.db, findingId, memoryId, learnedAt);
++  }
++
+   // ---- observability: agent_runs + run_traces ----------------------------
+ 
+   /** Create an agent_runs row in `running` state; returns its id (= the runId). */
+@@ -138,10 +167,33 @@ export class ReviewRepository {
+     prId: string;
+     provider: string | null;
+     model: string | null;
++    multiAgentRunId?: string | null;
++    agentName?: string | null;
+   }): Promise<string> {
+     return runRepo.createAgentRun(this.db, values);
+   }
+ 
++  createMultiAgentRun(values: { workspaceId: string; prId: string }): Promise<string> {
++    return runRepo.createMultiAgentRun(this.db, values);
++  }
++
++  finishMultiAgentRun(id: string): Promise<void> {
++    return runRepo.finishMultiAgentRun(this.db, id);
++  }
++
++  getMultiAgentRunData(workspaceId: string, id: string): Promise<runRepo.MultiAgentRunData | undefined> {
++    return runRepo.getMultiAgentRunData(this.db, workspaceId, id);
++  }
++
++  recentDoneRunsForAgent(workspaceId: string, agentId: string, limit: number) {
++    return runRepo.recentDoneRunsForAgent(this.db, workspaceId, agentId, limit);
++  }
++
++  /** Workspace guard for run-scoped endpoints (cancel, trace). */
++  runExistsInWorkspace(workspaceId: string, runId: string): Promise<boolean> {
++    return runRepo.runExistsInWorkspace(this.db, workspaceId, runId);
++  }
++
+   completeAgentRun(
+     runId: string,
+     values: {
+diff --git a/server/src/modules/reviews/repository/review.repo.ts b/server/src/modules/reviews/repository/review.repo.ts
+index e6213d34..cca44326 100644
+--- a/server/src/modules/reviews/repository/review.repo.ts
++++ b/server/src/modules/reviews/repository/review.repo.ts
+@@ -1,9 +1,11 @@
+-import { and, desc, eq, inArray } from 'drizzle-orm';
+-import type { Db } from '../../../db/client.js';
++import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
++import type { Db, Tx } from '../../../db/client.js';
+ import * as t from '../../../db/schema.js';
+ import type { Finding, Severity } from '@devdigest/shared';
+ import type { FindingRow, PullRow } from '../../../db/rows.js';
+ 
++type MemoryRow = typeof t.memory.$inferSelect;
++
+ export type ReviewRow = typeof t.reviews.$inferSelect;
+ 
+ /** A finding as persisted: the reviewer's Finding plus the scope policy's `original_severity`. */
+@@ -163,3 +165,80 @@ export async function setFindingDismissed(
+     .returning();
+   return row;
+ }
++
++// ---- learn (finding -> repo memory) ----------------------------------------
++
++/** Run attribution for a finding's review: parent multi-agent run + stored agent name. */
++export async function getRunAttribution(
++  db: Db,
++  runId: string,
++): Promise<{ multiAgentRunId: string | null; agentName: string | null } | undefined> {
++  const [row] = await db
++    .select({ multiAgentRunId: t.agentRuns.multiAgentRunId, agentName: t.agentRuns.agentName })
++    .from(t.agentRuns)
++    .where(eq(t.agentRuns.id, runId));
++  return row;
++}
++
++/** Claim the one-time learn: sets `learned_at` only when still null. No row = already learned. */
++export async function claimFindingLearned(
++  db: Db | Tx,
++  findingId: string,
++  at: Date,
++): Promise<FindingRow | undefined> {
++  const [row] = await db
++    .update(t.findings)
++    .set({ learnedAt: at })
++    .where(and(eq(t.findings.id, findingId), isNull(t.findings.learnedAt)))
++    .returning();
++  return row;
++}
++
++export async function getFindingFor(db: Db | Tx, findingId: string): Promise<FindingRow | undefined> {
++  const [row] = await db.select().from(t.findings).where(eq(t.findings.id, findingId));
++  return row;
++}
++
++export async function getMemory(db: Db | Tx, id: string): Promise<MemoryRow | undefined> {
++  const [row] = await db.select().from(t.memory).where(eq(t.memory.id, id));
++  return row;
++}
++
++export async function insertLearning(
++  db: Db | Tx,
++  values: {
++    workspaceId: string;
++    repoId: string;
++    content: string;
++    confidence: number;
++    sources: unknown;
++  },
++): Promise<MemoryRow> {
++  const [row] = await db
++    .insert(t.memory)
++    .values({
++      workspaceId: values.workspaceId,
++      repoId: values.repoId,
++      scope: 'repo',
++      kind: 'learning',
++      content: values.content,
++      confidence: values.confidence,
++      sources: values.sources,
++    })
++    .returning();
++  return row!;
++}
++
++export async function linkFindingMemory(
++  db: Db | Tx,
++  findingId: string,
++  memoryId: string,
++  learnedAt: Date,
++): Promise<FindingRow> {
++  const [row] = await db
++    .update(t.findings)
++    .set({ learnedMemoryId: memoryId, learnedAt })
++    .where(eq(t.findings.id, findingId))
++    .returning();
++  return row!;
++}
+diff --git a/server/src/modules/reviews/repository/run.repo.ts b/server/src/modules/reviews/repository/run.repo.ts
+index 00c1de34..e944ea0e 100644
+--- a/server/src/modules/reviews/repository/run.repo.ts
++++ b/server/src/modules/reviews/repository/run.repo.ts
+@@ -1,7 +1,8 @@
+-import { and, desc, eq, inArray } from 'drizzle-orm';
++import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+ import type { Db } from '../../../db/client.js';
+ import * as t from '../../../db/schema.js';
+ import type { RunSummary, RunTrace } from '@devdigest/shared';
++import type { FindingRow } from '../../../db/rows.js';
+ import { findingPreviewsByReview } from '../../_shared/finding-previews.js';
+ 
+ // ---- in-flight / history --------------------------------------------------
+@@ -129,6 +130,137 @@ export async function reapStaleRunningRuns(db: Db): Promise<number> {
+   return rows.length;
+ }
+ 
++/** Insert the parent row of a multi-agent review; returns its id. */
++export async function createMultiAgentRun(
++  db: Db,
++  values: { workspaceId: string; prId: string },
++): Promise<string> {
++  const [row] = await db
++    .insert(t.multiAgentRuns)
++    .values({ workspaceId: values.workspaceId, prId: values.prId })
++    .returning({ id: t.multiAgentRuns.id });
++  return row!.id;
++}
++
++export type MultiAgentRunData = {
++  parent: { id: string; prId: string; prNumber: number | null; ranAt: Date; durationMs: number | null };
++  runs: {
++    run: typeof t.agentRuns.$inferSelect;
++    currentAgentName: string | null;
++    review: { verdict: string | null; summary: string | null; score: number | null } | null;
++    findings: FindingRow[];
++  }[];
++};
++
++/** Parent run + children (creation order) + each child's review and findings. Workspace-scoped. */
++export async function getMultiAgentRunData(
++  db: Db,
++  workspaceId: string,
++  id: string,
++): Promise<MultiAgentRunData | undefined> {
++  const [parentRow] = await db
++    .select({ run: t.multiAgentRuns, prNumber: t.pullRequests.number })
++    .from(t.multiAgentRuns)
++    .leftJoin(t.pullRequests, eq(t.pullRequests.id, t.multiAgentRuns.prId))
++    .where(and(eq(t.multiAgentRuns.id, id), eq(t.multiAgentRuns.workspaceId, workspaceId)));
++  if (!parentRow) return undefined;
++
++  const childRows = await db
++    .select({ run: t.agentRuns, currentAgentName: t.agents.name })
++    .from(t.agentRuns)
++    .leftJoin(t.agents, eq(t.agents.id, t.agentRuns.agentId))
++    .where(and(eq(t.agentRuns.multiAgentRunId, id), eq(t.agentRuns.workspaceId, workspaceId)))
++    .orderBy(asc(t.agentRuns.ranAt), asc(t.agentRuns.id));
++
++  const runIds = childRows.map((r) => r.run.id);
++  const reviewByRun = new Map<string, { id: string; verdict: string | null; summary: string | null; score: number | null }>();
++  const findingsByReview = new Map<string, FindingRow[]>();
++  if (runIds.length > 0) {
++    const reviewRows = await db
++      .select()
++      .from(t.reviews)
++      .where(and(eq(t.reviews.workspaceId, workspaceId), inArray(t.reviews.runId, runIds)));
++    for (const rv of reviewRows) if (rv.runId) reviewByRun.set(rv.runId, rv);
++    if (reviewRows.length > 0) {
++      const findingRows = await db
++        .select()
++        .from(t.findings)
++        .where(inArray(t.findings.reviewId, reviewRows.map((r) => r.id)))
++        .orderBy(asc(t.findings.file), asc(t.findings.startLine));
++      for (const f of findingRows) {
++        const list = findingsByReview.get(f.reviewId) ?? [];
++        list.push(f);
++        findingsByReview.set(f.reviewId, list);
++      }
++    }
++  }
++
++  return {
++    parent: {
++      id: parentRow.run.id,
++      prId: parentRow.run.prId,
++      prNumber: parentRow.prNumber ?? null,
++      ranAt: parentRow.run.ranAt,
++      durationMs: parentRow.run.durationMs,
++    },
++    runs: childRows.map(({ run, currentAgentName }) => {
++      const review = reviewByRun.get(run.id) ?? null;
++      return {
++        run,
++        currentAgentName: currentAgentName ?? null,
++        review: review ? { verdict: review.verdict, summary: review.summary, score: review.score } : null,
++        findings: review ? (findingsByReview.get(review.id) ?? []) : [],
++      };
++    }),
++  };
++}
++
++/** The last `limit` finished local runs of an agent (newest first) — the estimate window. */
++export async function recentDoneRunsForAgent(
++  db: Db,
++  workspaceId: string,
++  agentId: string,
++  limit: number,
++): Promise<{ durationMs: number | null; costUsd: number | null }[]> {
++  return db
++    .select({ durationMs: t.agentRuns.durationMs, costUsd: t.agentRuns.costUsd })
++    .from(t.agentRuns)
++    .where(
++      and(
++        eq(t.agentRuns.workspaceId, workspaceId),
++        eq(t.agentRuns.agentId, agentId),
++        eq(t.agentRuns.status, 'done'),
++        eq(t.agentRuns.source, 'local'),
++      ),
++    )
++    .orderBy(desc(t.agentRuns.ranAt))
++    .limit(limit);
++}
++
++/** Stamp the parent's wall-clock once every child settled (duration from its ran_at). */
++export async function finishMultiAgentRun(db: Db, id: string): Promise<void> {
++  await db
++    .update(t.multiAgentRuns)
++    .set({
++      finishedAt: sql`now()`,
++      durationMs: sql`(extract(epoch from (now() - ${t.multiAgentRuns.ranAt})) * 1000)::int`,
++    })
++    .where(eq(t.multiAgentRuns.id, id));
++}
++
++/** True when the run belongs to the workspace (guards cancel / trace reads). */
++export async function runExistsInWorkspace(
++  db: Db,
++  workspaceId: string,
++  runId: string,
++): Promise<boolean> {
++  const [row] = await db
++    .select({ id: t.agentRuns.id })
++    .from(t.agentRuns)
++    .where(and(eq(t.agentRuns.id, runId), eq(t.agentRuns.workspaceId, workspaceId)));
++  return !!row;
++}
++
+ // ---- observability: agent_runs + run_traces -------------------------------
+ 
+ /** Create an agent_runs row in `running` state; returns its id (= the runId). */
+@@ -140,6 +272,8 @@ export async function createAgentRun(
+     prId: string;
+     provider: string | null;
+     model: string | null;
++    multiAgentRunId?: string | null;
++    agentName?: string | null;
+   },
+ ): Promise<string> {
+   const [row] = await db
+@@ -152,6 +286,8 @@ export async function createAgentRun(
+       model: values.model,
+       status: 'running',
+       source: 'local',
++      multiAgentRunId: values.multiAgentRunId ?? null,
++      agentName: values.agentName ?? null,
+     })
+     .returning({ id: t.agentRuns.id });
+   return row!.id;
+diff --git a/server/src/modules/reviews/routes.ts b/server/src/modules/reviews/routes.ts
+index abff69e7..4b5f7930 100644
+--- a/server/src/modules/reviews/routes.ts
++++ b/server/src/modules/reviews/routes.ts
+@@ -9,12 +9,15 @@ import { ReviewService } from './service.js';
+ 
+ /**
+  * reviews module.
+- *   POST   /pulls/:id/review  {agentId} | {all:true}  → run review(s); returns runs
++ *   POST   /pulls/:id/review  {agentId} | {all:true} | {agent_ids}  → run review(s); returns runs
++ *   GET    /multi-agent-runs/:id                       → parent run: columns + grouped disagreements
++ *   GET    /multi-agent/estimates                      → per-agent history estimate
+  *   GET    /runs/:id/events                            → SSE stream of RunEvent (replay-first)
+  *   GET    /runs/:id/trace                             → the single-document RunTrace
+  *   GET    /pulls/:id/reviews                          → persisted reviews + findings for a PR
+  *   GET    /pulls/:id/smart-diff                       → files grouped by role + finding lines (no LLM)
+  *   POST   /findings/:id/(accept|dismiss)              → finding actions
++ *   POST   /findings/:id/learn                         → save a finding as a repo learning
+  */
+ const FINDING_ACTIONS = ['accept', 'dismiss'] as const;
+ export default async function reviewsRoutes(appBase: FastifyInstance) {
+@@ -31,18 +34,26 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
+     async (req) => {
+     const { workspaceId } = await getContext(container, req);
+     const body = RunRequest.parse(req.body ?? {});
+-    const targets = await service.resolveTargets(workspaceId, {
+-      ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
+-      ...(body.all !== undefined ? { all: body.all } : {}),
+-    });
+-    const { runs, reviews } = await service.runReview(
++    const multi = body.agent_ids !== undefined;
++    const targets = multi
++      ? await service.resolveAgentIds(workspaceId, {
++          agentIds: body.agent_ids!,
++          agentId: body.agentId,
++          all: body.all,
++        })
++      : await service.resolveTargets(workspaceId, {
++          ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
++          ...(body.all !== undefined ? { all: body.all } : {}),
++        });
++    const { runs, reviews, multi_agent_run_id } = await service.runReview(
+       workspaceId,
+       req.params.id,
+       targets,
+       req.log,
+       req.id,
++      { multiAgent: multi },
+     );
+-    return { pr_id: req.params.id, runs, reviews };
++    return { pr_id: req.params.id, ...(multi_agent_run_id ? { multi_agent_run_id } : {}), runs, reviews };
+   });
+ 
+   // ---- SSE: live run events (replay buffer first, then live; ends on done) -
+@@ -114,19 +125,30 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
+ 
+   // ---- Cancel an in-flight run --------------------------------------------
+   app.post('/runs/:id/cancel', { schema: { params: IdParams } }, async (req) => {
+-    await getContext(container, req);
+-    await service.cancelRun(req.params.id);
++    const { workspaceId } = await getContext(container, req);
++    await service.cancelRun(workspaceId, req.params.id);
+     return { ok: true };
+   });
+ 
+   // ---- Run trace (single document; A5 enriches with multi-agent/stats) ----
+   app.get('/runs/:id/trace', { schema: { params: IdParams } }, async (req) => {
+-    await getContext(container, req);
+-    const trace = await service.getRunTrace(req.params.id);
++    const { workspaceId } = await getContext(container, req);
++    const trace = await service.getRunTrace(workspaceId, req.params.id);
+     if (!trace) throw new NotFoundError('Run trace not found');
+     return trace;
+   });
+ 
++  // ---- Multi-agent review: parent run + history estimates -----------------
++  app.get('/multi-agent-runs/:id', { schema: { params: IdParams } }, async (req) => {
++    const { workspaceId } = await getContext(container, req);
++    return service.getMultiAgentRun(workspaceId, req.params.id);
++  });
++
++  app.get('/multi-agent/estimates', async (req) => {
++    const { workspaceId } = await getContext(container, req);
++    return service.agentEstimates(workspaceId);
++  });
++
+   // ---- Reads --------------------------------------------------------------
+   app.get('/pulls/:id/reviews', { schema: { params: IdParams } }, async (req) => {
+     const { workspaceId } = await getContext(container, req);
+@@ -150,6 +172,12 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
+     return { ok: true };
+   });
+ 
++  // ---- Learn: save a finding as a repo memory (idempotent) -----------------
++  app.post('/findings/:id/learn', { schema: { params: IdParams } }, async (req) => {
++    const { workspaceId } = await getContext(container, req);
++    return service.learnFinding(workspaceId, req.params.id);
++  });
++
+   // ---- Finding actions (accept / dismiss) ---------------------------------
+   for (const action of FINDING_ACTIONS) {
+     app.post(`/findings/:id/${action}`, { schema: { params: IdParams } }, async (req) => {
+diff --git a/server/src/modules/reviews/run-executor.ts b/server/src/modules/reviews/run-executor.ts
+index 4a28f8d3..162d3462 100644
+--- a/server/src/modules/reviews/run-executor.ts
++++ b/server/src/modules/reviews/run-executor.ts
+@@ -74,6 +74,29 @@ export class ReviewRunExecutor {
+     jobs: { agent: AgentRow; runId: string }[],
+     logger?: Logger,
+     correlationId?: string,
++    multiAgentRunId?: string,
++  ): Promise<void> {
++    try {
++      await this.executeJobs(workspaceId, pull, repo, jobs, logger, correlationId, multiAgentRunId);
++    } finally {
++      // Parent wall-clock: written once every child has settled (or the shared
++      // pre-work failed them all). A crash that skips this leaves it null → "—".
++      if (multiAgentRunId) {
++        await this.repo.finishMultiAgentRun(multiAgentRunId).catch((err) => {
++          logger?.error({ multiAgentRunId, err: (err as Error).message }, 'review: could not finish multi-agent run');
++        });
++      }
++    }
++  }
++
++  private async executeJobs(
++    workspaceId: string,
++    pull: PullRow,
++    repo: typeof schema.repos.$inferSelect,
++    jobs: { agent: AgentRow; runId: string }[],
++    logger: Logger | undefined,
++    correlationId: string | undefined,
++    multiAgentRunId: string | undefined,
+   ): Promise<void> {
+     // ONE logger fanned out over every queued run: shared pre-work (diff +
+     // intent) is streamed into each target agent's Live Log and persisted into
+@@ -82,7 +105,11 @@ export class ReviewRunExecutor {
+       this.container.runBus,
+       jobs.map((j) => j.runId),
+       logger,
+-      { prId: pull.id, ...(correlationId ? { correlation_id: correlationId } : {}) },
++      {
++        prId: pull.id,
++        ...(correlationId ? { correlation_id: correlationId } : {}),
++        ...(multiAgentRunId ? { multi_agent_run_id: multiAgentRunId } : {}),
++      },
+     );
+ 
+     // Pre-work failure (e.g. diff load) fails EVERY queued run. The error was
+@@ -130,7 +157,10 @@ export class ReviewRunExecutor {
+       ...(logger ? { log: logger } : {}),
+     });
+ 
+-    for (const { agent, runId } of jobs) {
++    // All agents run concurrently; one failing never affects the others
++    // (runOneAgent persists its own failure, so rejections here are only logged).
++    await Promise.allSettled(
++      jobs.map(async ({ agent, runId }) => {
+       const agentStart = Date.now();
+       logger?.info(
+         { runId, agent: agent.name, provider: agent.provider, model: agent.model, prId: pull.id },
+@@ -157,7 +187,8 @@ export class ReviewRunExecutor {
+           `review: agent "${agent.name}" ${cancelled ? 'cancelled' : 'failed'}`,
+         );
+       }
+-    }
++      }),
++    );
+   }
+ 
+   /** Execute a single agent's review against a PR, streaming progress. */
+@@ -374,6 +405,17 @@ export class ReviewRunExecutor {
+         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
+         // diff load + intent), not just events recorded inside this method.
+         log: runLog.logFor(runId),
++        ...(outcome.dropped.length > 0
++          ? {
++              grounding_dropped: outcome.dropped.map((d) => ({
++                title: d.finding.title,
++                file: d.finding.file,
++                start_line: d.finding.start_line,
++                end_line: d.finding.end_line,
++                reason: d.reason,
++              })),
++            }
++          : {}),
+       };
+       runLog.info('Run complete; trace persisted');
+       await this.repo.saveRunTrace(runId, trace);
+diff --git a/server/src/modules/reviews/service.ts b/server/src/modules/reviews/service.ts
+index b97be914..50381411 100644
+--- a/server/src/modules/reviews/service.ts
++++ b/server/src/modules/reviews/service.ts
+@@ -1,9 +1,26 @@
+ import type { Container } from '../../platform/container.js';
+-import type { FindingActionKind, RunEventKind, RunTrace, SmartDiff } from '@devdigest/shared';
++import type {
++  AgentRunEstimate,
++  FindingActionKind,
++  LearnFindingResponse,
++  MultiAgentRunDetail,
++  RunEventKind,
++  RunTrace,
++  SmartDiff,
++} from '@devdigest/shared';
+ import { AppError, NotFoundError } from '../../platform/errors.js';
++import {
++  averageEstimate,
++  groupFindings,
++  normalizeAgentIds,
++  buildLearningContent,
++  buildLearningSource,
++  parentStatus,
++  type ColumnStatus,
++} from './multi-agent.js';
+ import type { AgentRow } from '../../db/rows.js';
+ import { ReviewRepository } from './repository.js';
+-import { type ReviewDto, type ReviewDtoFinding } from './helpers.js';
++import { findingRowToDto, type ReviewDto, type ReviewDtoFinding } from './helpers.js';
+ import { ReviewRunExecutor, type Logger } from './run-executor.js';
+ import { actOnFinding as actOnFindingImpl } from './findings.js';
+ import { reviewToDto } from './helpers.js';
+@@ -14,6 +31,8 @@ import { buildSmartDiff, latestReviewFindings } from './smart-diff/build.js';
+ export { findingRowToDto, reviewToDto } from './helpers.js';
+ export type { ReviewDto, ReviewDtoFinding } from './helpers.js';
+ 
++const ESTIMATE_WINDOW = 5;
++
+ /**
+  * Review service (the core). Orchestrates:
+  *   diff → assemblePrompt(system + repo-map + diff)
+@@ -57,6 +76,25 @@ export class ReviewService {
+     throw new AppError('invalid_run_request', 'Provide agentId or all:true', 400);
+   }
+ 
++  /**
++   * Resolve the agents of a multi-agent start: every id must exist in the
++   * workspace (disabled agents are accepted — the user picked them). Any
++   * unknown / foreign id → 404 before anything is written.
++   */
++  async resolveAgentIds(
++    workspaceId: string,
++    body: { agentIds: string[]; agentId?: string | undefined; all?: boolean | undefined },
++  ): Promise<AgentRow[]> {
++    const ids = normalizeAgentIds(body);
++    const agents: AgentRow[] = [];
++    for (const id of ids) {
++      const agent = await this.agents.getById(workspaceId, id);
++      if (!agent) throw new NotFoundError('Agent not found');
++      agents.push(agent);
++    }
++    return agents;
++  }
++
+   /** Delete a whole review run (one agent's pass) + its findings (cascade). */
+   async deleteReview(workspaceId: string, reviewId: string): Promise<boolean> {
+     return this.repo.deleteReview(workspaceId, reviewId);
+@@ -83,13 +121,20 @@ export class ReviewService {
+    * so cancel also works for ORPHANED runs (whose background process died on a
+    * server restart) where signalling alone would do nothing.
+    */
+-  async cancelRun(runId: string): Promise<void> {
++  async cancelRun(workspaceId: string, runId: string): Promise<void> {
++    await this.assertRunInWorkspace(workspaceId, runId);
+     this.publish(runId, 'info', 'Cancellation requested — stopping…');
+     this.container.runBus.cancel(runId);
+     await this.repo.cancelRunIfRunning(runId);
+     this.container.runBus.complete(runId);
+   }
+ 
++  private async assertRunInWorkspace(workspaceId: string, runId: string): Promise<void> {
++    if (!(await this.repo.runExistsInWorkspace(workspaceId, runId))) {
++      throw new NotFoundError('Run not found');
++    }
++  }
++
+   /** Reap runs left 'running' by a previous (now-dead) process. Called on boot. */
+   async reapStaleRuns(): Promise<number> {
+     return this.repo.reapStaleRunningRuns();
+@@ -108,7 +153,13 @@ export class ReviewService {
+     logger?: Logger,
+     /** The request id: ties the intent call and every agent's review together in the logs. */
+     correlationId?: string,
+-  ): Promise<{ runs: { run_id: string; agent_id: string; agent_name: string }[]; reviews: ReviewDto[] }> {
++    /** Multi-agent start: create a parent run and link every child to it. */
++    opts?: { multiAgent?: boolean },
++  ): Promise<{
++    runs: { run_id: string; agent_id: string; agent_name: string }[];
++    reviews: ReviewDto[];
++    multi_agent_run_id?: string;
++  }> {
+     const pull = await this.repo.getPull(workspaceId, prId);
+     if (!pull) throw new NotFoundError('Pull request not found');
+     const repo = await this.repo.getRepo(pull.repoId);
+@@ -117,6 +168,9 @@ export class ReviewService {
+     // Create the agent_run rows up front so a runId is available IMMEDIATELY —
+     // the client persists these in global state and subscribes to the SSE
+     // stream. The actual (slow) review runs in the background below.
++    const multiAgentRunId = opts?.multiAgent
++      ? await this.repo.createMultiAgentRun({ workspaceId, prId })
++      : undefined;
+     const runs: { run_id: string; agent_id: string; agent_name: string }[] = [];
+     const jobs: { agent: AgentRow; runId: string }[] = [];
+     for (const agent of targets) {
+@@ -126,6 +180,8 @@ export class ReviewService {
+         prId,
+         provider: agent.provider,
+         model: agent.model,
++        agentName: agent.name,
++        ...(multiAgentRunId ? { multiAgentRunId } : {}),
+       });
+       runs.push({ run_id: runId, agent_id: agent.id, agent_name: agent.name });
+       jobs.push({ agent, runId });
+@@ -133,11 +189,11 @@ export class ReviewService {
+ 
+     // Fire-and-forget: the HTTP response returns now with the runIds; reviews
+     // are persisted as each agent finishes and the client refetches on SSE done.
+-    void this.executor.executeRuns(workspaceId, pull, repo, jobs, logger, correlationId).catch((err) => {
++    void this.executor.executeRuns(workspaceId, pull, repo, jobs, logger, correlationId, multiAgentRunId).catch((err) => {
+       logger?.error({ prId, err: (err as Error).message }, 'review: background execution crashed');
+     });
+ 
+-    return { runs, reviews: [] };
++    return { runs, reviews: [], ...(multiAgentRunId ? { multi_agent_run_id: multiAgentRunId } : {}) };
+   }
+ 
+   private publish(runId: string, kind: RunEventKind, msg: string, data?: unknown) {
+@@ -156,6 +212,63 @@ export class ReviewService {
+     return actOnFindingImpl(this.repo, workspaceId, findingId, action);
+   }
+ 
++  /**
++   * Save a finding as a repo learning (no LLM, no embedding). Idempotent: the
++   * `learned_at IS NULL` claim and the memory insert share one transaction, so
++   * a double click yields one memory row and the second call returns it with
++   * `created: false`.
++   */
++  async learnFinding(workspaceId: string, findingId: string): Promise<LearnFindingResponse> {
++    const ctx = await this.repo.findingContext(findingId);
++    if (!ctx || ctx.pull.workspaceId !== workspaceId) throw new NotFoundError('Finding not found');
++    const { finding: ctxFinding, review, pull } = ctx;
++    const attribution = review.runId ? await this.repo.getRunAttribution(review.runId) : undefined;
++    const agent = review.agentId ? await this.agents.getById(workspaceId, review.agentId) : undefined;
++
++    return this.container.db.transaction(async (tx) => {
++      const now = new Date();
++      const claimed = await this.repo.claimFindingLearned(findingId, now, tx);
++      const current = claimed ?? (await this.repo.getFindingFor(findingId, tx)) ?? ctxFinding;
++      if (!claimed && current.learnedMemoryId) {
++        const existing = await this.repo.getMemory(current.learnedMemoryId, tx);
++        if (existing) {
++          return {
++            finding: findingRowToDto(current),
++            memory: { id: existing.id, kind: 'learning' as const, scope: 'repo' as const, content: existing.content, created: false },
++          };
++        }
++      }
++      const content = buildLearningContent(current);
++      const memoryRow = await this.repo.insertLearning(
++        {
++          workspaceId,
++          repoId: pull.repoId,
++          content,
++          confidence: Math.min(1, Math.max(0, current.confidence)),
++          sources: [
++            buildLearningSource({
++              prNumber: pull.number,
++              findingId,
++              prId: pull.id,
++              runId: review.runId,
++              multiAgentRunId: attribution?.multiAgentRunId ?? null,
++              agentId: review.agentId,
++              agentName: attribution?.agentName ?? agent?.name ?? null,
++              decision: current.acceptedAt ? 'accepted' : current.dismissedAt ? 'dismissed' : 'undecided',
++              learnedAt: now,
++            }),
++          ],
++        },
++        tx,
++      );
++      const linked = await this.repo.linkFindingMemory(findingId, memoryRow.id, current.learnedAt ?? now, tx);
++      return {
++        finding: findingRowToDto(linked),
++        memory: { id: memoryRow.id, kind: 'learning' as const, scope: 'repo' as const, content, created: true },
++      };
++    });
++  }
++
+   // ===========================================================================
+   // Reads
+   // ===========================================================================
+@@ -194,7 +307,78 @@ export class ReviewService {
+     );
+   }
+ 
+-  async getRunTrace(runId: string): Promise<RunTrace | undefined> {
++  /** Parent multi-agent run: columns, grouped findings / disagreements, derived status. No LLM. */
++  async getMultiAgentRun(workspaceId: string, id: string): Promise<MultiAgentRunDetail> {
++    const data = await this.repo.getMultiAgentRunData(workspaceId, id);
++    if (!data) throw new NotFoundError('Multi-agent run not found');
++
++    const columns: MultiAgentRunDetail['columns'] = data.runs.map(({ run, currentAgentName, review, findings }) => {
++      const status: ColumnStatus =
++        run.status === 'running' || run.status === 'done' || run.status === 'cancelled' ? run.status : 'failed';
++      return {
++        run_id: run.id,
++        agent_id: run.agentId ?? '',
++        agent_name: run.agentName ?? currentAgentName ?? 'Unknown agent',
++        provider: run.provider,
++        model: run.model,
++        status,
++        verdict: review?.verdict ?? null,
++        score: review?.score ?? run.score,
++        summary: review?.summary ?? null,
++        duration_ms: run.durationMs,
++        cost_usd: run.costUsd,
++        error: run.error,
++        findings: findings.map(findingRowToDto),
++      };
++    });
++
++    const conflicts = groupFindings(
++      columns.map((c) => ({ runId: c.run_id, agentId: c.agent_id, agentName: c.agent_name, status: c.status as ColumnStatus })),
++      columns
++        .filter((c) => c.status === 'done')
++        .flatMap((c) =>
++          c.findings.map((f) => ({
++            id: f.id,
++            runId: c.run_id,
++            severity: f.severity,
++            category: f.category,
++            title: f.title,
++            file: f.file,
++            startLine: f.start_line,
++            endLine: f.end_line,
++            rationale: f.rationale,
++          })),
++        ),
++    );
++
++    const knownCosts = columns.map((c) => c.cost_usd).filter((v): v is number => v !== null);
++    return {
++      id: data.parent.id,
++      pr_id: data.parent.prId,
++      pr_number: data.parent.prNumber,
++      ran_at: data.parent.ranAt.toISOString(),
++      agent_count: columns.length,
++      total_duration_ms: data.parent.durationMs,
++      total_cost_usd: knownCosts.length === 0 ? null : knownCosts.reduce((a, b) => a + b, 0),
++      status: parentStatus(columns.map((c) => c.status as ColumnStatus)),
++      columns,
++      conflicts,
++    };
++  }
++
++  /** History estimate per enabled agent: average of its last 5 finished local runs. */
++  async agentEstimates(workspaceId: string): Promise<AgentRunEstimate[]> {
++    const enabled = await this.agents.listEnabled(workspaceId);
++    return Promise.all(
++      enabled.map(async (agent) => ({
++        agent_id: agent.id,
++        ...averageEstimate(await this.repo.recentDoneRunsForAgent(workspaceId, agent.id, ESTIMATE_WINDOW)),
++      })),
++    );
++  }
++
++  async getRunTrace(workspaceId: string, runId: string): Promise<RunTrace | undefined> {
++    await this.assertRunInWorkspace(workspaceId, runId);
+     return this.repo.getRunTrace(runId);
+   }
+ }
+diff --git a/server/src/vendor/shared/contracts/knowledge.ts b/server/src/vendor/shared/contracts/knowledge.ts
+index 5ab6a477..d966b3cd 100644
+--- a/server/src/vendor/shared/contracts/knowledge.ts
++++ b/server/src/vendor/shared/contracts/knowledge.ts
+@@ -78,6 +78,16 @@ export type MemoryKind = z.infer<typeof MemoryKind>;
+ export const MemorySource = z.object({
+   pr: z.number().int().nullish(),
+   context: z.string(),
++  /** Learned-from-finding provenance (all optional; absent on other memories). */
++  finding_id: z.string().optional(),
++  pr_id: z.string().optional(),
++  run_id: z.string().optional(),
++  multi_agent_run_id: z.string().optional(),
++  agent_id: z.string().optional(),
++  agent_name: z.string().optional(),
++  decision: z.enum(['accepted', 'dismissed', 'undecided']).optional(),
++  learned_at: z.string().optional(),
++  origin: z.literal('agent_output').optional(),
+ });
+ export type MemorySource = z.infer<typeof MemorySource>;
+ 
+diff --git a/server/src/vendor/shared/contracts/observability.ts b/server/src/vendor/shared/contracts/observability.ts
+index 4c3a4528..1db29ea9 100644
+--- a/server/src/vendor/shared/contracts/observability.ts
++++ b/server/src/vendor/shared/contracts/observability.ts
+@@ -1,5 +1,6 @@
+ import { z } from 'zod';
+ import { Severity } from './findings.js';
++import { FindingRecord } from './review-api.js';
+ 
+ /**
+  * A5 — Observability / Multi-agent contracts (L07).
+@@ -38,7 +39,7 @@ export const AgentColumn = z.object({
+   agent_name: z.string(),
+   provider: z.string().nullable(),
+   model: z.string().nullable(),
+-  status: z.enum(['done', 'failed', 'running']),
++  status: z.enum(['done', 'failed', 'running', 'queued', 'cancelled']),
+   verdict: z.string().nullable(),
+   score: z.number().int().nullable(),
+   summary: z.string().nullable(),
+@@ -53,7 +54,13 @@ export const ConflictTake = z.object({
+   agent_id: z.string(),
+   persona: z.string(),
+   /** Severity if the agent flagged it, or 'ignored' when it did not. */
+-  verdict: z.union([Severity, z.literal('ignored')]),
++  verdict: z.union([
++    Severity,
++    z.literal('ignored'),
++    z.literal('failed'),
++    z.literal('cancelled'),
++    z.literal('pending'),
++  ]),
+   note: z.string(),
+ });
+ export type ConflictTake = z.infer<typeof ConflictTake>;
+@@ -85,6 +92,43 @@ export const MultiAgentRun = z.object({
+ });
+ export type MultiAgentRun = z.infer<typeof MultiAgentRun>;
+ 
++/** Response of GET /multi-agent-runs/:id (parent run with live-derived status). */
++export const MultiAgentRunDetail = MultiAgentRun.extend({
++  status: z.enum(['running', 'done', 'partial', 'failed']),
++  total_duration_ms: z.number().int().nullable(),
++  columns: z.array(
++    AgentColumn.extend({
++      error: z.string().nullable(),
++      findings: z.array(FindingRecord),
++    }),
++  ),
++  conflicts: z.array(
++    Conflict.extend({
++      end_line: z.number().int(),
++      members: z.array(
++        z.object({
++          finding_id: z.string(),
++          run_id: z.string(),
++          agent_id: z.string().nullable(),
++          agent_name: z.string(),
++          severity: Severity,
++          title: z.string(),
++        }),
++      ),
++      is_conflict: z.boolean(),
++    }),
++  ),
++});
++export type MultiAgentRunDetail = z.infer<typeof MultiAgentRunDetail>;
++
++/** One row of GET /multi-agent/estimates (history average per enabled agent). */
++export const AgentRunEstimate = z.object({
++  agent_id: z.string(),
++  est_duration_ms: z.number().int().nullable(),
++  est_cost_usd: z.number().nullable(),
++});
++export type AgentRunEstimate = z.infer<typeof AgentRunEstimate>;
++
+ // ---------------------------------------------------------------------------
+ // Per-agent Stats (GET /agents/:id/stats)
+ // ---------------------------------------------------------------------------
+diff --git a/server/src/vendor/shared/contracts/platform.ts b/server/src/vendor/shared/contracts/platform.ts
+index bf064a1f..6b86e634 100644
+--- a/server/src/vendor/shared/contracts/platform.ts
++++ b/server/src/vendor/shared/contracts/platform.ts
+@@ -267,6 +267,8 @@ export type IndexStatus = z.infer<typeof IndexStatus>;
+ export const RunRequest = z.object({
+   agentId: z.string().optional(),
+   all: z.boolean().optional(),
++  /** Multi-agent review: run exactly these agents concurrently (1..10 distinct). */
++  agent_ids: z.array(z.string()).optional(),
+ });
+ export type RunRequest = z.infer<typeof RunRequest>;
+ 
+diff --git a/server/src/vendor/shared/contracts/review-api.ts b/server/src/vendor/shared/contracts/review-api.ts
+index d52d49c8..cbddf7a6 100644
+--- a/server/src/vendor/shared/contracts/review-api.ts
++++ b/server/src/vendor/shared/contracts/review-api.ts
+@@ -18,6 +18,8 @@ export const FindingRecord = Finding.extend({
+   dismissed_at: z.string().nullable(),
+   /** Severity the reviewer gave before the intent scope policy downgraded it. */
+   original_severity: Severity.nullish(),
++  /** When the finding was saved as a repo learning; null/absent = not learned. */
++  learned_at: z.string().nullish(),
+ });
+ export type FindingRecord = z.infer<typeof FindingRecord>;
+ 
+@@ -60,9 +62,24 @@ export const ReviewRunResponse = z.object({
+   pr_id: z.string(),
+   runs: z.array(ReviewRunTarget),
+   reviews: z.array(ReviewRecord),
++  /** Set when the request used `agent_ids`: the parent multi-agent run. */
++  multi_agent_run_id: z.string().optional(),
+ });
+ export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
+ 
++/** Response of POST /findings/:id/learn. */
++export const LearnFindingResponse = z.object({
++  finding: FindingRecord,
++  memory: z.object({
++    id: z.string(),
++    kind: z.literal('learning'),
++    scope: z.literal('repo'),
++    content: z.string(),
++    created: z.boolean(),
++  }),
++});
++export type LearnFindingResponse = z.infer<typeof LearnFindingResponse>;
++
+ /** Intent persisted for a PR (the Intent plus the pr_id it scopes and derivation metadata). */
+ export const PrIntentRecord = Intent.extend({
+   pr_id: z.string(),
+diff --git a/server/src/vendor/shared/contracts/trace.ts b/server/src/vendor/shared/contracts/trace.ts
+index 98b34ac4..010574cd 100644
+--- a/server/src/vendor/shared/contracts/trace.ts
++++ b/server/src/vendor/shared/contracts/trace.ts
+@@ -103,6 +103,18 @@ export const RunTrace = z.object({
+   memory_pulled: z.array(MemoryPulled),
+   specs_read: z.array(z.union([z.string(), SpecRead])),
+   log: z.array(RunLogLine),
++  /** Findings the grounding pass dropped, with the reason. */
++  grounding_dropped: z
++    .array(
++      z.object({
++        title: z.string(),
++        file: z.string(),
++        start_line: z.number().int(),
++        end_line: z.number().int(),
++        reason: z.string(),
++      }),
++    )
++    .optional(),
+ });
+ export type RunTrace = z.infer<typeof RunTrace>;
+ 
