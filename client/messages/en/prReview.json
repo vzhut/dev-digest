@@ -6,6 +6,8 @@
     "accept": "Accept",
     "dismiss": "Reject",
     "learn": "Learn",
+    "learned": "learned",
+    "learnFailed": "Could not save this learning",
     "replyToAuthor": "Reply to author",
     "replyPlaceholder": "Reply to the author about this finding…",
     "sendReply": "Send reply",
@@ -49,13 +51,18 @@
     "noMatchBody": "Adjust the filters above, or run a review to generate findings."
   },
   "runReview": {
-    "runAll": "Run all enabled agents",
+    "pickerLabel": "Choose agents",
+    "agentsHeading": "Pick agents to run",
+    "clear": "Clear",
+    "runMulti": "Run multi-agent review ({count})",
     "configureAgents": "Configure agents…",
+    "goToAgents": "Go to Agents",
+    "noEnabledAgents": "Multi-agent review runs the PR through every enabled agent in parallel. You have no agents enabled yet.",
     "running": "Running…",
     "runReview": "Run Review",
     "mergedWarning": "Already merged — review is informational",
     "mergedTooltip": "This PR is already merged; running a review won’t affect the merged code.",
-    "noAgents": "No agents yet — create one"
+    "lastRun": "Last multi-agent run"
   },
   "runStatus": {
     "elapsed": "Running · {count} agent(s)",
@@ -168,7 +175,7 @@
     "historyHint": "runs & commits · newest first",
     "runsHint": "grouped by run · newest first",
     "emptyTitle": "No findings yet",
-    "emptyBody": "Run a review to generate findings. Use Run Review ▾ above (run all enabled agents or a specific one).",
+    "emptyBody": "Run a review to generate findings. Use Run Review ▾ above to pick the agents to run.",
     "deleteRun": "Delete this review run",
     "reviewInProgressSub": "the agent is analyzing the diff — this can take a while on large PRs.",
     "trifectaCount": "{count} finding(s)",

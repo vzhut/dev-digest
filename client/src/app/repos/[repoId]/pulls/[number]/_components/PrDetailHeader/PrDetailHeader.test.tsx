@@ -8,10 +8,15 @@ import { NextIntlClientProvider } from "next-intl";
 import type { PrDetail } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useParams: () => ({ repoId: "r1" }),
+}));
 vi.mock("@/lib/hooks/agents", () => ({ useAgents: () => ({ data: [] }) }));
 vi.mock("@/lib/hooks/reviews", () => ({
-  useRunReview: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useStartMultiAgentReview: () => ({ mutate: vi.fn(), isPending: false }),
+  useAgentEstimates: () => ({ data: [] }),
+  useLatestPrMultiAgentRun: () => ({ data: { id: null } }),
 }));
 
 import { PrDetailHeader } from "./PrDetailHeader";

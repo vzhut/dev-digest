@@ -102,6 +102,18 @@ export const RunTrace = z.object({
   memory_pulled: z.array(MemoryPulled),
   specs_read: z.array(z.union([z.string(), SpecRead])),
   log: z.array(RunLogLine),
+  /** Findings the grounding pass dropped, with the reason. */
+  grounding_dropped: z
+    .array(
+      z.object({
+        title: z.string(),
+        file: z.string(),
+        start_line: z.number().int(),
+        end_line: z.number().int(),
+        reason: z.string(),
+      }),
+    )
+    .optional(),
 });
 export type RunTrace = z.infer<typeof RunTrace>;
 

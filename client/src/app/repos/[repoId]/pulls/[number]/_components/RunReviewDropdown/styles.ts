@@ -1,6 +1,38 @@
 import type { CSSProperties } from "react";
 
-/** Co-located styles for RunReviewDropdown. This component renders only library
-   primitives (Button/Dropdown) and has no inline styles; the map is kept for
-   convention parity and future use. */
-export const s = {} satisfies Record<string, CSSProperties>;
+export const s = {
+  group: { display: "inline-flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
+  root: { position: "relative", display: "inline-block" } satisfies CSSProperties,
+  panel: (width: number): CSSProperties => ({
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    right: 0,
+    width,
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border-strong)",
+    borderRadius: 9,
+    boxShadow: "var(--shadow-modal)",
+    padding: 10,
+    zIndex: 40,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  }),
+  warning: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  headerRow: { display: "flex", alignItems: "center", justifyContent: "space-between" } satisfies CSSProperties,
+  heading: { fontSize: 13, fontWeight: 600 } satisfies CSSProperties,
+  list: { display: "flex", flexDirection: "column", gap: 2, maxHeight: 260, overflowY: "auto" } satisfies CSSProperties,
+  row: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "6px 4px",
+    fontSize: 14,
+    cursor: "pointer",
+  } satisfies CSSProperties,
+  rowName: { flex: 1, minWidth: 0 } satisfies CSSProperties,
+  rowEstimate: { fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" } satisfies CSSProperties,
+  total: { fontSize: 12, color: "var(--text-secondary)" } satisfies CSSProperties,
+  footer: { display: "flex", flexDirection: "column", gap: 6 } satisfies CSSProperties,
+  empty: { fontSize: 13, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
+} as const;

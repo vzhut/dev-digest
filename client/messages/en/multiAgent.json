@@ -1,0 +1,73 @@
+{
+  "page": {
+    "crumb": "Multi-Agent Review",
+    "title": "Multi-Agent Review",
+    "subtitle": "Run several agents on one pull request at the same time and compare what they find.",
+    "configureRun": "Configure run",
+    "backToResults": "Back to last run",
+    "loading": "Loading the last run…"
+  },
+  "format": {
+    "noEstimate": "no estimate",
+    "estimate": "≈ {duration} · {cost}",
+    "total": "≈ {duration} · {cost} · parallel fan-out",
+    "runMeta": "{count, plural, one {# agent} other {# agents}} · parallel · {wall} total · {cost}",
+    "estimateCompact": "{duration} · {cost}"
+  },
+  "configure": {
+    "pullRequest": "Pull request",
+    "pickPr": "Select a pull request…",
+    "pickPrFirst": "Pick a pull request first",
+    "agents": "Agents ({checked} of {total} selected)",
+    "selectAll": "Select all",
+    "run": "Run multi-agent review ({count})",
+    "noAgentsTitle": "Enable agents to run reviews",
+    "noAgentsBody": "Multi-agent review runs the PR through every enabled agent in parallel. You have no agents enabled yet.",
+    "goToAgents": "Go to Agents",
+    "pickPrBody": "Choose which PR to review above, then select the agents to run on it.",
+    "agentsToRun": "Agents to run"
+  },
+  "results": {
+    "prTitle": "Pull request #{number}",
+    "prTitleUnknown": "Pull request",
+    "runStatus": {
+      "running": "running",
+      "done": "done",
+      "partial": "partial",
+      "failed": "failed"
+    },
+    "mode": {
+      "label": "View mode",
+      "columns": "Columns",
+      "tabs": "Tabs"
+    },
+    "status": {
+      "queued": "queued",
+      "running": "running",
+      "done": "done",
+      "failed": "failed",
+      "cancelled": "cancelled"
+    },
+    "costUnknown": "unknown",
+    "cancelled": "Cancelled",
+    "failedNoReason": "The run failed.",
+    "findingCount": "{count, plural, one {# finding} other {# findings}}",
+    "noFindings": "No findings.",
+    "viewTrace": "View trace",
+    "loadError": "Could not load this multi-agent run.",
+    "conflicts": {
+      "title": "Where agents disagree",
+      "onlyConflicts": "Show only conflicts",
+      "none": "No overlapping findings between agents.",
+      "noneConflicting": "No conflicts: the agents agree wherever they overlap.",
+      "take": {
+        "ignored": "did not flag",
+        "failed": "run failed",
+        "cancelled": "run cancelled",
+        "pending": "still running"
+      },
+      "disagreeCount": "{conflicts} of {total} {total, plural, one {location} other {locations}} disagree",
+      "showing": "Showing {shown} of {total}"
+    }
+  }
+}

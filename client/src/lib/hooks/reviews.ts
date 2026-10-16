@@ -7,7 +7,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE } from "../api";
 import { notify } from "../toast";
 import type {
+  AgentRunEstimate,
   FindingActionKind,
+  LatestMultiAgentRun,
+  LearnFindingResponse,
+  MultiAgentRunDetail,
   PrIntentResponse,
   PrReviewComment,
   ReviewRecord,
@@ -26,6 +30,12 @@ export const reviewKeys = {
   comments: (prId: string | null | undefined) => ["pr-comments", prId] as const,
   intent: (prId: string | null | undefined) => ["pr-intent", prId] as const,
   smartDiff: (prId: string | null | undefined) => ["pr-smart-diff", prId] as const,
+  multiAgentRun: (id: string | null | undefined) => ["multi-agent-run", id] as const,
+  agentEstimates: () => ["multi-agent-estimates"] as const,
+  /** Prefix of every "latest multi-agent run" query (repo- and PR-scoped); invalidate by this. */
+  latestMultiAgentRunAll: ["multi-agent-latest"] as const,
+  latestMultiAgentRun: (repoId: string | null | undefined) => ["multi-agent-latest", repoId] as const,
+  latestPrMultiAgentRun: (prId: string | null | undefined) => ["multi-agent-latest", "pr", prId] as const,
 };
 
 // ---- Active (in-flight) runs — server-side source of truth ----
@@ -175,6 +185,61 @@ export function useRunReview() {
   });
 }
 
+// ---- Multi-agent review (several agents on one PR, concurrently) ----
+export interface StartMultiAgentInput {
+  prId: string;
+  agentIds: string[];
+}
+
+/** Start one concurrent review with exactly these agents; the response carries `multi_agent_run_id`. */
+export function useStartMultiAgentReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ prId, agentIds }: StartMultiAgentInput) =>
+      api.post<ReviewRunResponse>(`/pulls/${prId}/review`, { agent_ids: agentIds }),
+    onSuccess: (_d, { prId }) => {
+      qc.invalidateQueries({ queryKey: reviewKeys.runs(prId) });
+      qc.invalidateQueries({ queryKey: reviewKeys.activeRuns(prId) });
+      qc.invalidateQueries({ queryKey: reviewKeys.latestMultiAgentRunAll });
+    },
+  });
+}
+
+/** The repo's most recent multi-agent run id (or null) — what the Multi-Agent Review page reopens. */
+export function useLatestMultiAgentRun(repoId: string | null | undefined) {
+  return useQuery({
+    queryKey: reviewKeys.latestMultiAgentRun(repoId),
+    queryFn: () => api.get<LatestMultiAgentRun>(`/repos/${repoId}/multi-agent-runs/latest`),
+    enabled: !!repoId,
+  });
+}
+
+/** The PR's most recent multi-agent run id (or null) — the PR page's "Last multi-agent run" link. */
+export function useLatestPrMultiAgentRun(prId: string | null | undefined) {
+  return useQuery({
+    queryKey: reviewKeys.latestPrMultiAgentRun(prId),
+    queryFn: () => api.get<LatestMultiAgentRun>(`/pulls/${prId}/multi-agent-runs/latest`),
+    enabled: !!prId,
+  });
+}
+
+/** The parent run with its columns and conflicts. No polling: callers refetch when the SSE streams settle. */
+export function useMultiAgentRun(id: string | null | undefined) {
+  return useQuery({
+    queryKey: reviewKeys.multiAgentRun(id),
+    queryFn: () => api.get<MultiAgentRunDetail>(`/multi-agent-runs/${id}`),
+    enabled: !!id,
+  });
+}
+
+/** History-average duration/cost per enabled agent. */
+export function useAgentEstimates() {
+  return useQuery({
+    queryKey: reviewKeys.agentEstimates(),
+    queryFn: () => api.get<AgentRunEstimate[]>("/multi-agent/estimates"),
+  });
+}
+
 // ---- PR intent (what the PR is meant to change) ----
 /** The PR's stored intent; `data.intent` is null until it was derived once. */
 export function usePrIntent(prId: string | null | undefined) {
@@ -211,13 +276,28 @@ export function useFindingAction() {
       action: FindingActionKind;
       reply?: string;
       prId?: string;
+      multiAgentRunId?: string;
     }) =>
       api.post<{ finding: ReviewRecord["findings"][number]; memoryId?: string }>(
         `/findings/${findingId}/${action}`,
         reply ? { reply } : undefined,
       ),
-    onSuccess: (_d, { prId }) => {
+    onSuccess: (_d, { prId, multiAgentRunId }) => {
       if (prId) qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
+      if (multiAgentRunId) qc.invalidateQueries({ queryKey: reviewKeys.multiAgentRun(multiAgentRunId) });
+    },
+  });
+}
+
+/** Save a finding as a repo learning (idempotent server-side). */
+export function useLearnFinding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ findingId }: { findingId: string; prId?: string; multiAgentRunId?: string }) =>
+      api.post<LearnFindingResponse>(`/findings/${findingId}/learn`),
+    onSuccess: (_d, { prId, multiAgentRunId }) => {
+      if (prId) qc.invalidateQueries({ queryKey: reviewKeys.reviews(prId) });
+      if (multiAgentRunId) qc.invalidateQueries({ queryKey: reviewKeys.multiAgentRun(multiAgentRunId) });
     },
   });
 }
