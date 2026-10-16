@@ -488,3 +488,18 @@ onion-architecture violation (a cross-module import that compiled fine) and one 
 ## Open Questions
 
 _No entries yet._
+
+### `pnpm db:migrate` needs DATABASE_URL exported; there is no .env in a fresh worktree
+
+`server/.env.example:2` · 2026-10-13
+
+`pnpm db:migrate` in a new worktree fails with `DATABASE_URL is required` (only `.env.example` exists). Export the compose default (`postgres://devdigest:devdigest@localhost:5432/devdigest`) for the shell, then migrate; the same variable is what the `.it` suite uses via testcontainers-independent paths. Also: `agent-runner` `pnpm typecheck` already fails on a clean tree (`agent-runner/src/run.ts:124`, `string[]` vs `PromptSkill[]`), so it cannot be used as a contract-change gate until fixed.
+
+### The full `.it` suite flakes under parallel Testcontainers; `--no-file-parallelism` is green
+
+`server/vitest.config.ts` · `pnpm exec vitest run .it.test` · 2026-10-13
+
+On Docker Desktop with ~7.7 GiB, the 24 `.it` files start ~10 `pgvector` containers at once; some `beforeAll` hooks then die with `Hook timed out in 120000ms` (one container exited 137), and a different set of 4–7 files fails each run (`Test Files 7 failed | 17 passed`). The same files pass in isolation and as a group with `pnpm exec vitest run --no-file-parallelism <files>` (7/7 files, 20/20 tests). Treat a failing `.it` file as a regression only after re-running it alone; the failures are load, not code. (`--maxWorkers` is rejected by this config: `options.minThreads and options.maxThreads must not conflict`.)
+
+## 2026-10-16 — rows inserted in one transaction share `now()`, so `ran_at` ordering ties
+Moving the parent + child `agent_runs` inserts into one transaction made every `ran_at` (`defaultNow()`) identical, and the multi-agent columns came back in arbitrary order (`test/multi-agent-review.it.test.ts` "runs three agents at once": expected Alpha/Bravo/Charlie, got Bravo first). Fixed by inserting `ran_at` as `clock_timestamp()` in `modules/reviews/repository/run.repo.ts` `createAgentRun`. Anything that orders siblings by a `defaultNow()` column must not be created inside one transaction.

@@ -267,6 +267,8 @@ export type IndexStatus = z.infer<typeof IndexStatus>;
 export const RunRequest = z.object({
   agentId: z.string().optional(),
   all: z.boolean().optional(),
+  /** Multi-agent review: run exactly these agents concurrently (1..10 distinct). */
+  agent_ids: z.array(z.string().uuid()).optional(),
 });
 export type RunRequest = z.infer<typeof RunRequest>;
 
