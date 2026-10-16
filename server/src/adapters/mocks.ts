@@ -14,6 +14,8 @@ import type {
   GitHubReviewPayload,
   CreateReviewCommentInput,
   PrReviewComment,
+  CiWorkflowRun,
+  CiRunArtifactRef,
   OpenPrPayload,
   CommitFilesPayload,
   IssueMeta,
@@ -130,6 +132,14 @@ export interface MockGitHubOptions {
   login?: string;
   /** Existing inline review comments returned by listReviewComments. */
   comments?: PrReviewComment[];
+  /** Default branch returned by getDefaultBranch (default 'main'). */
+  defaultBranch?: string;
+  /** Workflow runs returned by listWorkflowRuns. */
+  workflowRuns?: CiWorkflowRun[];
+  /** Artifact refs per workflow run id, returned by listRunArtifacts. */
+  runArtifacts?: Record<number, CiRunArtifactRef[]>;
+  /** Artifact zip bytes per artifact id, returned by downloadArtifact. */
+  artifactBytes?: Record<number, Uint8Array>;
 }
 
 export class MockGitHubClient implements GitHubClient {
@@ -137,6 +147,9 @@ export class MockGitHubClient implements GitHubClient {
   public openedPrs: OpenPrPayload[] = [];
   public committed: CommitFilesPayload[] = [];
   public createdComments: CreateReviewCommentInput[] = [];
+  public workflowRunCalls: { repo: RepoRef; workflowFile: string; perPage: number }[] = [];
+  public artifactListCalls: { repo: RepoRef; runId: number }[] = [];
+  public artifactDownloads: { repo: RepoRef; artifactId: number }[] = [];
 
   constructor(private opts: MockGitHubOptions = {}) {}
 
@@ -235,12 +248,35 @@ export class MockGitHubClient implements GitHubClient {
     return pr ? { url: 'https://github.com/mock/mock/pull/1' } : null;
   }
 
+  async getDefaultBranch(_repo: RepoRef): Promise<string> {
+    return this.opts.defaultBranch ?? 'main';
+  }
+
   async getIssue(_repo: RepoRef, n: number): Promise<IssueMeta> {
     return { number: n, title: `Issue #${n}`, body: 'mock issue', state: 'open' };
   }
 
   async currentLogin(): Promise<string> {
     return this.opts.login ?? 'mock-user';
+  }
+
+  async listWorkflowRuns(
+    repo: RepoRef,
+    workflowFile: string,
+    opts: { perPage: number },
+  ): Promise<CiWorkflowRun[]> {
+    this.workflowRunCalls.push({ repo, workflowFile, perPage: opts.perPage });
+    return this.opts.workflowRuns ?? [];
+  }
+
+  async listRunArtifacts(repo: RepoRef, runId: number): Promise<CiRunArtifactRef[]> {
+    this.artifactListCalls.push({ repo, runId });
+    return this.opts.runArtifacts?.[runId] ?? [];
+  }
+
+  async downloadArtifact(repo: RepoRef, artifactId: number): Promise<Uint8Array> {
+    this.artifactDownloads.push({ repo, artifactId });
+    return this.opts.artifactBytes?.[artifactId] ?? new Uint8Array();
   }
 }
 

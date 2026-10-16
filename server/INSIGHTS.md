@@ -211,6 +211,17 @@ case in `test/reviews.it.test.ts` and the failed-run assertion in `test/backfill
 
 The persistent index resolves callers through `references` rows that exclude the declaring file, so a caller in the declaring file cannot occur. The ripgrep fallback matches by name, so when two changed files declare the same name each shows up as a "caller" of the other. `capCallersPerSymbol` therefore drops callers in any declaring file on both paths; the fallback case in `repo-intel-blast.test.ts` guards it. The per-symbol cap (not a global slice) also stops a hot symbol from starving the others.
 
+### The Export-to-CI workflow checks out the PR's BASE, so the install PR itself gets no review — by design
+
+`server/src/modules/ci/workflow.ts` (`ref: github.event.pull_request.base.sha`, `persist-credentials: false`) · 2026-10-14
+
+The generated workflow runs the runner and manifest from the base revision, so a PR can never change the code that
+reviews it and runs with `OPENROUTER_API_KEY`; the PR's own changes arrive only as the API diff. Consequence: on the
+install PR the runner is not on base yet, the job takes ~4 s, writes a summary notice and exits 0, and no review comment
+appears. Reviews start on PRs opened after the install PR is merged (live runs on `vzhut/conventions-demo`, PRs #3 and #5).
+A reference setup that checks out the PR head does show a review on its install PR, at the price that a same-repo PR can
+alter the runner it is reviewed with. Fork PRs are skipped by `if: head.repo.full_name == github.repository`.
+
 ## Tool & Library Notes
 
 ### js-tiktoken on one long run of non-space characters is quadratic — a 1 MiB `'a'.repeat()` test fixture hangs at 100% CPU
@@ -275,6 +286,12 @@ even the owner's own: `GET /repos/<owner>/<repo>/pulls` returns **404** (not 403
 token, which is why the same repo worked from the CLI. Fix: add the repo under the token's *Repository access*
 (needs Contents: read, Pull requests: read), or make the repo public. Also note the clone URL embeds the token
 (`https://x-access-token:<token>@github.com/…`), so a git error printed to the log contains it in clear text.
+
+*Extension 2026-10-14 (Export to CI):* writing needs more than the read rights above. To push `.github/workflows/*` the token
+also needs **Workflows: Read and write** (plus Contents and Pull requests: Read and write); without it the install
+answers 403 `token_permission_missing`. Read probes cannot reveal this: `GET /repos/<repo>` returns 200 with
+`permissions.push: true`, `git/ref`, `pulls` and `actions/workflows` all return 200, and the write only fails at commit
+time. Editing the token's permissions in GitHub applies to the same token string, so nothing needs re-pasting in the studio.
 
 ### `pnpm db:generate`'s rename-ambiguity prompt needs a real TTY — `yes ""` and `printf '\n' | …` hang it
 
@@ -399,6 +416,26 @@ The body has `</untrusted>` neutralised, but the label (a spec document's repo-r
 
 Also by design: since `markProgress` only writes a counter, `eval_runs.results` is written once by `finishRun`, so a run that crashes mid-way keeps no per-case results (the orphan sweep marks it `errored`); the run is simply re-run.
 
+### The studio's GitHub token comes from `~/.devdigest/secrets.json` first — an empty `GITHUB_TOKEN=` in `.env` proves nothing
+
+`server/src/adapters/secrets/local.ts:33` · `server/src/platform/container.ts:250` · 2026-10-14
+
+`LocalSecretsProvider.get('GITHUB_TOKEN')` returns the value stored by the Settings UI in `~/.devdigest/secrets.json` and
+only falls back to `GITHUB_TOKEN` / `GITHUB_PAT` from the environment. A user who verified "my token works" with a
+`curl` using `server/.env` (which can hold an empty `GITHUB_TOKEN=`) or with `gh` (a third, OAuth token) was testing a
+different credential than the server. To check the token the server really uses, read the same file; the script
+`docs/retro/2026-10-14-export-to-ci/check-token.sh <owner/repo> <branch>` does this and prints only HTTP codes and GitHub's
+own messages, never the token.
+
+### `gh api repos/<repo>/git/ref/tags/<tag>` can return 404 for tags that exist — use `matching-refs`
+
+`server/src/modules/ci/constants.ts` (pinned action SHAs) · 2026-10-14
+
+While pinning `actions/checkout` and `actions/upload-artifact` to full commit SHAs, `gh api repos/actions/checkout/git/ref/tags/<tag>`
+answered 404 even for existing tags. `gh api repos/actions/<name>/git/matching-refs/tags/<tag>` works and also shows
+`object.type`: `commit` means the SHA is the commit (no dereferencing), `tag` means an annotated tag that must be
+dereferenced first.
+
 ## Recurring Errors & Fixes
 
 
@@ -443,6 +480,19 @@ T10's depth-2 endpoint attribution needs `getEdges` to find each caller's import
 `server/test/onboarding-service.test.ts` · 2026-10-02
 
 A test double that records `info(obj, msg)` calls and an assertion reading `msg` sees nothing if the code under test passes the sentence as the first argument. Log the structured fields as `obj` and the sentence as `msg`, the same shape Fastify's pino uses, or the log-line assertions (AC-28) fail with an empty message.
+
+### "GitHub can't see this repository" (`repo_not_accessible`) on the user's own repo can mean the stored default branch does not exist
+
+`server/src/db/schema/repos.ts:15` · `server/src/modules/ci/service.ts` (`getDefaultBranch`) · `server/src/modules/ci/helpers.ts` (`githubFailure`) · 2026-10-14
+
+Install failed with `repo_not_accessible` although the token could read and push the repo. `githubFailure` maps every 404 to
+that message, and `commitFiles` starts with `git/ref/heads/<base>`; the studio's `repos.default_branch` is never synced from
+GitHub (column default `'main'`), while the demo repo's real default branch is `master`, so the very first call 404s.
+`docs/retro/2026-10-14-export-to-ci/check-token.sh` shows it: repo 200, `heads/main` 404, `default_branch = master`.
+Fix in the CI module: ask GitHub (`GitHubClient.getDefaultBranch`, `repos.get`) at install time instead of trusting the
+stored value. The stored `default_branch` is still wrong for any other consumer. To debug a similar 404, read the
+`ci install failed` log line: it now carries the failing `method`, `path` and GitHub's `message` (`githubDebugOf`), never
+headers or the token.
 
 ## Session Notes
 
