@@ -92,6 +92,23 @@ Fix: stop propagation on the portal root, and on the trigger itself, which sits 
 
 The `preventDefault` on `mousedown` serves a second purpose. It keeps focus on the trigger, so its `onBlur` close doesn't fire while the pointer is still inside the popover.
 
+### TanStack Query drops per-call `mutate(vars, { onSuccess })` callbacks when the component unmounts — put side effects on the mutation
+
+`client/src/lib/hooks/ci.ts` (`useCiZip`) · `client/src/app/agents/[id]/_components/AgentEditor/_components/CiTab/_components/ExportWizard/useExportWizard.ts` · 2026-10-16
+
+The Export wizard saved the downloaded .zip in `zip.mutate(request, { onSuccess: saveBlob })`. Pressing Escape or Close while the request
+was in flight unmounted the wizard; the server had already recorded the installation, but the browser never got the file and nothing was
+shown. Callbacks passed to `mutate` belong to the observer and are skipped after unmount, whereas `onSuccess` given to `useMutation` runs
+from the mutation itself (this is also why the installations invalidation in the same hook still fired). Fix: `useCiZip(agentId, onBlob)`
+calls `onBlob` from the hook-level `onSuccess`; `hooks/ci.test.tsx` ("hands the blob to its own callback") pins it.
+
+### jsdom's `Blob` has no `arrayBuffer()` — read it with a `FileReader` in tests
+
+`client/src/lib/api.ci.test.ts:43` · 2026-10-16
+
+A test of `api.ciZip` that asserted on the returned `Blob` failed with `blob.arrayBuffer is not a function` under vitest + jsdom. Wrap a
+`FileReader` (`readAsArrayBuffer`) in a promise as the test does, instead of polyfilling the global.
+
 ## Recurring Errors & Fixes
 
 ### `@testing-library/user-event` is not installed, so the skill's `userEvent.setup()` tests don't compile

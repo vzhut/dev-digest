@@ -290,3 +290,22 @@ Mode: default · Agents: 3 completed + 1 failed (rate limit) · Total tokens: ~3
 **Proposals:**
 - Next run, give the plan-verifier the parent's fresh suite results and tell it to re-run only the suites it needs for evidence of changed items; the retry spent most of its 20 minutes re-running everything.
 - Next run, write the tests for the stricter Verify clauses (AC-57 PR-cost-after-ingest, NFR-Sec `.it` sentinel) in the test-writer brief; two rounds of verification reported them as the only recurring gaps.
+
+### Export to CI: pr-self-review round and commits — 2026-10-16
+
+Mode: default · Agents: 2 · Total tokens: ~208k · Fix-loop rounds: 0 (the parent fixed the findings inline)
+
+| # | Agent | Model | Tokens | Tool uses | Duration | Status |
+|---|---|---|---|---|---|---|
+| 1 | pr-self-review reviewer: backend (20 files) | not stated | 88k | 11 | 1m19s | done: 0 critical / 2 medium / 1 low |
+| 2 | pr-self-review reviewer: ui (64 files) | not stated | 121k | 17 | 1m55s | done: 0 critical / 0 medium / 5 low |
+
+**Went easily:** both reviewers returned the JSON shape on the first pass and every finding carried file:line, skill rule, failure scenario and fix; the one real gap (workflow without `permissions`) was found by the security rubric, which the three earlier architecture/spec reviews had not applied.
+**Had difficulty:** the skill's scripts failed in a git worktree (`mkdir: .git: Not a directory`); the parent ran a patched scratch copy. The `gates.sh` pass prints nothing on success, so a quiet run looks the same as a broken one until `gate-findings.tsv` is checked.
+**Duplicated:** the ui reviewer re-checked XSS, i18n keys and shared-contract parity that the architecture reviewer and the verifier had already covered.
+**Missed / caught late:** the missing-`permissions` hole in `validateWorkflow` survived a spec-level verification (AC-22 checked the generated workflow, not the validator's reach), two test-writer passes and three architecture reviews.
+
+**Proposals:**
+- Next run, add one security-rubric reviewer (the `security` skill alone, over the added lines of anything that parses or generates security-relevant text) to the review wave before the first `plan-verifier`, instead of waiting for pr-self-review; it found the only functional defect of this round in 79 s.
+- Fix `.claude/skills/pr-self-review/scripts/*.sh` to use `$(git rev-parse --git-dir)`, then run `cd evals && pnpm eval:quality` as AGENTS.md requires for skill changes; every worktree user currently hits the failure.
+- Make `gates.sh` print a one-line summary (rules run, findings count) even when clean.

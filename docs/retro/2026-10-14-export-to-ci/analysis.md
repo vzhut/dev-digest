@@ -201,3 +201,17 @@ export path), NFR-A11y (no manual keyboard walk), NFR-Perf (no timing test). `ge
 Tails at this point: nothing is committed (31 tracked files modified, 26 untracked paths); the demo repo's workflow on `master`
 is still the old two-job version until the agent is exported again and the PR merged; PR #5 and branch
 `test/devdigest-critical` are still open in `vzhut/conventions-demo`; `/pr-self-review` has not been run.
+
+## 12. pr-self-review and commits (added 2026-10-16; supersedes the "tails" list in section 11)
+
+`/pr-self-review` (full tier) ran with two reviewer sub-agents (backend, ui; 208k tokens together) after the gates were clean: PASS, 0 critical,
+0 high, 2 medium, 6 low. The parent then fixed the real gap (a workflow without any `permissions:` passed the validator, so GitHub would give the
+token the repo default) and three small UI items (Back after success, zip saved by the mutation, test stub restore). Final counts: server 618
+unit + 7 `.it`, client 574, agent-runner 99, gates clean. Open and accepted: attribution of one run to the first of two agents installed in the
+same repo, no DB-level uniqueness or index for `hasCiRunKey`, radio-card keyboard behaviour, a polling test that only checks the option.
+
+Committed on `emdash/export-to-ci-tg8ip` (not pushed): `0b8c623` shared contracts and port, `8607693` agent-runner, `c3b165e` server ci module,
+`dca23ba` client, `475cd2c` specs and docs. Section 11 said nothing was committed: that is no longer true. Still open: the demo repo's workflow on
+`master` is the old two-job one until the agent is exported again and the PR merged; PR #5 and `test/devdigest-critical` are still open there;
+the branch name is the Emdash one, not a lesson branch.
+
